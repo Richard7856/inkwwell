@@ -125,9 +125,14 @@ export default function ARViewer({ tattooId = 'default' }) {
         </div>
       )}
 
-      {/* Botones de animación — posicionados abajo sin tapar el AR */}
+      {/* Botones de animación — posicionados sobre la barra de navegación nativa.
+          paddingBottom con env(safe-area-inset-bottom) para Android gesture bar e iOS home bar.
+          Requiere viewport-fit=cover en el meta viewport para que env() funcione. */}
       {animations.length > 1 && (
-        <div className="absolute bottom-6 left-0 right-0 flex justify-center gap-3 px-4">
+        <div
+          className="absolute left-0 right-0 flex justify-center gap-3 px-4"
+          style={{ bottom: 'calc(1.5rem + env(safe-area-inset-bottom, 0px))' }}
+        >
           {animations.map((name) => (
             <button
               key={name}
