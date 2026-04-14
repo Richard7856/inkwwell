@@ -128,7 +128,12 @@ export default function ARViewer({ tattooId = 'default' }) {
       )}
 
       {/* Botones de animación — z-20 para estar encima del canvas de MindAR.
-          bottom con safe-area-inset-bottom para no quedar tapados por la barra de Android/iOS. */}
+          bottom con safe-area-inset-bottom para no quedar tapados por la barra de Android/iOS.
+
+          Por qué NO usamos backdrop-blur ni bg-black/40 (transparencia):
+          backdrop-filter:blur() tiene soporte inconsistente en Chrome Android (falla silenciosamente).
+          Los colores RGBA semitransparentes también pueden no renderizar en algunos WebGL contexts.
+          Usamos bg-gray-900 (opaco sólido) y bg-white — funcionan en 100% de browsers. */}
       {animations.length > 0 && (
         <div
           className="absolute left-0 right-0 flex justify-center gap-3 px-4 z-20"
@@ -140,10 +145,10 @@ export default function ARViewer({ tattooId = 'default' }) {
               onClick={() => handleAnimationChange(name)}
               className={`
                 px-5 py-2.5 rounded-full text-sm font-semibold
-                backdrop-blur-md border transition-all duration-200
+                border transition-all duration-200 shadow-lg
                 ${activeAnim === name
-                  ? 'bg-white text-black border-white shadow-lg scale-105'
-                  : 'bg-black/40 text-white border-white/30'
+                  ? 'bg-white text-black border-white scale-105'
+                  : 'bg-gray-900 text-white border-gray-600'
                 }
               `}
             >

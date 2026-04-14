@@ -21,7 +21,19 @@ export default function Scan() {
   }
 
   return (
-    <div className="w-full h-screen">
+    /*
+      position: fixed + inset: 0 garantiza que el container mida EXACTAMENTE el viewport
+      visible en el momento que MindAR inicializa el video.
+
+      Por qué NO usar h-screen (100vh):
+      En Android Chrome, 100vh incluye la altura de la barra de URL aunque esté visible.
+      El container resulta más alto que el área visible → MindAR lee dimensiones incorrectas
+      al inicializar → calcula mal el aspect ratio del video → imagen aparece torcida/chueca.
+
+      position:fixed + inset:0 siempre mide el viewport visible real, sin importar
+      si la barra de URL está visible o no, o si hay barra de navegación inferior.
+    */
+    <div style={{ position: 'fixed', inset: 0 }}>
       <ARViewer tattooId={tattooId} />
     </div>
   )
