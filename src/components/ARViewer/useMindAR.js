@@ -30,6 +30,26 @@ export function useMindAR(mindUrl, containerRef) {
       uiLoading: 'yes',
       uiScanning: 'yes',
       uiError: 'yes',
+
+      /*
+        One Euro Filter — controla el suavizado del tracking.
+
+        filterMinCF (minimum cutoff frequency):
+          Frecuencia de corte mínima. Valores bajos = más suavizado cuando el objeto
+          está quieto. 0.001 = máximo suavizado en reposo (menos jitter al estar fijo).
+
+        filterBeta (speed coefficient):
+          Ajusta cuánto se reduce el suavizado cuando hay movimiento rápido.
+          DEFAULT = 1000 → muy reactivo al movimiento → mucho jitter (vibración).
+          0.001 → suavizado consistente incluso en movimiento → menos vibración.
+
+        Por qué estos valores para un tatuaje:
+        El tatuaje se mueve lentamente (brazo, cuerpo). No necesitamos respuesta
+        ultra-rápida a velocidades altas. Priorizamos estabilidad sobre reactividad.
+        Resultado: el 3D "flota" estable en lugar de vibrar.
+      */
+      filterMinCF: 0.001,
+      filterBeta: 0.001,
     })
 
     mindarRef.current = mindar
@@ -62,12 +82,45 @@ export function useMindAR(mindUrl, containerRef) {
       El <video> lo crea MindAR durante .start(). Si buscamos el elemento antes,
       el querySelector devuelve null.
     */
+    /*
+      Forzar object-fit: cover en el <video> para eliminar barras negras.
+      El video element lo crea MindAR durante .start() — no existe antes.
+    */
     const videoEl = containerRef.current?.querySelector('video')
     if (videoEl) {
-      videoEl.style.objectFit = 'cover'
+      videoEl.style.position = 'absolute'
+      videoEl.style.top = '0'
+      videoEl.style.left = '0'
       videoEl.style.width = '100%'
       videoEl.style.height = '100%'
+      videoEl.style.objectFit = 'cover'
     }
+
+    /*
+      Forzar recalculo de dimensiones del canvas de Three.js.
+
+      Por qué es necesario:
+      MindAR calcula el tamaño del renderer al inicializar, ANTES de que el video
+      tenga su resolución real del sensor. El video reporta videoWidth/videoHeight = 0
+      hasta que el stream está activo. MindAR entonces calcula el canvas con dimensiones
+      incorrectas → canvas queda corrido o más pequeño de lo que debería.
+
+      requestAnimationFrame garantiza que este resize corre en el SIGUIENTE frame de
+      pintado del browser — cuando el video ya tiene su resolución real. Dispatching
+      'resize' en window triggerea el handler interno de MindAR que recalcula el canvas.
+    */
+    requestAnimationFrame(() => {
+      window.dispatchEvent(new Event('resize'))
+
+      // Después del resize de MindAR, asegurar que el canvas también esté posicionado
+      // en esquina 0,0 del container — MindAR puede dejarlo con left en píxeles
+      const canvasEl = containerRef.current?.querySelector('canvas')
+      if (canvasEl) {
+        canvasEl.style.position = 'absolute'
+        canvasEl.style.top = '0'
+        canvasEl.style.left = '0'
+      }
+    })
 
     return { anchor, mindar }
   }, [mindUrl, containerRef])
