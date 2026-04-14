@@ -9,12 +9,16 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
  * El GLB se añade como hijo del anchor.group — MindAR se encarga
  * de posicionarlo y rotarlo según el tracking del tatuaje.
  *
- * ¿Por qué renderer.setAnimationLoop en lugar de requestAnimationFrame?
- * MindAR internamente llama renderer.setAnimationLoop() para su propio render loop.
- * Si usamos requestAnimationFrame en paralelo, hay DOS llamadas a renderer.render()
- * por frame — MindAR no puede compositar correctamente la cámara y el resultado
- * es pantalla negra. Llamar a setAnimationLoop() REEMPLAZA el loop interno de
- * MindAR con el nuestro, que hace lo mismo (renderer.render) más el mixer.update().
+ * ── IMPORTANTE: por qué NO llamamos renderer.render() aquí ──
+ * MindAR en su start() llama renderer.setAnimationLoop(async () => {
+ *   await processVideo()        ← actualiza el feed de cámara + detección
+ *   renderer.render(scene, camera) ← renderiza la escena 3D encima
+ * })
+ * Si nosotros también llamamos renderer.render(), hay dos renders por frame
+ * y la cámara queda negra. Si reemplazamos el loop con setAnimationLoop(),
+ * perdemos processVideo() y la cámara también queda negra.
+ * La solución: requestAnimationFrame SOLO para mixer.update() — MindAR
+ * maneja el render completo (cámara + escena) en su propio loop.
  *
  * @param {string} glbUrl - URL del modelo GLB
  * @returns {{ loadModel, playAnimation, getAnimationNames, cleanup }}
@@ -25,13 +29,13 @@ export function useThreeScene(glbUrl) {
   const actionsRef = useRef({})
   const currentActionRef = useRef(null)
   const clockRef = useRef(new THREE.Clock())
-  const rendererRef = useRef(null) // guardamos ref para poder parar el loop en cleanup
+  const frameIdRef = useRef(null)
 
   /**
    * Carga el GLB y lo añade al grupo del anchor.
-   * Usa renderer.setAnimationLoop para integrarse con MindAR sin conflicto.
+   * Inicia un loop RAF exclusivamente para actualizar el AnimationMixer.
    */
-  const loadModel = useCallback(async (anchorGroup, renderer, scene, camera) => {
+  const loadModel = useCallback(async (anchorGroup) => {
     const loader = new GLTFLoader()
 
     const gltf = await new Promise((resolve, reject) => {
@@ -40,7 +44,6 @@ export function useThreeScene(glbUrl) {
 
     const model = gltf.scene
     modelRef.current = model
-    rendererRef.current = renderer
 
     // Escala: 1 unidad ≈ 10cm — ajustar si el modelo es muy grande/pequeño
     model.scale.set(0.15, 0.15, 0.15)
@@ -52,7 +55,7 @@ export function useThreeScene(glbUrl) {
       const mixer = new THREE.AnimationMixer(model)
       mixerRef.current = mixer
 
-      // Indexar todas las animaciones por nombre para acceso rápido en playAnimation()
+      // Indexar todas las animaciones por nombre para acceso rápido
       gltf.animations.forEach((clip) => {
         actionsRef.current[clip.name] = mixer.clipAction(clip)
       })
@@ -65,16 +68,18 @@ export function useThreeScene(glbUrl) {
 
     clockRef.current.start()
 
-    // setAnimationLoop reemplaza el loop interno de MindAR con el nuestro.
-    // MindAR ya hizo setAnimationLoop(() => renderer.render(scene, camera)) en su start().
-    // Al reemplazarlo aquí, controlamos el loop completo: mixer + render, un solo llamado por frame.
-    renderer.setAnimationLoop(() => {
+    // Loop RAF — SOLO para mixer.update(delta).
+    // NO llamamos renderer.render() — MindAR lo hace en su propio setAnimationLoop.
+    // Agregar un segundo render causaría cámara negra (feed de cámara no se procesa).
+    const animate = () => {
+      frameIdRef.current = requestAnimationFrame(animate)
       const delta = clockRef.current.getDelta()
       if (mixerRef.current) {
         mixerRef.current.update(delta)
       }
-      renderer.render(scene, camera)
-    })
+    }
+
+    animate()
   }, [glbUrl])
 
   /**
@@ -98,17 +103,15 @@ export function useThreeScene(glbUrl) {
     return Object.keys(actionsRef.current)
   }, [])
 
-  /** Limpia Three.js: para el loop, disposa geometrías y texturas para evitar leaks */
+  /** Limpia Three.js: detiene el loop, disposa geometrías y texturas */
   const cleanup = useCallback(() => {
-    // setAnimationLoop(null) para el loop — equivalente a cancelAnimationFrame
-    if (rendererRef.current) {
-      rendererRef.current.setAnimationLoop(null)
+    if (frameIdRef.current) {
+      cancelAnimationFrame(frameIdRef.current)
+      frameIdRef.current = null
     }
-
     if (mixerRef.current) {
       mixerRef.current.stopAllAction()
     }
-
     if (modelRef.current) {
       modelRef.current.traverse((child) => {
         if (child.isMesh) {
@@ -124,12 +127,10 @@ export function useThreeScene(glbUrl) {
         }
       })
     }
-
     actionsRef.current = {}
     currentActionRef.current = null
     modelRef.current = null
     mixerRef.current = null
-    rendererRef.current = null
   }, [])
 
   return {

@@ -10,11 +10,11 @@ import { loadTarget } from './targetLoader.js'
  * Ciclo: mount → loadTarget → start MindAR → load GLB → anchor al target
  * La cámara se limpia al desmontar para evitar leaks en mobile.
  *
- * @param {{ tattooId?: string }} props - ID del tatuaje o 'default' para demo
+ * @param {{ tattooId?: string }} props - ID del tatuaje
  */
 export default function ARViewer({ tattooId = 'default' }) {
   const containerRef = useRef(null)
-  const [status, setStatus] = useState('loading') // loading | scanning | error
+  const [status, setStatus] = useState('loading') // loading | scanning | tracking | error
   const [errorMsg, setErrorMsg] = useState('')
   const [animations, setAnimations] = useState([])
   const [activeAnim, setActiveAnim] = useState('')
@@ -25,7 +25,7 @@ export default function ARViewer({ tattooId = 'default' }) {
   const mindAR = useMindAR(urls?.mindUrl, containerRef)
   const threeScene = useThreeScene(urls?.glbUrl)
 
-  // Paso 1: resolver URLs del tatuaje
+  // Paso 1: resolver URLs del tatuaje desde Supabase o hardcoded (demo)
   useEffect(() => {
     let cancelled = false
 
@@ -59,17 +59,13 @@ export default function ARViewer({ tattooId = 'default' }) {
           return
         }
 
-        // Callbacks de tracking — útiles para UI y analytics futuras
+        // Callbacks de tracking — cambian el status para UI y analytics futuras
         anchor.onTargetFound = () => setStatus('tracking')
         anchor.onTargetLost = () => setStatus('scanning')
 
-        // Cargar GLB y anclarlo al target
-        await threeScene.loadModel(
-          anchor.group,
-          mindar.renderer,
-          mindar.scene,
-          mindar.camera
-        )
+        // loadModel ya no necesita renderer/scene/camera — solo el anchor group
+        // MindAR maneja el render loop completo (cámara + escena)
+        await threeScene.loadModel(anchor.group, mindar.renderer, mindar.scene, mindar.camera)
 
         if (cancelled) {
           threeScene.cleanup()
@@ -112,7 +108,7 @@ export default function ARViewer({ tattooId = 'default' }) {
       {/* Contenedor de MindAR — ocupa 100% del viewport */}
       <div ref={containerRef} className="w-full h-full" />
 
-      {/* Error state */}
+      {/* Estado de error — cámara denegada, .mind no encontrado, etc. */}
       {status === 'error' && (
         <div className="absolute inset-0 flex items-center justify-center bg-black/80 p-6">
           <div className="text-center max-w-sm">
@@ -125,32 +121,42 @@ export default function ARViewer({ tattooId = 'default' }) {
         </div>
       )}
 
-      {/* Botones de animación — posicionados sobre la barra de navegación nativa.
-          paddingBottom con env(safe-area-inset-bottom) para Android gesture bar e iOS home bar.
-          Requiere viewport-fit=cover en el meta viewport para que env() funcione. */}
-      {animations.length > 1 && (
+      {/* Botones de animación — aparecen cuando el GLB cargó y tiene animaciones.
+          Usan safe-area-inset-bottom para no quedar tapados por la barra de Android/iOS.
+          El texto viene del GLB pero se muestra con label legible en español. */}
+      {animations.length > 0 && (
         <div
           className="absolute left-0 right-0 flex justify-center gap-3 px-4"
-          style={{ bottom: 'calc(1.5rem + env(safe-area-inset-bottom, 0px))' }}
+          style={{ bottom: 'calc(env(safe-area-inset-bottom, 0px) + 5rem)' }}
         >
           {animations.map((name) => (
             <button
               key={name}
               onClick={() => handleAnimationChange(name)}
               className={`
-                px-4 py-2 rounded-full text-sm font-medium
-                backdrop-blur-sm transition-all duration-200
+                px-5 py-2.5 rounded-full text-sm font-semibold
+                backdrop-blur-md border transition-all duration-200
                 ${activeAnim === name
-                  ? 'bg-white/90 text-black shadow-lg'
-                  : 'bg-white/20 text-white hover:bg-white/30'
+                  ? 'bg-white text-black border-white shadow-lg scale-105'
+                  : 'bg-black/40 text-white border-white/30 hover:bg-black/60'
                 }
               `}
             >
-              {name}
+              {ANIMATION_LABEL[name] ?? name}
             </button>
           ))}
         </div>
       )}
     </div>
   )
+}
+
+/**
+ * Mapeo de nombres de animación del GLB a labels legibles en español.
+ * Los nombres del GLB son técnicos (ej: "Jim canter") — esto los convierte
+ * a texto visible para el usuario. Agregar entradas según el catálogo de GLBs.
+ */
+const ANIMATION_LABEL = {
+  'Jim canter':    '🐕 Trotando',
+  'Ethan scratch': '🐾 Rascándose',
 }
