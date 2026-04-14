@@ -1,0 +1,12 @@
+@import "tailwindcss";
+
+/* Mobile-first fullscreen layout — AR needs 100% viewport */
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  background: #0a0a0a;
+  color: white;
+  font-family: system-ui, -apple-system, sans-serif;
+}
