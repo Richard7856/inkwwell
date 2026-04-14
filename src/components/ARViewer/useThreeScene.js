@@ -6,19 +6,15 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
  * Hook que carga un GLB y lo ancla al image target de MindAR.
  * Maneja AnimationMixer para reproducir las animaciones del modelo.
  *
- * El GLB se añade como hijo del anchor.group — MindAR se encarga
- * de posicionarlo y rotarlo según el tracking del tatuaje.
+ * ── Por qué SÍ llamamos renderer.render() aquí ──
+ * MindAR NO tiene loop de render interno. Verificado en el source:
+ * - processVideo() corre un loop de TensorFlow (tf.nextFrame) que actualiza matrices
+ * - NO llama renderer.render() en ningún punto
+ * - El render ES responsabilidad del consumer (nosotros)
  *
- * ── IMPORTANTE: por qué NO llamamos renderer.render() aquí ──
- * MindAR en su start() llama renderer.setAnimationLoop(async () => {
- *   await processVideo()        ← actualiza el feed de cámara + detección
- *   renderer.render(scene, camera) ← renderiza la escena 3D encima
- * })
- * Si nosotros también llamamos renderer.render(), hay dos renders por frame
- * y la cámara queda negra. Si reemplazamos el loop con setAnimationLoop(),
- * perdemos processVideo() y la cámara también queda negra.
- * La solución: requestAnimationFrame SOLO para mixer.update() — MindAR
- * maneja el render completo (cámara + escena) en su propio loop.
+ * Sin renderer.render() el canvas de Three.js nunca se pinta → pantalla negra.
+ * La cámara es el <video> con z-index:-2 que se ve a través del canvas transparente
+ * (alpha:true en el renderer). Si el canvas no se renderiza, no hay nada visible.
  *
  * @param {string} glbUrl - URL del modelo GLB
  * @returns {{ loadModel, playAnimation, getAnimationNames, cleanup }}
@@ -33,9 +29,9 @@ export function useThreeScene(glbUrl) {
 
   /**
    * Carga el GLB y lo añade al grupo del anchor.
-   * Inicia un loop RAF exclusivamente para actualizar el AnimationMixer.
+   * Inicia el animation loop: mixer.update() + renderer.render() por frame.
    */
-  const loadModel = useCallback(async (anchorGroup) => {
+  const loadModel = useCallback(async (anchorGroup, renderer, scene, camera) => {
     const loader = new GLTFLoader()
 
     const gltf = await new Promise((resolve, reject) => {
@@ -68,15 +64,16 @@ export function useThreeScene(glbUrl) {
 
     clockRef.current.start()
 
-    // Loop RAF — SOLO para mixer.update(delta).
-    // NO llamamos renderer.render() — MindAR lo hace en su propio setAnimationLoop.
-    // Agregar un segundo render causaría cámara negra (feed de cámara no se procesa).
+    // Loop RAF: actualizar mixer Y llamar renderer.render().
+    // MindAR NO renderiza internamente — processVideo() solo actualiza matrices.
+    // renderer (alpha:true) dibuja el canvas Three.js transparente encima del <video> de cámara.
     const animate = () => {
       frameIdRef.current = requestAnimationFrame(animate)
       const delta = clockRef.current.getDelta()
       if (mixerRef.current) {
         mixerRef.current.update(delta)
       }
+      renderer.render(scene, camera)
     }
 
     animate()
@@ -117,7 +114,6 @@ export function useThreeScene(glbUrl) {
         if (child.isMesh) {
           child.geometry?.dispose()
           if (child.material) {
-            // Material puede ser array (multi-material) o single
             const materials = Array.isArray(child.material) ? child.material : [child.material]
             materials.forEach((mat) => {
               mat.map?.dispose()

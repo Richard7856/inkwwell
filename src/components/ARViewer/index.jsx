@@ -8,18 +8,20 @@ import { loadTarget } from './targetLoader.js'
  * Integra MindAR (image tracking) + Three.js (rendering GLB).
  *
  * Ciclo: mount → loadTarget → start MindAR → load GLB → anchor al target
- * La cámara se limpia al desmontar para evitar leaks en mobile.
  *
- * @param {{ tattooId?: string }} props - ID del tatuaje
+ * ── Por qué isolation: isolate en el containerRef ──
+ * MindAR posiciona el <video> (cámara) con z-index: -2 y el <canvas> (Three.js)
+ * sin z-index explícito. Para que el video sea visible DETRÁS del canvas (y no
+ * detrás del body negro del documento), el container necesita crear su propio
+ * stacking context. isolation: isolate hace exactamente eso sin afectar el layout.
+ * Sin esto, z-index:-2 saca el video FUERA del container → fondo negro.
  */
 export default function ARViewer({ tattooId = 'default' }) {
   const containerRef = useRef(null)
-  const [status, setStatus] = useState('loading') // loading | scanning | tracking | error
+  const [status, setStatus] = useState('loading')
   const [errorMsg, setErrorMsg] = useState('')
   const [animations, setAnimations] = useState([])
   const [activeAnim, setActiveAnim] = useState('')
-
-  // URLs se resuelven vía targetLoader — fuente de verdad de rutas
   const [urls, setUrls] = useState(null)
 
   const mindAR = useMindAR(urls?.mindUrl, containerRef)
@@ -28,18 +30,14 @@ export default function ARViewer({ tattooId = 'default' }) {
   // Paso 1: resolver URLs del tatuaje desde Supabase o hardcoded (demo)
   useEffect(() => {
     let cancelled = false
-
     loadTarget(tattooId)
-      .then((resolved) => {
-        if (!cancelled) setUrls(resolved)
-      })
+      .then((resolved) => { if (!cancelled) setUrls(resolved) })
       .catch((err) => {
         if (!cancelled) {
           setStatus('error')
           setErrorMsg(err.message)
         }
       })
-
     return () => { cancelled = true }
   }, [tattooId])
 
@@ -54,31 +52,25 @@ export default function ARViewer({ tattooId = 'default' }) {
         setStatus('loading')
         const { anchor, mindar } = await mindAR.start()
 
-        if (cancelled) {
-          mindAR.stop()
-          return
-        }
+        if (cancelled) { mindAR.stop(); return }
 
-        // Callbacks de tracking — cambian el status para UI y analytics futuras
         anchor.onTargetFound = () => setStatus('tracking')
-        anchor.onTargetLost = () => setStatus('scanning')
+        anchor.onTargetLost  = () => setStatus('scanning')
 
-        // loadModel ya no necesita renderer/scene/camera — solo el anchor group
-        // MindAR maneja el render loop completo (cámara + escena)
-        await threeScene.loadModel(anchor.group, mindar.renderer, mindar.scene, mindar.camera)
+        // Pasamos renderer/scene/camera — MindAR NO renderiza internamente,
+        // useThreeScene corre el loop RAF con renderer.render() por frame
+        await threeScene.loadModel(
+          anchor.group,
+          mindar.renderer,
+          mindar.scene,
+          mindar.camera
+        )
 
-        if (cancelled) {
-          threeScene.cleanup()
-          mindAR.stop()
-          return
-        }
+        if (cancelled) { threeScene.cleanup(); mindAR.stop(); return }
 
-        // Poblar lista de animaciones para los botones de toggle
         const animNames = threeScene.getAnimationNames()
         setAnimations(animNames)
-        if (animNames.length > 0) {
-          setActiveAnim(animNames[0])
-        }
+        if (animNames.length > 0) setActiveAnim(animNames[0])
 
         setStatus('scanning')
       } catch (err) {
@@ -105,12 +97,26 @@ export default function ARViewer({ tattooId = 'default' }) {
 
   return (
     <div className="relative w-full h-full">
-      {/* Contenedor de MindAR — ocupa 100% del viewport */}
-      <div ref={containerRef} className="w-full h-full" />
 
-      {/* Estado de error — cámara denegada, .mind no encontrado, etc. */}
+      {/*
+        isolation: isolate crea un stacking context propio para el container.
+        Esto es crítico: el <video> de MindAR tiene z-index:-2 y el <canvas> no tiene
+        z-index explícito. Sin isolation, el video escapa al stacking context del
+        documento y queda DETRÁS del body negro → cámara negra.
+        Con isolation, z-index:-2 es relativo al container → video visible detrás del canvas.
+
+        overflow: hidden contiene los elementos absolutos de MindAR.
+        position: relative asegura que los hijos absolutos se anclen aquí.
+      */}
+      <div
+        ref={containerRef}
+        className="w-full h-full"
+        style={{ position: 'relative', overflow: 'hidden', isolation: 'isolate' }}
+      />
+
+      {/* Error state */}
       {status === 'error' && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black/80 p-6">
+        <div className="absolute inset-0 flex items-center justify-center bg-black/80 p-6 z-20">
           <div className="text-center max-w-sm">
             <p className="text-red-400 text-lg font-medium mb-2">No se pudo iniciar AR</p>
             <p className="text-gray-400 text-sm">{errorMsg}</p>
@@ -121,12 +127,11 @@ export default function ARViewer({ tattooId = 'default' }) {
         </div>
       )}
 
-      {/* Botones de animación — aparecen cuando el GLB cargó y tiene animaciones.
-          Usan safe-area-inset-bottom para no quedar tapados por la barra de Android/iOS.
-          El texto viene del GLB pero se muestra con label legible en español. */}
+      {/* Botones de animación — z-20 para estar encima del canvas de MindAR.
+          bottom con safe-area-inset-bottom para no quedar tapados por la barra de Android/iOS. */}
       {animations.length > 0 && (
         <div
-          className="absolute left-0 right-0 flex justify-center gap-3 px-4"
+          className="absolute left-0 right-0 flex justify-center gap-3 px-4 z-20"
           style={{ bottom: 'calc(env(safe-area-inset-bottom, 0px) + 5rem)' }}
         >
           {animations.map((name) => (
@@ -138,7 +143,7 @@ export default function ARViewer({ tattooId = 'default' }) {
                 backdrop-blur-md border transition-all duration-200
                 ${activeAnim === name
                   ? 'bg-white text-black border-white shadow-lg scale-105'
-                  : 'bg-black/40 text-white border-white/30 hover:bg-black/60'
+                  : 'bg-black/40 text-white border-white/30'
                 }
               `}
             >
@@ -152,9 +157,8 @@ export default function ARViewer({ tattooId = 'default' }) {
 }
 
 /**
- * Mapeo de nombres de animación del GLB a labels legibles en español.
- * Los nombres del GLB son técnicos (ej: "Jim canter") — esto los convierte
- * a texto visible para el usuario. Agregar entradas según el catálogo de GLBs.
+ * Mapeo de nombres técnicos del GLB a labels en español para el usuario.
+ * Agregar entradas según crezca el catálogo de modelos.
  */
 const ANIMATION_LABEL = {
   'Jim canter':    '🐕 Trotando',
