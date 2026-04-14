@@ -22,6 +22,7 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 export function useThreeScene(glbUrl) {
   const mixerRef = useRef(null)
   const modelRef = useRef(null)
+  const lightsRef = useRef([])    // referencias para poder limpiarlas en cleanup
   const actionsRef = useRef({})
   const currentActionRef = useRef(null)
   const clockRef = useRef(new THREE.Clock())
@@ -45,6 +46,32 @@ export function useThreeScene(glbUrl) {
     model.scale.set(0.15, 0.15, 0.15)
 
     anchorGroup.add(model)
+
+    /*
+      Iluminación — OBLIGATORIA para que los materiales sean visibles.
+
+      Por qué los perros salían negros:
+      Three.js MeshStandardMaterial (el default en GLBs exportados desde Blender/3D tools)
+      NO tiene color propio — responde a la luz de la escena. Sin luces en la escena,
+      el material no recibe ningún aporte de luz → renderiza negro puro, ignorando texturas.
+
+      MindARThree crea la escena pero NO agrega luces — esa responsabilidad es nuestra.
+
+      Setup elegido:
+      - AmbientLight: iluminación base pareja desde todas las direcciones (0.8 intensity).
+        Garantiza que las partes del modelo sin incidencia directa no queden negras.
+      - DirectionalLight: simula luz solar/spot, da forma y profundidad (1.5 intensity).
+        Posición (1, 3, 2) — arriba-derecha-frente, ángulo natural para un objeto en el suelo.
+    */
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.8)
+    scene.add(ambientLight)
+
+    const dirLight = new THREE.DirectionalLight(0xffffff, 1.5)
+    dirLight.position.set(1, 3, 2)
+    scene.add(dirLight)
+
+    // Guardar referencias para quitarlas limpiamente en cleanup
+    lightsRef.current = [ambientLight, dirLight]
 
     // Setup AnimationMixer si el GLB tiene animaciones esqueléticas
     if (gltf.animations.length > 0) {
@@ -123,6 +150,11 @@ export function useThreeScene(glbUrl) {
         }
       })
     }
+    // Remover luces de la escena — no tienen .dispose() pero sí hay que sacarlas
+    // del scene graph para evitar que persistan si el componente se vuelve a montar
+    lightsRef.current.forEach((light) => light.parent?.remove(light))
+    lightsRef.current = []
+
     actionsRef.current = {}
     currentActionRef.current = null
     modelRef.current = null

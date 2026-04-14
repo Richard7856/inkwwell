@@ -47,6 +47,28 @@ export function useMindAR(mindUrl, containerRef) {
       throw err
     }
 
+    /*
+      Forzar object-fit: cover en el <video> de MindAR para eliminar las barras
+      negras (letterboxing) que aparecen cuando el aspect ratio de la cámara
+      no coincide con el del container.
+
+      Por qué es seguro:
+      MindAR procesa frames directamente del stream de getUserMedia (datos reales del sensor),
+      no del elemento <video> como se muestra en pantalla. Cambiar object-fit solo afecta
+      cómo se renderiza visualmente el video — no las coordenadas que TensorFlow procesa
+      para el tracking. Los puntos de imagen target se mapean al stream original.
+
+      Por qué después de .start():
+      El <video> lo crea MindAR durante .start(). Si buscamos el elemento antes,
+      el querySelector devuelve null.
+    */
+    const videoEl = containerRef.current?.querySelector('video')
+    if (videoEl) {
+      videoEl.style.objectFit = 'cover'
+      videoEl.style.width = '100%'
+      videoEl.style.height = '100%'
+    }
+
     return { anchor, mindar }
   }, [mindUrl, containerRef])
 
