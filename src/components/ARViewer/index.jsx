@@ -162,10 +162,25 @@ export default function ARViewer({ tattooId = 'default' }) {
 }
 
 /**
- * Mapeo de nombres técnicos del GLB a labels en español para el usuario.
- * Agregar entradas según crezca el catálogo de modelos.
+ * Mapeo de nombres de animación del GLB → label visible para el usuario.
+ *
+ * Por qué este mapeo existe:
+ * Los nombres de animación en el GLB los define quien modela (Blender, Maya, etc.)
+ * y pueden ser técnicos, en inglés, o simplemente nombres de clip. El usuario
+ * ve los botones — necesita texto que le diga qué hace cada animación.
+ *
+ * Si un nombre no está aquí, se muestra el nombre técnico del clip como fallback.
+ * Agregar entradas cuando se sumen nuevos modelos al catálogo.
  */
 const ANIMATION_LABEL = {
+  // Alaskan Malamute
   'Jim canter':    '🐕 Trotando',
   'Ethan scratch': '🐾 Rascándose',
+
+  // Fénix
+  'Parado':   '🦅 Parado',
+  'Ataque':   '⚔️ Ataque',
+  'Ataque2':  '🔥 Ataque 2',
+  'Atacado':  '💥 Golpe',
+  'Atacado2': '💢 Golpe 2',
 }
