@@ -20,6 +20,17 @@ export async function compileMindFile(imageFile) {
   const response = await fetch(`${COMPILER_URL}/compile`, {
     method: 'POST',
     body: formData,
+    headers: {
+      /*
+        ngrok intercepta peticiones en el plan gratuito con una página HTML de advertencia.
+        Esa página no tiene Access-Control-Allow-Origin → el browser reporta CORS error,
+        pero el problema real es que nunca llegó al worker.
+
+        Este header le dice a ngrok: "es una petición programática, salta la advertencia".
+        No afecta nada cuando el worker está en Railway o producción (se ignora).
+      */
+      'ngrok-skip-browser-warning': 'true',
+    },
   })
 
   if (!response.ok) {
