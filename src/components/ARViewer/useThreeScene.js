@@ -102,14 +102,11 @@ export function useThreeScene(glbUrl) {
     const MODEL_CONFIGS = [
       {
         match: 'farmacias_similares',
-        // WHITELIST: solo mostrar meshes que empiecen con estos prefijos.
-        // Más robusto que blacklist — gltf-transform optimize puede renombrar
-        // o fusionar meshes durante compresión, y nuevos prefijos quedaban fuera
-        // de nuestro hide. Con whitelist, todo lo que NO sea simi_* desaparece
-        // automáticamente sin importar cómo se renombró.
-        keepMeshNamePrefixes: ['simi_'],
-        // Bump 2x para que el personaje sea claramente visible sobre el tatuaje
-        scaleMultiplier: 2,
+        // Esconder solo piso/bancas — los letreros se MANTIENEN visibles
+        // porque dan contexto de marca (Farmacias Similares) al demo.
+        hideMeshNamePrefixes: ['Floor_', 'Tube_', 'seat_', 'Body_farm', 'Plane_farm'],
+        // Bump 2.5x: el render actual se ve ~1/6 del tatuaje, target ~1/2
+        scaleMultiplier: 2.5,
         autoPlay: true,
       },
       // Default: mostrar todo, auto-play primera animación
@@ -135,19 +132,18 @@ export function useThreeScene(glbUrl) {
       Todo envuelto en try/catch — si la estructura interna del loader cambia
       en una versión futura, fallback graceful (modelo completo se muestra).
     */
-    if (modelCfg.keepMeshNamePrefixes?.length > 0) {
+    if (modelCfg.hideMeshNamePrefixes?.length > 0) {
       try {
         const gltfJson = gltf.parser?.json ?? {}
         const gltfMeshes = gltfJson.meshes ?? []
         const gltfNodes = gltfJson.nodes ?? []
 
-        // Inverso del filtro anterior: ahora identificamos lo que QUEREMOS mantener,
-        // y todo lo demás se oculta. Más robusto a renombramientos de gltf-transform.
         const meshIdxToHide = new Set()
         gltfMeshes.forEach((m, idx) => {
           const name = m.name ?? ''
-          const keep = modelCfg.keepMeshNamePrefixes.some((p) => name.startsWith(p))
-          if (!keep) meshIdxToHide.add(idx)
+          if (modelCfg.hideMeshNamePrefixes.some((p) => name.startsWith(p))) {
+            meshIdxToHide.add(idx)
+          }
         })
 
         const nodeNamesToHide = new Set()
@@ -164,9 +160,9 @@ export function useThreeScene(glbUrl) {
             hiddenCount++
           }
         })
-        console.log(`[loadModel] Ocultos ${hiddenCount} meshes (whitelist: ${modelCfg.keepMeshNamePrefixes.join(',')})`)
+        console.log(`[loadModel] Ocultos ${hiddenCount} meshes en ${glbUrl.split('/').pop()}`)
       } catch (err) {
-        console.warn('[loadModel] keepMeshNamePrefixes falló (continuando con modelo completo):', err.message)
+        console.warn('[loadModel] hideMeshNamePrefixes falló (continuando con modelo completo):', err.message)
       }
     }
 
