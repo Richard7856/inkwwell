@@ -23,14 +23,35 @@ const CATALOG = [
     tier: 'catalog',
     emoji: '🦅',
   },
-  {
-    id: 'farmacia-simi',
-    name: 'Farmacia del Dr. Simi',
-    description: 'Escena 3D completa con el Dr. Simi en su farmacia',
-    glbUrl: '/models/farmacias_similares.glb',
-    tier: 'catalog',
-    emoji: '🏥',
-  },
+  /*
+    Farmacia del Dr. Simi — temporalmente oculto del picker.
+
+    Por qué se quita del catálogo:
+    El GLB es una escena COMPLETA exportada desde Cinema 4D, no un personaje suelto.
+    Tiene dos problemas técnicos que no se resuelven con tuning rápido de scale/autoPlay:
+
+    1. La animación "CINEMA_4D_Main" es una animación de cámara/timeline de C4D.
+       Three.js la interpreta como transformaciones de objetos y los manda fuera del frame.
+       Sin reproducirla, el modelo queda en su "rest pose" de C4D — también mal posicionado.
+
+    2. El bbox del modelo está dominado por el piso/letreros. El personaje (Dr. Simi)
+       es ~5% del bbox total → microscópico al normalizar. Subir el scaleMultiplier
+       lo agranda pero también agranda el piso, no resuelve el ratio.
+
+    Solución pendiente (post-demo): extraer solo los meshes simi_body_*, simi_bigote_0,
+    simi_eyes_0 con gltf-transform y re-exportar como personaje aislado.
+
+    Mientras tanto, el GLB sigue en /public/models/ y MODEL_CONFIGS en useThreeScene.js
+    sigue teniendo su entry — listos para reactivarlo cuando esté el fix real.
+  */
+  // {
+  //   id: 'farmacia-simi',
+  //   name: 'Farmacia del Dr. Simi',
+  //   description: 'Escena 3D completa con el Dr. Simi en su farmacia',
+  //   glbUrl: '/models/farmacias_similares.glb',
+  //   tier: 'catalog',
+  //   emoji: '🏥',
+  // },
 ]
 
 export default function DesignPicker({ onDesignSelected }) {
