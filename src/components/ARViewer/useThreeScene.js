@@ -62,13 +62,40 @@ export function useThreeScene(glbUrl) {
       el centro del bbox (multiplicado por la escala) a la posición del modelo
       para que su centro visual quede exactamente sobre el image target.
     */
+    /*
+      Config por modelo. Algunos GLBs requieren ajustes específicos que NO se pueden
+      deducir solo del bounding box:
+
+      - Escenas completas (con piso, paredes, mobiliario alrededor del personaje)
+        tienen un bbox dominado por el piso → el personaje queda microscópico
+        si normalizamos al bbox total. scaleMultiplier corrige eso.
+
+      - Algunos modelos vienen con animaciones de cámara (Cinema4D "CINEMA_4D_Main")
+        que NO son animaciones de personaje sino transformaciones de escena que
+        rompen el renderizado AR. autoPlay:false los mantiene en pose estática.
+
+      Identificamos el modelo por substring de la URL (no por nombre) para que
+      funcione igual cuando el GLB vive en Supabase Storage con UUIDs en el path.
+    */
+    const MODEL_CONFIGS = [
+      {
+        match: 'farmacias_similares',
+        scaleMultiplier: 4,    // escena completa → el personaje queda mini con auto-scale
+        autoPlay: false,        // CINEMA_4D_Main es animación de escena, no de personaje
+      },
+      // Default config: auto-scale 1:1, auto-play primera animación
+    ]
+    const modelCfg = MODEL_CONFIGS.find((c) => glbUrl.includes(c.match)) ?? {}
+    const scaleMultiplier = modelCfg.scaleMultiplier ?? 1
+    const shouldAutoPlay = modelCfg.autoPlay ?? true
+
     const bbox = new THREE.Box3().setFromObject(model)
     const size = bbox.getSize(new THREE.Vector3())
     const center = bbox.getCenter(new THREE.Vector3())
     const maxDim = Math.max(size.x, size.y, size.z)
 
     const TARGET_SIZE = 0.5
-    const scale = TARGET_SIZE / maxDim
+    const scale = (TARGET_SIZE / maxDim) * scaleMultiplier
     model.scale.setScalar(scale)
 
     // Centrar: mover el modelo por -(center * scale) para que el centro del bbox
@@ -113,10 +140,13 @@ export function useThreeScene(glbUrl) {
         actionsRef.current[clip.name] = mixer.clipAction(clip)
       })
 
-      // Reproducir la primera animación por defecto
-      const firstClip = gltf.animations[0]
-      actionsRef.current[firstClip.name].play()
-      currentActionRef.current = actionsRef.current[firstClip.name]
+      // Reproducir la primera animación por defecto (a menos que la config lo desactive)
+      // Algunos GLBs tienen animaciones de cámara (no de personaje) que rompen el render AR
+      if (shouldAutoPlay) {
+        const firstClip = gltf.animations[0]
+        actionsRef.current[firstClip.name].play()
+        currentActionRef.current = actionsRef.current[firstClip.name]
+      }
     }
 
     clockRef.current.start()
