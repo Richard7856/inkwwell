@@ -80,16 +80,57 @@ export function useThreeScene(glbUrl) {
     const MODEL_CONFIGS = [
       {
         match: 'farmacias_similares',
-        scaleMultiplier: 4,    // escena completa → el personaje queda mini con auto-scale
-        autoPlay: false,        // CINEMA_4D_Main es animación de escena, no de personaje
+        /*
+          La escena completa tiene piso, bancas, letreros y mobiliario que NO queremos
+          mostrar — solo el Dr. Simi como personaje aislado. Escondemos esos meshes por
+          prefijo de nombre. Los huesos (Bip01) NO se esconden, son necesarios para
+          que el personaje skinneado se anime/renderice.
+        */
+        hideMeshPrefixes: ['Floor_', 'Tube_', 'seat_', 'Body_farm', 'Plane_farm', 'sign_farm', 'Sign_'],
+        autoPlay: true,
       },
-      // Default config: auto-scale 1:1, auto-play primera animación
+      // Default config: auto-scale 1:1, auto-play primera animación, mostrar todo
     ]
     const modelCfg = MODEL_CONFIGS.find((c) => glbUrl.includes(c.match)) ?? {}
+    const hidePrefixes = modelCfg.hideMeshPrefixes ?? []
     const scaleMultiplier = modelCfg.scaleMultiplier ?? 1
     const shouldAutoPlay = modelCfg.autoPlay ?? true
 
-    const bbox = new THREE.Box3().setFromObject(model)
+    /*
+      Esconder meshes no deseados ANTES de calcular el bbox.
+      Si los dejamos visibles y luego los escondemos, el bbox incluye el piso (~10
+      unidades) y el personaje queda microscópico al normalizar. Escondiéndolos
+      primero, el bbox es solo del personaje → escala correcta.
+    */
+    if (hidePrefixes.length > 0) {
+      model.traverse((child) => {
+        if (child.isMesh) {
+          const name = child.name || ''
+          if (hidePrefixes.some((p) => name.startsWith(p))) {
+            child.visible = false
+          }
+        }
+      })
+    }
+
+    /*
+      Box3.setFromObject() incluye hijos invisibles. Para que el bbox sea solo
+      de los meshes visibles, lo computamos manualmente recorriendo el árbol.
+    */
+    const bbox = new THREE.Box3()
+    if (hidePrefixes.length > 0) {
+      model.updateMatrixWorld(true)
+      model.traverse((child) => {
+        if (child.isMesh && child.visible && child.geometry) {
+          child.geometry.computeBoundingBox()
+          const meshBbox = child.geometry.boundingBox.clone()
+          meshBbox.applyMatrix4(child.matrixWorld)
+          bbox.union(meshBbox)
+        }
+      })
+    } else {
+      bbox.setFromObject(model)
+    }
     const size = bbox.getSize(new THREE.Vector3())
     const center = bbox.getCenter(new THREE.Vector3())
     const maxDim = Math.max(size.x, size.y, size.z)
