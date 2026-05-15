@@ -133,8 +133,13 @@ export default function ARViewer({ tattooId = 'default' }) {
           Por qué NO usamos backdrop-blur ni bg-black/40 (transparencia):
           backdrop-filter:blur() tiene soporte inconsistente en Chrome Android (falla silenciosamente).
           Los colores RGBA semitransparentes también pueden no renderizar en algunos WebGL contexts.
-          Usamos bg-gray-900 (opaco sólido) y bg-white — funcionan en 100% de browsers. */}
-      {animations.length > 0 && (
+          Usamos bg-gray-900 (opaco sólido) y bg-white — funcionan en 100% de browsers.
+
+          Por qué length > 1 y no > 0:
+          Con una sola animación no hay nada que elegir — clic en el único botón
+          solo reinicia la misma animación que ya está corriendo en auto-play.
+          Ocultar el botón limpia la UI sin perder funcionalidad. */}
+      {animations.length > 1 && (
         <div
           className="absolute left-0 right-0 flex justify-center gap-3 px-4 z-20"
           style={{ bottom: 'calc(env(safe-area-inset-bottom, 0px) + 5rem)' }}

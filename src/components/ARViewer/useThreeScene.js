@@ -42,8 +42,38 @@ export function useThreeScene(glbUrl) {
     const model = gltf.scene
     modelRef.current = model
 
-    // Escala: 1 unidad ≈ 10cm — ajustar si el modelo es muy grande/pequeño
-    model.scale.set(0.15, 0.15, 0.15)
+    /*
+      Auto-escala y centrado por bounding box.
+
+      Por qué auto-escala en lugar de un valor fijo:
+      Los GLBs vienen modelados en escalas muy distintas — un personaje de juego mide
+      ~3 unidades, una escena completa (farmacia, edificio) puede medir 15-50 unidades.
+      Un scale fijo (ej. 0.15) que funciona para el perro hace que la farmacia salga
+      gigantesca o el fénix invisible. Calculando el bounding box real, NORMALIZAMOS
+      cualquier GLB al mismo tamaño visual sobre el tatuaje.
+
+      Target = 0.5 unidades en la dimensión más grande del modelo. Con MindAR
+      donde 1 unidad ≈ tamaño del image target, 0.5 significa "ocupa la mitad del
+      ancho del tatuaje" — tamaño correcto para ser visible sin tapar piel adyacente.
+
+      Por qué también centramos:
+      Muchos modelos tienen su pivot en una esquina o en el suelo (no en el centro
+      geométrico). Sin centrar, el objeto aparece desplazado del tatuaje. Restamos
+      el centro del bbox (multiplicado por la escala) a la posición del modelo
+      para que su centro visual quede exactamente sobre el image target.
+    */
+    const bbox = new THREE.Box3().setFromObject(model)
+    const size = bbox.getSize(new THREE.Vector3())
+    const center = bbox.getCenter(new THREE.Vector3())
+    const maxDim = Math.max(size.x, size.y, size.z)
+
+    const TARGET_SIZE = 0.5
+    const scale = TARGET_SIZE / maxDim
+    model.scale.setScalar(scale)
+
+    // Centrar: mover el modelo por -(center * scale) para que el centro del bbox
+    // quede en el origen del anchor (que está sobre el tatuaje)
+    model.position.copy(center).multiplyScalar(-scale)
 
     anchorGroup.add(model)
 

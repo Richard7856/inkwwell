@@ -23,6 +23,14 @@ const CATALOG = [
     tier: 'catalog',
     emoji: '🦅',
   },
+  {
+    id: 'farmacia-simi',
+    name: 'Farmacia del Dr. Simi',
+    description: 'Escena 3D completa con el Dr. Simi en su farmacia',
+    glbUrl: '/models/farmacias_similares.glb',
+    tier: 'catalog',
+    emoji: '🏥',
+  },
 ]
 
 export default function DesignPicker({ onDesignSelected }) {
