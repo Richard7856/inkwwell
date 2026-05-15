@@ -1,6 +1,25 @@
 import { useRef, useCallback } from 'react'
 import * as THREE from 'three'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
+import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js'
+
+/*
+  DRACOLoader compartido — necesario para decodificar GLBs comprimidos con Draco.
+
+  Por qué se carga global (no por loadModel):
+  El decoder de Draco es un módulo WASM/JS de ~200KB que se descarga una vez
+  desde el CDN de Google. Crear una instancia por modelo desperdiciaría descargas.
+
+  Por qué desde CDN externo y no /public/draco:
+  Self-host requiere copiar los archivos del decoder (1.5MB) al bundle Vercel.
+  El CDN de Google (gstatic.com) sirve los binarios con cache global e infraestructura
+  más rápida que Vercel free. Trade-off aceptable para Phase 1.
+
+  Modelos sin Draco (perro, fénix) NO usan este loader — GLTFLoader solo lo invoca
+  si detecta la extensión KHR_draco_mesh_compression en el GLB.
+*/
+const dracoLoader = new DRACOLoader()
+dracoLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.6/')
 
 /**
  * Hook que carga un GLB y lo ancla al image target de MindAR.
@@ -34,6 +53,9 @@ export function useThreeScene(glbUrl) {
    */
   const loadModel = useCallback(async (anchorGroup, renderer, scene, camera) => {
     const loader = new GLTFLoader()
+    // Conectar DRACOLoader — sin esto, GLBs con Draco fallan con
+    // "No DRACOLoader instance provided". Si el GLB no tiene Draco, no se invoca.
+    loader.setDRACOLoader(dracoLoader)
 
     const gltf = await new Promise((resolve, reject) => {
       loader.load(glbUrl, resolve, undefined, reject)
