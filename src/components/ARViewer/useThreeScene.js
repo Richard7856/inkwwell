@@ -80,67 +80,112 @@ export function useThreeScene(glbUrl) {
     const MODEL_CONFIGS = [
       {
         match: 'farmacias_similares',
-        /*
-          La escena completa tiene piso, bancas, letreros y mobiliario que NO queremos
-          mostrar — solo el Dr. Simi como personaje aislado. Escondemos esos meshes por
-          prefijo de nombre. Los huesos (Bip01) NO se esconden, son necesarios para
-          que el personaje skinneado se anime/renderice.
-        */
-        hideMeshPrefixes: ['Floor_', 'Tube_', 'seat_', 'Body_farm', 'Plane_farm', 'sign_farm', 'Sign_'],
+        // OJO: estos son nombres del MESH dentro del GLB (no nombres de nodo
+        // de three.js). GLTFLoader nombra los Mesh resultantes con el nombre
+        // del NODO padre, no del mesh — por eso usamos el parser.json para
+        // mapear correctamente abajo.
+        hideMeshNamePrefixes: ['Floor_', 'Tube_', 'seat_', 'Body_farm', 'Plane_farm', 'sign_farm', 'Sign_'],
         autoPlay: true,
       },
-      // Default config: auto-scale 1:1, auto-play primera animación, mostrar todo
+      // Default: mostrar todo, auto-play primera animación
     ]
     const modelCfg = MODEL_CONFIGS.find((c) => glbUrl.includes(c.match)) ?? {}
-    const hidePrefixes = modelCfg.hideMeshPrefixes ?? []
     const scaleMultiplier = modelCfg.scaleMultiplier ?? 1
     const shouldAutoPlay = modelCfg.autoPlay ?? true
 
     /*
-      Esconder meshes no deseados ANTES de calcular el bbox.
-      Si los dejamos visibles y luego los escondemos, el bbox incluye el piso (~10
-      unidades) y el personaje queda microscópico al normalizar. Escondiéndolos
-      primero, el bbox es solo del personaje → escala correcta.
+      Filtrar meshes via gltf.parser.json (los nombres reales del GLB).
+
+      Por qué no usar child.name directamente:
+      Three.js GLTFLoader nombra cada Mesh con el nombre del NODO del gltf,
+      no con el nombre del MESH del gltf. Si filtramos por child.name, no
+      coincide con nuestros prefijos ("Floor_", etc. son nombres de mesh).
+
+      Estrategia:
+      1. parser.json.meshes → lista de meshes del gltf con sus nombres
+      2. Identificar los índices de meshes a esconder (Floor_*, etc.)
+      3. parser.json.nodes → nodes que referencian esos meshes
+      4. Traversar three.js scene y esconder los Mesh con esos nombres de nodo
+
+      Todo envuelto en try/catch — si la estructura interna del loader cambia
+      en una versión futura, fallback graceful (modelo completo se muestra).
     */
-    if (hidePrefixes.length > 0) {
-      model.traverse((child) => {
-        if (child.isMesh) {
-          const name = child.name || ''
-          if (hidePrefixes.some((p) => name.startsWith(p))) {
-            child.visible = false
+    if (modelCfg.hideMeshNamePrefixes?.length > 0) {
+      try {
+        const gltfJson = gltf.parser?.json ?? {}
+        const gltfMeshes = gltfJson.meshes ?? []
+        const gltfNodes = gltfJson.nodes ?? []
+
+        const meshIdxToHide = new Set()
+        gltfMeshes.forEach((m, idx) => {
+          const name = m.name ?? ''
+          if (modelCfg.hideMeshNamePrefixes.some((p) => name.startsWith(p))) {
+            meshIdxToHide.add(idx)
           }
-        }
-      })
+        })
+
+        const nodeNamesToHide = new Set()
+        gltfNodes.forEach((n) => {
+          if (typeof n.mesh === 'number' && meshIdxToHide.has(n.mesh)) {
+            nodeNamesToHide.add(n.name ?? '')
+          }
+        })
+
+        let hiddenCount = 0
+        model.traverse((obj) => {
+          if (obj.isMesh && nodeNamesToHide.has(obj.name)) {
+            obj.visible = false
+            hiddenCount++
+          }
+        })
+        console.log(`[loadModel] Ocultos ${hiddenCount} meshes en ${glbUrl.split('/').pop()}`)
+      } catch (err) {
+        console.warn('[loadModel] hideMeshNamePrefixes falló (continuando con modelo completo):', err.message)
+      }
     }
 
     /*
-      Box3.setFromObject() incluye hijos invisibles. Para que el bbox sea solo
-      de los meshes visibles, lo computamos manualmente recorriendo el árbol.
+      Bbox de meshes VISIBLES (excluye los que escondimos arriba).
+
+      Box3.setFromObject() incluye hijos invisibles por defecto — si lo usáramos,
+      el bbox de la farmacia incluiría el piso oculto → el personaje quedaría
+      microscópico al normalizar.
+
+      Si no hay meshes visibles (bbox queda vacío con min=+Inf, max=-Inf),
+      fallback a setFromObject del modelo completo para evitar scales NaN.
     */
-    const bbox = new THREE.Box3()
-    if (hidePrefixes.length > 0) {
+    let bbox = new THREE.Box3()
+    let hasVisible = false
+    try {
       model.updateMatrixWorld(true)
       model.traverse((child) => {
         if (child.isMesh && child.visible && child.geometry) {
-          child.geometry.computeBoundingBox()
-          const meshBbox = child.geometry.boundingBox.clone()
-          meshBbox.applyMatrix4(child.matrixWorld)
-          bbox.union(meshBbox)
+          if (!child.geometry.boundingBox) child.geometry.computeBoundingBox()
+          if (child.geometry.boundingBox) {
+            const mb = child.geometry.boundingBox.clone()
+            mb.applyMatrix4(child.matrixWorld)
+            bbox.union(mb)
+            hasVisible = true
+          }
         }
       })
-    } else {
-      bbox.setFromObject(model)
+    } catch (err) {
+      console.warn('[loadModel] bbox manual falló:', err.message)
     }
+    if (!hasVisible || !isFinite(bbox.min.x)) {
+      bbox = new THREE.Box3().setFromObject(model)
+    }
+
     const size = bbox.getSize(new THREE.Vector3())
     const center = bbox.getCenter(new THREE.Vector3())
     const maxDim = Math.max(size.x, size.y, size.z)
 
     const TARGET_SIZE = 0.5
-    const scale = (TARGET_SIZE / maxDim) * scaleMultiplier
+    // Safety: si maxDim es 0/NaN, usar scale conservadora — evita NaN propagándose
+    const scale = (maxDim > 0 && isFinite(maxDim))
+      ? (TARGET_SIZE / maxDim) * scaleMultiplier
+      : 0.1
     model.scale.setScalar(scale)
-
-    // Centrar: mover el modelo por -(center * scale) para que el centro del bbox
-    // quede en el origen del anchor (que está sobre el tatuaje)
     model.position.copy(center).multiplyScalar(-scale)
 
     anchorGroup.add(model)
