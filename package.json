@@ -8,6 +8,7 @@
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
+    "assetlinks": "node scripts/gen-assetlinks.mjs",
     "cap:sync": "npm run build && npx cap sync android",
     "cap:open": "npx cap open android",
     "android:apk": "npm run cap:sync && cd android && ./gradlew assembleDebug",

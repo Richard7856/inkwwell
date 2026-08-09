@@ -26,21 +26,20 @@
                 APP LINKS — hace que un link de escaneo compartido abra la app
                 en vez del navegador.
 
-                ⚠️ REEMPLAZAR android:host POR EL DOMINIO REAL antes de publicar.
-                El valor de abajo es un placeholder.
-
                 Para que Android verifique el link (autoVerify) hacen falta DOS cosas,
                 no solo este bloque:
 
                   1. Este intent-filter con el host correcto.
                   2. El dominio debe servir /.well-known/assetlinks.json con la huella
-                     SHA-256 del certificado con el que firmas el APK. Se obtiene con:
-                       keytool -list -v -keystore <tu.keystore> -alias <tu-alias>
-                     (Si publicas en Play Store con App Signing, la huella correcta es
-                     la que Google muestra en Play Console → Integridad de la app.)
+                     SHA-256 del certificado de firma. Ese archivo vive en
+                     public/.well-known/assetlinks.json y se despliega con la web.
+                     Para regenerarlo: npm run assetlinks
 
                 Sin el paso 2 el link sigue abriendo el navegador — autoVerify falla en
-                silencio. Ver DECISIONS.md.
+                silencio, sin error visible. Ver DECISIONS.md.
+
+                Si se agrega un dominio propio (ej. inkwell.mx), hay que duplicar este
+                intent-filter con ese host Y servir assetlinks.json también desde ahí.
 
                 launchMode="singleTask" (ya presente arriba) es lo que hace que el link
                 entre a la instancia YA corriendo y dispare 'appUrlOpen' en vez de
@@ -50,7 +49,7 @@
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="https" android:host="inkwell-ar.vercel.app" />
+                <data android:scheme="https" android:host="inkwwell.vercel.app" />
             </intent-filter>
 
         </activity>

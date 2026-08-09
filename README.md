@@ -62,11 +62,50 @@ npm run cap:open      # abrir en Android Studio
 `window.location.origin` es `https://localhost`, así que sin esa variable los links
 de escaneo que genere la app apuntarán a localhost y no abrirán en ningún otro lado.
 
+### Firma de release
+
+Las credenciales viven en `android/keystore.properties` (gitignored). Copiar
+`android/keystore.properties.example` y seguir las instrucciones de ahí para generar
+el keystore. Sin ese archivo el build de release corre igual, pero produce un APK
+**sin firmar** que Android no instala.
+
+```bash
+npm run android:bundle   # .aab firmado para Play Store
+```
+
+### App Links
+
+Para que un link compartido abra la app en vez del navegador:
+
+```bash
+npm run assetlinks   # regenera public/.well-known/assetlinks.json desde el keystore
+```
+
+Android descarga `https://inkwwell.vercel.app/.well-known/assetlinks.json` y compara
+esa huella con la del certificado que firmó el APK instalado. Si no coinciden, abre el
+navegador **sin ningún error visible** — por eso los App Links fallan tan seguido sin
+que quede claro por qué.
+
+Dos cosas que muerden:
+
+- El archivo solo cuenta cuando está **desplegado en producción**. En una rama sin
+  mergear, la verificación sigue fallando.
+- Al publicar en Play con App Signing, **Google re-firma el APK con su propia llave**.
+  La huella que importa pasa a ser la de Play Console → Integridad de la app. Agrégala
+  sin borrar la local: `npm run assetlinks -- --sha256 AA:BB:...`
+
+Verificar en un dispositivo con la app instalada:
+
+```bash
+adb shell pm verify-app-links --re-verify com.inkwell.ar
+adb shell pm get-app-links com.inkwell.ar   # debe decir "verified"
+```
+
 ### Pendiente antes de publicar
 
-- [ ] Reemplazar el host placeholder del intent-filter en `android/app/src/main/AndroidManifest.xml`
-- [ ] Servir `/.well-known/assetlinks.json` con la huella SHA-256 del keystore (sin esto los App Links no verifican)
-- [ ] Generar keystore de release y firmar (`npm run android:bundle` para el `.aab` de Play Store)
+- [ ] Regenerar el keystore localmente (el actual se creó en una sesión de Claude Code, ver `DECISIONS.md`)
+- [ ] Mergear a `main` para que `assetlinks.json` quede desplegado
+- [ ] Agregar la huella de Play App Signing al `assetlinks.json`
 - [ ] Iconos y splash propios (ahora son los de Capacitor)
 
 ## Estructura

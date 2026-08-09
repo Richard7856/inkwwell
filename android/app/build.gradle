@@ -1,5 +1,24 @@
 apply plugin: 'com.android.application'
 
+/*
+  Credenciales de firma leídas desde keystore.properties (fuera del control de versiones).
+
+  Por qué un archivo aparte y no valores en este build.gradle:
+  build.gradle SÍ se commitea. Poner ahí la ruta y la contraseña del keystore
+  publicaría la llave de firma en el repo. keystore.properties está en .gitignore
+  y hay un keystore.properties.example con la forma esperada.
+
+  Si el archivo no existe, el build de release igual funciona pero SIN FIRMAR
+  (Gradle produce app-release-unsigned.apk). Eso es intencional: quien solo
+  quiere compilar debug no debería necesitar la llave de firma.
+*/
+def keystorePropertiesFile = rootProject.file("keystore.properties")
+def keystoreProperties = new Properties()
+def hasSigningConfig = keystorePropertiesFile.exists()
+if (hasSigningConfig) {
+    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+}
+
 android {
     namespace "com.inkwell.ar"
     compileSdk rootProject.ext.compileSdkVersion
@@ -16,10 +35,23 @@ android {
             ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    signingConfigs {
+        if (hasSigningConfig) {
+            release {
+                storeFile rootProject.file(keystoreProperties['storeFile'])
+                storePassword keystoreProperties['storePassword']
+                keyAlias keystoreProperties['keyAlias']
+                keyPassword keystoreProperties['keyPassword']
+            }
+        }
+    }
     buildTypes {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            if (hasSigningConfig) {
+                signingConfig signingConfigs.release
+            }
         }
     }
 }
