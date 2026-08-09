@@ -1,12 +1,57 @@
 @import "tailwindcss";
 
-/* Mobile-first fullscreen layout — AR needs 100% viewport */
+/*
+  Paleta — tinta y ámbar.
+
+  El fondo NO es un gris neutro: lleva sesgo cálido hacia el café. Un near-black
+  puro con un acento brillante encima es el look por defecto de cualquier landing
+  de tecnología; el sesgo cálido lo mueve hacia algo fotográfico y de recuerdo,
+  que es de lo que trata el producto.
+
+  El ámbar es luz de vela, no highlight de UI. Se usa poco a propósito.
+*/
+@theme {
+  --color-ink:       #0B0908;
+  --color-ink-soft:  #17130F;
+  --color-ink-line:  #2A231D;
+  --color-bone:      #F4EFE9;
+  --color-ash:       #8C8177;
+  --color-ember:     #E9A23B;
+  --color-ember-dim: #6E4E1E;
+}
+
 html, body, #root {
-  height: 100%;
   margin: 0;
   padding: 0;
+  background: var(--color-ink);
+  color: var(--color-bone);
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+/*
+  Antes había `height: 100%; overflow: hidden` global aquí, para que la vista AR
+  ocupara el viewport exacto. Eso impedía hacer scroll en CUALQUIER página —
+  invisible mientras todo eran pantallas de una sola vista, fatal en cuanto
+  existe una landing.
+
+  Ahora el bloqueo lo pone la propia página de escaneo mientras está montada
+  (ver Scan.jsx). El contenedor del AR ya usa position:fixed + inset:0, así que
+  no necesita que el documento entero esté congelado.
+*/
+body.ar-active {
   overflow: hidden;
-  background: #0a0a0a;
-  color: white;
-  font-family: system-ui, -apple-system, sans-serif;
+  overscroll-behavior: none;
+}
+
+/* Tipografía de la narrativa — serif para la parte emocional, sans para el resto */
+.prose-serif {
+  font-family: Charter, "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+}
+
+/* Respetar preferencia de movimiento reducido en el video del hero */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    transition-duration: .01ms !important;
+  }
 }

@@ -1,5 +1,21 @@
+import { useEffect } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import ARViewer from '../components/ARViewer/index.jsx'
+
+/**
+ * Bloquea el scroll del documento mientras la vista AR está montada.
+ *
+ * Antes esto era `overflow: hidden` global en index.css, lo que impedía hacer
+ * scroll en TODA la app — invisible mientras cada pantalla cabía en una vista,
+ * y fatal en cuanto existió una landing. Ahora el bloqueo dura lo que dura el
+ * escaneo y se limpia solo al salir.
+ */
+function useLockBodyScroll() {
+  useEffect(() => {
+    document.body.classList.add('ar-active')
+    return () => document.body.classList.remove('ar-active')
+  }, [])
+}
 
 /**
  * Página de experiencia AR — Flujo B.
@@ -14,6 +30,7 @@ import ARViewer from '../components/ARViewer/index.jsx'
 export default function Scan() {
   const [searchParams] = useSearchParams()
   const tattooId = searchParams.get('tattoo')
+  useLockBodyScroll()
 
   // Sin ID — el usuario llegó directo a /scan sin un link de tatuaje
   if (!tattooId) {
