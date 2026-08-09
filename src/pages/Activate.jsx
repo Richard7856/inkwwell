@@ -6,6 +6,7 @@ import CompileStatus from '../components/UploadFlow/CompileStatus.jsx'
 import { uploadTattooImage, uploadMindFile } from '../lib/storage.js'
 import { createTattoo } from '../lib/supabase.js'
 import { compileMindFile } from '../lib/compiler.js'
+import { buildScanUrl, copyToClipboard } from '../lib/native.js'
 
 /**
  * Flujo de activación — Flujo A.
@@ -27,6 +28,15 @@ export default function Activate() {
   const [selectedDesign, setSelectedDesign] = useState(null)
   const [tattooId, setTattooId] = useState(null) // UUID del tatuaje en Supabase
   const [error, setError] = useState('')
+  const [copied, setCopied] = useState(false)
+
+  const handleCopyLink = async () => {
+    const ok = await copyToClipboard(buildScanUrl(tattooId))
+    if (!ok) return
+    setCopied(true)
+    // Revertir el label a los 2s — feedback efímero, sin necesidad de toast
+    setTimeout(() => setCopied(false), 2000)
+  }
 
   const handlePhotoSelected = async (file) => {
     setStep('uploading')
@@ -140,17 +150,19 @@ export default function Activate() {
             Probar ahora →
           </Link>
 
-          {/* Mostrar el link para que el usuario lo guarde / comparta */}
+          {/* Mostrar el link para que el usuario lo guarde / comparta.
+              Usamos buildScanUrl (no window.location.origin) porque dentro del APK
+              el origen del WebView es https://localhost — ver src/lib/native.js */}
           <div className="bg-white/5 border border-white/10 rounded-xl p-4 max-w-xs mx-auto">
             <p className="text-gray-500 text-xs mb-2">Tu link de escaneo:</p>
             <p className="text-gray-300 text-xs font-mono break-all">
-              /scan?tattoo={tattooId}
+              {buildScanUrl(tattooId)}
             </p>
             <button
-              onClick={() => navigator.clipboard?.writeText(`${window.location.origin}/scan?tattoo=${tattooId}`)}
+              onClick={handleCopyLink}
               className="mt-3 text-xs text-gray-400 hover:text-white transition-colors underline"
             >
-              Copiar link
+              {copied ? '✓ Link copiado' : 'Copiar link'}
             </button>
           </div>
         </div>

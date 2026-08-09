@@ -2,6 +2,7 @@ import { useRef, useState, useEffect, useCallback } from 'react'
 import { useMindAR } from './useMindAR.js'
 import { useThreeScene } from './useThreeScene.js'
 import { loadTarget } from './targetLoader.js'
+import { ensureCameraPermission } from '../../lib/native.js'
 
 /**
  * ARViewer — componente principal de la experiencia AR.
@@ -50,6 +51,23 @@ export default function ARViewer({ tattooId = 'default' }) {
     async function init() {
       try {
         setStatus('loading')
+
+        /*
+          Pedir el permiso de cámara ANTES de arrancar MindAR.
+
+          En web es un no-op (el navegador lo pide solo al llamar getUserMedia).
+          En el APK importa: sin esto el diálogo de Android aparece a media
+          inicialización de MindAR, sobre una pantalla negra con spinner, y si el
+          usuario lo niega MindAR revienta con un error de stream ilegible.
+        */
+        const granted = await ensureCameraPermission()
+        if (!granted) {
+          throw new Error(
+            'Permiso de cámara denegado. Actívalo en Ajustes → Apps → Inkwell AR → Permisos.'
+          )
+        }
+        if (cancelled) return
+
         const { anchor, mindar } = await mindAR.start()
 
         if (cancelled) { mindAR.stop(); return }

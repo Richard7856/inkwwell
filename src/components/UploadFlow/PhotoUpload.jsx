@@ -1,12 +1,18 @@
 import { useRef, useState } from 'react'
+import { isNative, takePhoto } from '../../lib/native.js'
 
 /**
  * Captura o selección de foto del tatuaje.
  *
- * Dos modos de entrada:
- * 1. Tomar foto — usa capture="environment" que abre la cámara nativa del OS.
- *    Más confiable que getUserMedia para captura de foto estática en mobile.
- * 2. Subir de galería — input file estándar sin capture.
+ * Dos modos de entrada, cada uno con implementación distinta según plataforma:
+ * 1. Tomar foto — APK: plugin nativo de Capacitor. Web: <input capture="environment">.
+ * 2. Subir de galería — APK: picker nativo. Web: <input> estándar.
+ *
+ * Por qué se bifurca (ver src/lib/native.js para el detalle):
+ * El file input dentro de un WebView depende de onShowFileChooser y su
+ * comportamiento varía entre fabricantes de Android. En web el <input> funciona
+ * perfecto y evita cargar el modal de @ionic/pwa-elements que el plugin
+ * requeriría en navegador.
  *
  * Valida resolución mínima (800x800) — fotos pequeñas generan .mind
  * de baja calidad que fallan en tracking.
@@ -51,6 +57,32 @@ export default function PhotoUpload({ onPhotoSelected }) {
     setError('')
   }
 
+  /**
+   * Punto único de entrada para ambos botones.
+   * En APK abre el picker nativo; en web delega al <input> correspondiente.
+   */
+  const handlePick = async (source) => {
+    if (!isNative) {
+      const ref = source === 'gallery' ? galleryInputRef : cameraInputRef
+      ref.current?.click()
+      return
+    }
+
+    setError('')
+    try {
+      const file = await takePhoto(source)
+      // null = el usuario cerró la cámara sin tomar foto. No es un error.
+      if (file) validateAndSelect(file)
+    } catch (err) {
+      // El plugin lanza si el permiso fue denegado permanentemente
+      setError(
+        err.message?.includes('denied') || err.message?.includes('permission')
+          ? 'Necesitamos permiso de cámara. Actívalo en Ajustes → Apps → Inkwell AR.'
+          : 'No se pudo abrir la cámara. Intenta de nuevo.'
+      )
+    }
+  }
+
   return (
     <div className="text-center">
       <p className="text-gray-400 mb-6">
@@ -75,7 +107,7 @@ export default function PhotoUpload({ onPhotoSelected }) {
         <div className="flex flex-col gap-3 max-w-sm mx-auto">
           {/* Opción principal: tomar foto con cámara */}
           <button
-            onClick={() => cameraInputRef.current?.click()}
+            onClick={() => handlePick('camera')}
             className="w-full py-4 rounded-2xl bg-white text-black font-semibold
                        flex items-center justify-center gap-3
                        hover:bg-gray-200 transition-colors"
@@ -86,7 +118,7 @@ export default function PhotoUpload({ onPhotoSelected }) {
 
           {/* Opción secundaria: subir de galería */}
           <button
-            onClick={() => galleryInputRef.current?.click()}
+            onClick={() => handlePick('gallery')}
             className="w-full py-4 rounded-2xl bg-white/10 text-white font-medium
                        flex items-center justify-center gap-3
                        border border-white/10 hover:bg-white/20 transition-colors"
@@ -103,24 +135,29 @@ export default function PhotoUpload({ onPhotoSelected }) {
         <p className="text-red-400 text-sm mt-3">{error}</p>
       )}
 
-      {/* Input cámara — capture="environment" abre cámara trasera en mobile */}
-      <input
-        ref={cameraInputRef}
-        type="file"
-        accept="image/jpeg,image/png"
-        capture="environment"
-        onChange={(e) => validateAndSelect(e.target.files?.[0])}
-        className="hidden"
-      />
+      {/* Inputs solo para web — en el APK los reemplaza el picker nativo de Capacitor */}
+      {!isNative && (
+        <>
+          {/* Input cámara — capture="environment" abre cámara trasera en mobile */}
+          <input
+            ref={cameraInputRef}
+            type="file"
+            accept="image/jpeg,image/png"
+            capture="environment"
+            onChange={(e) => validateAndSelect(e.target.files?.[0])}
+            className="hidden"
+          />
 
-      {/* Input galería — sin capture, abre selector de archivos */}
-      <input
-        ref={galleryInputRef}
-        type="file"
-        accept="image/jpeg,image/png"
-        onChange={(e) => validateAndSelect(e.target.files?.[0])}
-        className="hidden"
-      />
+          {/* Input galería — sin capture, abre selector de archivos */}
+          <input
+            ref={galleryInputRef}
+            type="file"
+            accept="image/jpeg,image/png"
+            onChange={(e) => validateAndSelect(e.target.files?.[0])}
+            className="hidden"
+          />
+        </>
+      )}
     </div>
   )
 }

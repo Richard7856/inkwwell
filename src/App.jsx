@@ -3,8 +3,12 @@ import Home from './pages/Home.jsx'
 import Scan from './pages/Scan.jsx'
 import Activate from './pages/Activate.jsx'
 import Profile from './pages/Profile.jsx'
+import { useNativeShell } from './hooks/useNativeShell.js'
 
 function App() {
+  // Deep links + botón físico de atrás. No-op en web.
+  useNativeShell()
+
   return (
     <Routes>
       <Route path="/" element={<Home />} />

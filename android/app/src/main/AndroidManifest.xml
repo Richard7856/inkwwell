@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <application
+        android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/AppTheme">
+
+        <activity
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|smallestScreenSize|screenLayout|uiMode|navigation"
+            android:name=".MainActivity"
+            android:label="@string/title_activity_main"
+            android:theme="@style/AppTheme.NoActionBarLaunch"
+            android:launchMode="singleTask"
+            android:exported="true">
+
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+
+            <!--
+                APP LINKS — hace que un link de escaneo compartido abra la app
+                en vez del navegador.
+
+                ⚠️ REEMPLAZAR android:host POR EL DOMINIO REAL antes de publicar.
+                El valor de abajo es un placeholder.
+
+                Para que Android verifique el link (autoVerify) hacen falta DOS cosas,
+                no solo este bloque:
+
+                  1. Este intent-filter con el host correcto.
+                  2. El dominio debe servir /.well-known/assetlinks.json con la huella
+                     SHA-256 del certificado con el que firmas el APK. Se obtiene con:
+                       keytool -list -v -keystore <tu.keystore> -alias <tu-alias>
+                     (Si publicas en Play Store con App Signing, la huella correcta es
+                     la que Google muestra en Play Console → Integridad de la app.)
+
+                Sin el paso 2 el link sigue abriendo el navegador — autoVerify falla en
+                silencio. Ver DECISIONS.md.
+
+                launchMode="singleTask" (ya presente arriba) es lo que hace que el link
+                entre a la instancia YA corriendo y dispare 'appUrlOpen' en vez de
+                arrancar una Activity nueva.
+            -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" android:host="inkwell-ar.vercel.app" />
+            </intent-filter>
+
+        </activity>
+
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths"></meta-data>
+        </provider>
+    </application>
+
+    <!-- Permissions -->
+
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <!--
+        CAMERA es obligatorio y NO es opcional para esta app.
+
+        Lo necesitan dos caminos distintos:
+          - El plugin @capacitor/camera, para capturar la foto del tatuaje (Flujo A).
+          - getUserMedia dentro del WebView, que es lo que usa MindAR (Flujo B).
+
+        Sobre el segundo: BridgeWebChromeClient.onPermissionRequest de Capacitor mapea
+        el recurso VIDEO_CAPTURE del WebView a Manifest.permission.CAMERA y lanza el
+        diálogo de permiso en runtime. Si el permiso NO está declarado aquí, ese
+        request falla de inmediato y la cámara AR queda en negro sin mensaje útil.
+    -->
+    <uses-permission android:name="android.permission.CAMERA" />
+
+    <!--
+        required="true" a propósito: una app cuyo producto entero es apuntar la cámara
+        a un tatuaje no tiene ningún modo degradado sin cámara. Esto además hace que
+        Play Store no la ofrezca en dispositivos sin cámara.
+    -->
+    <uses-feature android:name="android.hardware.camera" android:required="true" />
+</manifest>

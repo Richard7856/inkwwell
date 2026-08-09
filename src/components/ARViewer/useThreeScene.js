@@ -7,19 +7,24 @@ import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js'
   DRACOLoader compartido — necesario para decodificar GLBs comprimidos con Draco.
 
   Por qué se carga global (no por loadModel):
-  El decoder de Draco es un módulo WASM/JS de ~200KB que se descarga una vez
-  desde el CDN de Google. Crear una instancia por modelo desperdiciaría descargas.
+  El decoder de Draco es un módulo WASM que se descarga una vez. Crear una
+  instancia por modelo desperdiciaría descargas.
 
-  Por qué desde CDN externo y no /public/draco:
-  Self-host requiere copiar los archivos del decoder (1.5MB) al bundle Vercel.
-  El CDN de Google (gstatic.com) sirve los binarios con cache global e infraestructura
-  más rápida que Vercel free. Trade-off aceptable para Phase 1.
+  Por qué self-hosted en /draco/ y NO desde el CDN de gstatic:
+  Antes apuntaba a gstatic.com. Eso funciona en web pero es inaceptable en el APK:
+  una app nativa que depende de un CDN externo para renderizar su contenido falla
+  con conexión mala o si el CDN está bloqueado, y el usuario lo percibe como
+  "la app no sirve" (no como "no hay internet"). Los archivos ahora viven en
+  /public/draco/ (~750KB) y se empaquetan dentro del APK vía `npx cap sync`.
+
+  Los 3 archivos vienen de three/examples/jsm/libs/draco/gltf/ — se copian a mano
+  y DEBEN re-copiarse si se actualiza la versión de three (ver DECISIONS.md).
 
   Modelos sin Draco (perro, fénix) NO usan este loader — GLTFLoader solo lo invoca
   si detecta la extensión KHR_draco_mesh_compression en el GLB.
 */
 const dracoLoader = new DRACOLoader()
-dracoLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.6/')
+dracoLoader.setDecoderPath('/draco/')
 
 /**
  * Hook que carga un GLB y lo ancla al image target de MindAR.
