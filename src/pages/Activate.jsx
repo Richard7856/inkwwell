@@ -29,6 +29,7 @@ export default function Activate() {
   const [tattooId, setTattooId] = useState(null) // UUID del tatuaje en Supabase
   const [error, setError] = useState('')
   const [copied, setCopied] = useState(false)
+  const [compileProgress, setCompileProgress] = useState(0)
 
   const handleCopyLink = async () => {
     const ok = await copyToClipboard(buildScanUrl(tattooId))
@@ -61,9 +62,11 @@ export default function Activate() {
     setError('')
 
     try {
-      // Paso 1: enviar la foto al worker — el worker ejecuta MindAR OfflineCompiler
-      // Esto toma 10-30 segundos dependiendo del tamaño de la imagen y el servidor
-      const mindBuffer = await compileMindFile(imageFile)
+      // Paso 1: compilar el image target. Corre en el propio dispositivo, en un
+      // Web Worker (ver src/lib/compiler.js). Toma decenas de segundos, por eso
+      // reportamos avance real en vez de un spinner indefinido.
+      setCompileProgress(0)
+      const mindBuffer = await compileMindFile(imageFile, setCompileProgress)
 
       // Paso 2: subir el .mind compilado a Supabase Storage (bucket: mind-files)
       const { url: mindUrl } = await uploadMindFile(mindBuffer)
@@ -127,7 +130,7 @@ export default function Activate() {
       )}
 
       {step === 'compiling' && (
-        <CompileStatus />
+        <CompileStatus progress={compileProgress} />
       )}
 
       {step === 'done' && (
