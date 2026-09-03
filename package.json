@@ -7,9 +7,14 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "apk": "./scripts/build-apk.sh",
+    "apk:install": "./scripts/build-apk.sh --install"
   },
   "dependencies": {
+    "@capacitor/android": "^8.5.1",
+    "@capacitor/cli": "^8.5.1",
+    "@capacitor/core": "^8.5.1",
     "@supabase/supabase-js": "^2.103.0",
     "mind-ar": "^1.2.5",
     "react": "^19.2.4",
