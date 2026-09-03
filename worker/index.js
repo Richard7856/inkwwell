@@ -16,6 +16,7 @@ import express from 'express'
 import multer from 'multer'
 import cors from 'cors'
 import { compileTattooImage } from './compiler.js'
+import { analyzeTattooImage } from './analyzer.js'
 
 const app = express()
 
@@ -76,6 +77,53 @@ app.post('/compile', upload.single('image'), async (req, res) => {
   }
 })
 
+/*
+  POST /analyze — mide si un tatuaje va a trackear bien ANTES de activarlo.
+
+  Por qué existe separado de /compile:
+  MindAR no se entrena. Si la foto no tiene suficientes puntos de interés únicos,
+  ningún parámetro de runtime lo salva. Medir antes evita que el usuario active
+  un tatuaje que nunca va a funcionar y culpe al producto.
+
+  Acepta: multipart/form-data con campo 'image'
+  Devuelve: JSON con métricas + veredicto + tips accionables
+
+  Nota: internamente compila igual que /compile (10-30s). El .mind resultante
+  se descarta aquí — cuando el frontend implemente "analizar y luego activar",
+  conviene devolverlo en base64 o cachearlo para no compilar dos veces.
+*/
+app.post('/analyze', upload.single('image'), async (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({
+      error: 'Se requiere campo "image" con el archivo de la foto del tatuaje',
+    })
+  }
+
+  console.log(`\n[analyze] Imagen recibida: ${req.file.originalname} (${(req.file.size / 1024).toFixed(0)}KB)`)
+  const startTime = Date.now()
+
+  try {
+    const { metrics } = await analyzeTattooImage(req.file.buffer)
+
+    const elapsed = ((Date.now() - startTime) / 1000).toFixed(1)
+    const v = metrics.verdict
+    console.log(
+      `[analyze] ✓ ${elapsed}s — veredicto: ${v.level.toUpperCase()} ` +
+      `(detección: ${metrics.detection.totalPoints} pts, ` +
+      `tracking: ${metrics.tracking.totalPoints} pts, ` +
+      `zonas: ${metrics.distribution.occupiedCells}/9)`
+    )
+
+    res.json({ ...metrics, analyzeTimeSeconds: Number(elapsed) })
+  } catch (err) {
+    console.error('[analyze] Error:', err.message)
+    res.status(500).json({
+      error: `Análisis fallido: ${err.message}`,
+      hint: 'Verificar que la imagen es válida y tiene resolución suficiente (mínimo 800x800px)',
+    })
+  }
+})
+
 // Manejador de errores de multer (archivo muy grande, formato inválido)
 app.use((err, req, res, _next) => {
   if (err.code === 'LIMIT_FILE_SIZE') {
@@ -88,5 +136,6 @@ const PORT = process.env.PORT || 3001
 app.listen(PORT, () => {
   console.log(`\n🖋️  Inkwell AR Worker corriendo en http://localhost:${PORT}`)
   console.log(`   Health check: http://localhost:${PORT}/health`)
-  console.log(`   Compile:      POST http://localhost:${PORT}/compile\n`)
+  console.log(`   Compile:      POST http://localhost:${PORT}/compile`)
+  console.log(`   Analyze:      POST http://localhost:${PORT}/analyze\n`)
 })

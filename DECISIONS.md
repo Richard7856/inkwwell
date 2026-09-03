@@ -55,3 +55,27 @@
 **Alternatives considered:** Deshabilitar RLS (`alter table tattoos disable row level security`) — funciona pero es una mala práctica que se olvida de re-habilitar en Phase 2. Service role key en el frontend — expone credenciales privilegiadas al cliente, inaceptable.
 **Risks/Limitations:** Cualquier persona con la anon key puede insertar tatuajes. Aceptable para Phase 1 — el demo no tiene datos sensibles.
 **Improvement opportunities:** En Phase 2 con auth, cambiar policies a `auth.uid() = user_id` para que cada usuario solo vea y modifique sus propios tatuajes.
+
+## [2026-09-02] Analizador de calidad de image target
+**Context:** Se planteó "entrenar el tracker" como siguiente paso. MindAR no entrena nada — extrae descriptores visuales de forma determinista. Si un tatuaje no tiene puntos de interés suficientes, ningún parámetro de runtime lo arregla. Hacía falta poder medir la calidad de un target ANTES de activarlo.
+
+**Decision:** Nuevo módulo `worker/analyzer.js` + endpoint `POST /analyze` + CLI `analyze-cli.js` para lotes. Mide tres ejes independientes sobre la salida del OfflineCompiler:
+- `matchingData` → puntos de detección por nivel de escala (reconocer el tatuaje desde cero)
+- `trackingData` → puntos de seguimiento frame a frame (estabilidad del 3D)
+- Distribución espacial en grilla 3x3 sobre el keyframe de mayor escala
+
+El veredicto lo determina la métrica MÁS DÉBIL, no el promedio: un target con 900 puntos concentrados en una esquina falla igual que uno con 80 bien repartidos. Promediar escondería el problema.
+
+**Alternatives considered:**
+- Umbral único sobre conteo total de puntos: descartado, esconde el problema de concentración espacial.
+- Entrenar un clasificador ML sobre fotos etiquetadas: descartado, no hay dataset y el problema no lo requiere — las métricas de CV son directamente interpretables.
+
+**Risks/Limitations:**
+- Los umbrales son heurísticas iniciales, NO están calibrados contra comportamiento real en cámara. Requieren un lote de 15-20 tatuajes reales medidos contra si trackean bien o no.
+- `computeMaxTrackingFeatures()` replica constantes internas de mind-ar (TEMPLATE_SIZE=6, occSize=min/10). Si se actualiza mind-ar hay que verificarlas.
+- `/analyze` compila completo (10-30s) y descarta el .mind. Para el flujo "analizar y luego activar" conviene reutilizar ese buffer y no compilar dos veces.
+
+**Improvement opportunities:**
+- Calibrar umbrales con datos reales y registrar el dataset.
+- Reutilizar el .mind entre analyze y compile.
+- Exponer el analizador en el UI de activación con feedback visual (heatmap de zonas débiles sobre la foto).
