@@ -31,6 +31,14 @@ const CATALOG = [
     tier: 'catalog',
     emoji: '👨‍⚕️',
   },
+  {
+    id: 'shiba-negro',
+    name: 'Shiba negro',
+    description: 'Perro negro con pecho blanco — 5 animaciones',
+    glbUrl: '/models/shiba_negro.glb',
+    tier: 'catalog',
+    emoji: '🐺',
+  },
 ]
 
 export default function DesignPicker({ onDesignSelected }) {

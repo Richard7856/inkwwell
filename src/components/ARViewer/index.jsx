@@ -138,10 +138,15 @@ export default function ARViewer({ tattooId = 'default' }) {
           Por qué length > 1 y no > 0:
           Con una sola animación no hay nada que elegir — clic en el único botón
           solo reinicia la misma animación que ya está corriendo en auto-play.
-          Ocultar el botón limpia la UI sin perder funcionalidad. */}
+          Ocultar el botón limpia la UI sin perder funcionalidad.
+
+          Por qué flex-wrap:
+          Modelos como el Fénix y el Shiba tienen 5 animaciones. En una sola fila
+          no caben en 390px — se encimarían o desbordarían fuera de pantalla.
+          Con wrap se acomodan en dos filas. */}
       {animations.length > 1 && (
         <div
-          className="absolute left-0 right-0 flex justify-center gap-3 px-4 z-20"
+          className="absolute left-0 right-0 flex flex-wrap justify-center gap-2 px-4 z-20"
           style={{ bottom: 'calc(env(safe-area-inset-bottom, 0px) + 5rem)' }}
         >
           {animations.map((name) => (
@@ -149,7 +154,7 @@ export default function ARViewer({ tattooId = 'default' }) {
               key={name}
               onClick={() => handleAnimationChange(name)}
               className={`
-                px-5 py-2.5 rounded-full text-sm font-semibold
+                px-4 py-2 rounded-full text-sm font-semibold
                 border transition-all duration-200 shadow-lg
                 ${activeAnim === name
                   ? 'bg-white text-black border-white scale-105'
@@ -188,4 +193,11 @@ const ANIMATION_LABEL = {
   'Ataque2':  '🔥 Ataque 2',
   'Atacado':  '💥 Golpe',
   'Atacado2': '💢 Golpe 2',
+
+  // Shiba negro — los nombres traen el prefijo "0|" del exportador original
+  '0|standing_0':  '🐕 Parado',
+  '0|sitting_0':   '🦴 Sentado',
+  '0|shake_0':     '💦 Sacudirse',
+  '0|rollover_0':  '🔄 Rodar',
+  '0|play_dead_0': '💀 Muerto',
 }
