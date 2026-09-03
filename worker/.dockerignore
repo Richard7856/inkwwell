@@ -1,0 +1,11 @@
+# CRÍTICO: node_modules del host trae binarios nativos de canvas compilados para
+# macOS/ARM. Si se copian dentro de la imagen pisan los que se compilaron para
+# Linux durante el build → el contenedor arranca y truena al primer require.
+node_modules
+
+# Ruido que solo infla la imagen y invalida el cache de capas
+npm-debug.log*
+.env
+.env.*
+*.md
+.DS_Store
