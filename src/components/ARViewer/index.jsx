@@ -33,13 +33,9 @@ export default function ARViewer({ tattooId = 'default' }) {
   const [activeAnim, setActiveAnim] = useState('')
   const [urls, setUrls] = useState(null)
   // Diagnóstico de layout — con ?debug=1 en la URL o con triple-tap sobre la vista
-  /*
-    TEMPORAL: encendido por defecto mientras se depura el encuadre de la cámara.
-    El triple-tap resultó poco fiable porque la UI de escaneo de MindAR se
-    interpone y absorbe los toques. Volver a `false` (leyendo ?debug) cuando
-    el problema esté cerrado.
-  */
-  const [debugOn, setDebugOn] = useState(true)
+  const [debugOn, setDebugOn] = useState(
+    () => new URLSearchParams(window.location.search).has('debug')
+  )
   const [layoutInfo, setLayoutInfo] = useState(null)
   const tapTimesRef = useRef([])
 
