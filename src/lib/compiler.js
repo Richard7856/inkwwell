@@ -89,7 +89,7 @@ async function compileWithProgress(imageFile, onProgress) {
       const payload = JSON.parse(line.slice(5).trim())
 
       if (payload.type === 'progress') {
-        onProgress?.(payload.value)
+        onProgress?.(toDisplayProgress(payload.value))
       } else if (payload.type === 'error') {
         throw new CompileError(payload.message)
       } else if (payload.type === 'done') {
@@ -128,6 +128,27 @@ async function compilePlain(imageFile) {
   }
 
   return await response.arrayBuffer()
+}
+
+/*
+  Remapea el progreso de MindAR a algo que represente tiempo real.
+
+  Medido contra Railway con una imagen de 1 MP:
+      0% ->  3.2s     25% ->  8.7s
+     50% -> 10.4s    100% -> 10.4s
+  La primera mitad (features de detección, que corre sobre TensorFlow) consume
+  prácticamente todo el tiempo; la segunda (features de seguimiento) es
+  instantánea.
+
+  Sin remapear, la barra se arrastra hasta 50% y salta a 100% de golpe — parece
+  que se atoró y luego que hizo trampa. Estirando 0-50 sobre 0-95 el avance
+  visible corresponde al tiempo que el usuario realmente espera.
+
+  Sigue siendo progreso real: se transforma la escala, no se inventa el dato.
+*/
+function toDisplayProgress(raw) {
+  if (raw <= 50) return (raw / 50) * 95
+  return 95 + ((raw - 50) / 50) * 5
 }
 
 function base64ToArrayBuffer(base64) {
