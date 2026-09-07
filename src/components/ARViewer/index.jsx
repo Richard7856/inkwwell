@@ -33,9 +33,13 @@ export default function ARViewer({ tattooId = 'default' }) {
   const [activeAnim, setActiveAnim] = useState('')
   const [urls, setUrls] = useState(null)
   // Diagnóstico de layout — con ?debug=1 en la URL o con triple-tap sobre la vista
-  const [debugOn, setDebugOn] = useState(
-    () => new URLSearchParams(window.location.search).has('debug')
-  )
+  /*
+    TEMPORAL: encendido por defecto mientras se depura el encuadre de la cámara.
+    El triple-tap resultó poco fiable porque la UI de escaneo de MindAR se
+    interpone y absorbe los toques. Volver a `false` (leyendo ?debug) cuando
+    el problema esté cerrado.
+  */
+  const [debugOn, setDebugOn] = useState(true)
   const [layoutInfo, setLayoutInfo] = useState(null)
   const tapTimesRef = useRef([])
 
@@ -130,6 +134,8 @@ export default function ARViewer({ tattooId = 'default' }) {
       const cs = (el) => (el ? getComputedStyle(el) : null)
       const vs = cs(v)
       const cvs = cs(cv)
+      const cRect = c.getBoundingClientRect()
+      const vRect = v?.getBoundingClientRect()
       setLayoutInfo({
         build: __BUILD_ID__,
         // Host (no la URL completa) para confirmar contra qué backend corre
@@ -137,7 +143,11 @@ export default function ARViewer({ tattooId = 'default' }) {
         worker: hostOf(import.meta.env.VITE_COMPILER_URL),
         db: hostOf(import.meta.env.VITE_SUPABASE_URL),
         screen: `${window.innerWidth}x${window.innerHeight} dpr${window.devicePixelRatio}`,
-        container: `${c.clientWidth}x${c.clientHeight}`,
+        // clientWidth vs rect: si difieren, algo escala o transforma el contenedor
+        container: `${c.clientWidth}x${c.clientHeight} rect ${Math.round(cRect.width)}x${Math.round(cRect.height)}`,
+        // Lo que el video ocupa REALMENTE en pantalla — el dato decisivo
+        videoReal: vRect ? `${Math.round(vRect.width)}x${Math.round(vRect.height)} @ ${Math.round(vRect.left)},${Math.round(vRect.top)}` : '—',
+        videoAttr: v ? `${v.getAttribute('width')}x${v.getAttribute('height')}` : '—',
         stream: v ? `${v.videoWidth}x${v.videoHeight}` : 'sin video',
         videoCss: vs ? `${vs.width} x ${vs.height} @ ${vs.left},${vs.top}` : '—',
         videoFit: vs ? vs.objectFit : '—',
