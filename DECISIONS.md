@@ -98,3 +98,27 @@ El veredicto lo determina la métrica MÁS DÉBIL, no el promedio: un target con
 **Improvement opportunities:**
 - Reutilizar el `.mind` entre `/analyze` y `/compile` — hoy el flujo "analizar y luego activar" compilaría dos veces.
 - Rate limiting: los endpoints están abiertos sin auth. Aceptable en Phase 1, no en producción.
+
+## [2026-09-07] Multi-tatuaje: un perfil, varios tatuajes en una sesión
+**Context:** El escaneo requería un link por tatuaje (`?tattoo=<uuid>`), atajo de Phase 1 que contradecía el Flujo B del CLAUDE.md ("MindAR reconoce la imagen → consulta Supabase") y mataba la viralidad: para ver un tatuaje había que recibir su link específico.
+
+**Decision:** Un `.mind` contiene varios image targets, uno por tatuaje de la persona. Cada target tiene su ancla y su modelo 3D. Un solo link por PERSONA, no por tatuaje.
+
+**Verificado antes de construir:**
+- Los `.mind` se fusionan sin recompilar: son msgpack `{v, dataList}` con entradas autocontenidas. Probado con dos archivos reales (517KB + 553KB → 1070KB, 2 targets íntegros). Agregar un tatuaje costará compilar solo ese (~11s), no la colección.
+- Calidad medida con el analizador: huella 2308 puntos de detección / 16% de tracking; esqueleto 2516 / 20%. Ambos ACEPTABLE. Contradijo la intuición de que el tatuaje más detallado sería más difícil — es al revés, el detalle fino alimenta la extracción de features.
+- **Validado en dispositivo:** los dos tatuajes se rastrean SIMULTÁNEAMENTE, cada uno con su modelo, sin confundirse entre sí.
+
+**Alternatives considered:**
+- *Un `.mind` global con todos los tatuajes:* descartado por peso. ~875KB por tatuaje: 100 tatuajes serían ~87MB de descarga.
+- *Reconocimiento en la nube (frame → servidor → identifica → descarga ese `.mind`):* es la arquitectura correcta para escalar sin links, pero requiere índice de búsqueda por similitud. Se difiere.
+- *Filtrado por geolocalización* (idea del founder): reduce el espacio de búsqueda a usuarios cercanos, lo que vuelve tratable el reconocimiento en la nube. Es el puente natural entre el nivel 1 y el 3.
+
+**Risks/Limitations:**
+- `maxTrack` limitado a 2 simultáneos: cada target rastreado cuesta trabajo por frame y en gama media afecta fps.
+- Con dos tatuajes visibles a la vez, los botones muestran las animaciones del último detectado. Ambiguo pero no roto; hace falta un selector cuando haya varios activos.
+- El peso del `.mind` crece linealmente: ~875KB por tatuaje. Alrededor de 8-10 tatuajes la descarga se vuelve pesada en datos móviles.
+
+**Improvement opportunities:**
+- Selector visual cuando hay varios tatuajes rastreados a la vez.
+- Carga diferida del modelo: hoy se cargan todos al iniciar; con muchos tatuajes convendría cargar el modelo al detectar su target.
