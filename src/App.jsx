@@ -3,6 +3,7 @@ import { Capacitor } from '@capacitor/core'
 import { Routes, Route } from 'react-router-dom'
 import Home from './pages/Home.jsx'
 import Landing from './pages/Landing.jsx'
+import Demo from './pages/Demo.jsx'
 import Scan from './pages/Scan.jsx'
 import Activate from './pages/Activate.jsx'
 import Profile from './pages/Profile.jsx'
@@ -41,6 +42,9 @@ function App() {
       */}
       <Route path="/" element={Capacitor.isNativePlatform() ? <Home /> : <Landing />} />
       <Route path="/app" element={<Home />} />
+
+      {/* Demo público: probar el AR sin tener un tatuaje activado */}
+      <Route path="/demo" element={<Demo />} />
       <Route path="/scan" element={<Scan />} />
       <Route path="/activate" element={<Activate />} />
       <Route path="/profile" element={<Profile />} />

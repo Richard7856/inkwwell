@@ -25,6 +25,23 @@ const DEMO_MULTI = {
   ],
 }
 
+/*
+  Demo público con marcador universal.
+
+  El problema que resuelve: nadie que llega a la landing tiene un tatuaje
+  activado, y los jueces del concurso tampoco tienen tatuajes. Sin esto, la
+  única forma de conocer el producto es que alguien te lo cuente.
+
+  El marcador es una imagen ornamental generada a propósito y medida con el
+  analizador del worker: veredicto BUENO, 3440 puntos de detección y 33% de
+  seguimiento — mejor que los tatuajes reales con los que se validó el sistema.
+  Se sirve desde /public para que funcione sin red dentro del APK.
+*/
+const DEMO_MARCADOR = {
+  mindUrl: '/targets/demo.mind',
+  targets: [{ glbUrl: '/models/Fenix.glb', label: 'Fénix' }],
+}
+
 /**
  * @param {object} params
  * @param {string|null} params.tattooId - UUID de un tatuaje concreto
@@ -33,6 +50,7 @@ const DEMO_MULTI = {
  */
 export async function loadTarget({ tattooId = null, demo = null } = {}) {
   if (demo === 'multi') return DEMO_MULTI
+  if (demo === 'marcador') return DEMO_MARCADOR
 
   if (!tattooId) {
     throw new Error('No se indicó qué tatuaje escanear')

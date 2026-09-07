@@ -248,3 +248,32 @@ Además, si el borrado de la identidad falla de todos modos (por ejemplo si esa 
 - El correo del duplicado se responde con éxito. Es deliberado —el usuario hizo lo correcto— pero significa que la landing no distingue entre "te acabas de inscribir" y "ya estabas" en las métricas del cliente.
 - No hay confirmación por correo: la lista puede acumular direcciones inválidas. Aceptable para una lista de espera; no lo sería para enviar el lanzamiento sin verificar antes.
 - El contenido de la landing vive en dos objetos por idioma dentro del componente. Si crece mucho conviene moverlo a archivos aparte.
+
+## [2026-09-07] Demo público con marcador universal
+**Context:** La landing tiene que convencer a gente que nunca oyó del producto, y nadie que llega tiene un tatuaje activado. Los jueces del concurso tampoco tienen tatuajes. Sin un demo, conocer InkAR depende de que alguien te lo cuente — y un video no demuestra que funcione.
+
+**Decision:** Una imagen-marcador que cualquiera puede abrir en otra pantalla o imprimir, con su `.mind` precompilado servido desde `/public`. Ruta `/demo` con las instrucciones, y `/scan?demo=marcador` para el visor. Resuelve a la vez el demo de la landing y el riesgo crítico del sprint ("los jueces no tienen tatuajes").
+
+**Por qué en otra pantalla o impreso:** casi todo el mundo llega desde el teléfono, y un teléfono no puede apuntarse a sí mismo. La única salida es separar la imagen del visor.
+
+**El marcador se eligió midiendo, no opinando.** Se generaron cuatro candidatos y se pasaron por el `/analyze` del worker:
+
+| Candidato | Veredicto | Detección | Seguimiento |
+|---|---|---|---|
+| Ornamental | BUENO | 3502 | 75 (31%) |
+| Geométrico + dotwork | ACEPTABLE | 4279 | 51 (21%) |
+| Orgánico | ACEPTABLE | 3563 | 47 (19%) |
+| **Mandala de gotas (elegido)** | **BUENO** | **3440** | **81 (33%)** |
+
+Contradijo la intuición: el geométrico tiene MÁS puntos de detección y rastrea peor. Los puntos de detección no predicen el seguimiento. Como referencia, los tatuajes reales con los que se validó el sistema midieron 16% y 20% y funcionan bien, así que 33% da margen.
+
+El elegido usa la gota de la marca como motivo ornamental repetido: la densidad que exige el rastreo ES el ornamento, en vez de ruido encima de una figura. Lleva los corchetes de visor en esquinas opuestas, que además de marca aportan la asimetría que un dibujo radial necesita para que MindAR no confunda orientaciones.
+
+**Por qué el `.mind` va en `/public` y no en Storage:** son 694KB que así viajan dentro del APK y hacen que el demo funcione sin red. En Storage habría una petición más que puede fallar justo en el momento en que alguien decide si el producto le interesa.
+
+**El demo va ANTES del formulario en la landing.** Quien no conoce el producto no entrega su correo por una descripción; lo entrega después de ver que funciona. Pedirlo primero convierte la página en un peaje.
+
+**Risks/Limitations:**
+- **Sin probar con cámara real.** Lo verificado es la calidad medida del marcador y que los tres archivos se sirven con el tipo correcto (un `.mind` que devuelva HTML de 404 revienta MindAR con un error de msgpack ilegible). Falta apuntarle un teléfono.
+- El marcador impreso en papel mate rastrea mejor que en pantalla: el brillo y el refresco de un monitor le quitan puntos. Hay que decirlo si alguien reporta que le cuesta.
+- El `.mind` suma 694KB al bundle web y al APK.

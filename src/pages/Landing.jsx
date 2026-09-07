@@ -23,6 +23,15 @@ const ES = {
   promesa: 'Tu tatuaje cobra vida en realidad aumentada',
   sub: 'No es un filtro ni una prueba de tatuajes. Tu tatuaje real queda vinculado a una experiencia en 3D que cualquiera puede ver apuntando su cámara.',
   cta: 'Quiero avisarme cuando salga',
+  demoTitulo: 'Pruébalo ahora, sin tatuaje',
+  demoTexto: 'No hace falta que tengas un tatuaje activado ni que instales nada. Te damos una imagen, le apuntas la cámara y ves exactamente lo que verá cualquiera que apunte al tuyo.',
+  demoCta: 'Probar el demo →',
+  distintoTitulo: 'Por qué no es un filtro',
+  distinto: [
+    ['El activador es tu piel, no tu cara', 'Los filtros siguen tu cara y desaparecen cuando cambias de app. Aquí el activador es el tatuaje: vive contigo, y funciona aunque quien mire sea otra persona con otro teléfono.'],
+    ['Cualquiera lo ve, sin instalar nada', 'Quien apunte su cámara a tu tatuaje abre una liga y ve tu contenido. Sin cuenta, sin descargar, sin pedirte permiso.'],
+    ['Es tuyo y es permanente', 'Registras el tatuaje una vez y queda activado. Puedes cambiar después qué aparece encima, sin volver a registrarlo.'],
+  ],
   yaTengo: '¿Ya tienes la app? Activa tu tatuaje',
   soy: '¿Quién eres?',
   persona: 'Tengo tatuajes',
@@ -47,6 +56,15 @@ const EN = {
   promesa: 'Your tattoo comes alive in augmented reality',
   sub: 'Not a filter, not a tattoo try-on. Your real tattoo gets linked to a 3D experience anyone can see by pointing their camera at it.',
   cta: 'Tell me when it launches',
+  demoTitulo: 'Try it now, no tattoo needed',
+  demoTexto: 'You don’t need an activated tattoo or an install. We give you an image, you point your camera at it, and you see exactly what anyone pointing at yours would see.',
+  demoCta: 'Try the demo →',
+  distintoTitulo: 'Why this isn’t a filter',
+  distinto: [
+    ['The trigger is your skin, not your face', 'Filters track your face and vanish when you switch apps. Here the trigger is the tattoo: it lives with you, and it works even when the person looking is someone else on another phone.'],
+    ['Anyone can see it, with nothing installed', 'Whoever points a camera at your tattoo opens a link and sees your content. No account, no download, no asking you for anything.'],
+    ['It’s yours and it’s permanent', 'You register the tattoo once and it stays activated. You can change what appears on top later, without registering it again.'],
+  ],
   yaTengo: 'Already have the app? Activate your tattoo',
   soy: 'Who are you?',
   persona: 'I have tattoos',
@@ -103,7 +121,24 @@ export default function Landing() {
         </h1>
         <p className="text-gray-400 text-center mt-4 leading-relaxed">{c.sub}</p>
 
-        {/* ── Formulario: antes de tener que desplazarse ── */}
+        {/*
+          El demo va ANTES del formulario.
+
+          Quien no conoce el producto no entrega su correo por una descripción;
+          lo entrega después de ver que funciona. Pedirlo primero convierte la
+          página en un peaje.
+        */}
+        <Link
+          to="/demo"
+          className="block mt-8 bg-white/5 border border-violet-500/40 rounded-2xl p-5
+                     hover:border-violet-400 transition-colors"
+        >
+          <p className="font-semibold">{c.demoTitulo}</p>
+          <p className="text-gray-400 text-sm mt-1 leading-relaxed">{c.demoTexto}</p>
+          <p className="text-violet-400 text-sm font-medium mt-3">{c.demoCta}</p>
+        </Link>
+
+        {/* ── Formulario ── */}
         <div className="mt-10">
           {estado === 'listo' ? (
             <div className="bg-violet-600/10 border border-violet-500/30 rounded-2xl p-6 text-center">
@@ -182,6 +217,19 @@ export default function Landing() {
               </li>
             ))}
           </ol>
+        </section>
+
+        {/* ── Qué lo hace distinto: el malentendido más común es "es un filtro" ── */}
+        <section className="mt-14">
+          <h2 className="text-lg font-semibold mb-5">{c.distintoTitulo}</h2>
+          <div className="flex flex-col gap-5">
+            {c.distinto.map(([titulo, detalle]) => (
+              <div key={titulo}>
+                <p className="font-medium">{titulo}</p>
+                <p className="text-gray-400 text-sm mt-1 leading-relaxed">{detalle}</p>
+              </div>
+            ))}
+          </div>
         </section>
 
         {/* ── Estudios: el canal de distribución ── */}
