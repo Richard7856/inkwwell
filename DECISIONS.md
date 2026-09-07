@@ -345,3 +345,20 @@ Detalles de implementación:
 5. **¿Por qué no es un filtro?** — el activador es la piel y no la cara, cualquiera lo ve sin instalar, y es permanente.
 
 El video y la explicación van ANTES del formulario. Quien no conoce el producto no entrega su correo por una descripción.
+
+## [2026-09-07] Trazos de tinta y ajuste del logotipo
+**Context:** Llegaron los tres trazos de tinta que faltaban del tablero, en PNG de 1536×1024 con transparencia real. Hasta entonces la textura de fondo era la propia K estirada, que se notaba repetida.
+
+**Decision:** Los trazos se guardan como **máscaras CSS en modo LA** (luminancia 0 + el alfa original) y se colorean con `background-color`.
+
+**El error que costó una iteración:** primero se guardó solo el canal alfa como escala de grises. La máscara CSS de una imagen rasterizada recorta por **alfa**, no por luminancia — y una imagen en escala de grises es opaca en todo el rectángulo, así que la máscara no recortaba nada y el trazo salía como un bloque gris sólido. LA conserva el alfa (que es lo que recorta) y descarta los tres canales de color, que no aportan porque la tinta es negra en todos lados.
+
+Resultado: 390KB los tres, contra 1.2MB en RGBA. Y como el color sale del CSS, el mismo archivo sirve sobre fondo claro y sobre oscuro sin duplicar assets.
+
+**Van a opacidad 0.10-0.13** porque viven detrás del texto. A plena intensidad compiten con lo que hay que leer. Se verifica también que no capturen clics (`pointer-events: none`) y que el contenedor recorte lo que sangra, o la página haría scroll horizontal en móvil.
+
+**Logotipo: peso 500 y espaciado 0.17**, no negrita. El mockup aprobado muestra la palabra ligera y muy espaciada; con peso 600 la tipografía competía con la K en vez de acompañarla. La caligrafía original del tablero no se puede reproducir, y el tablero mismo especifica Montserrat — así que el camino es usarla bien, no imitar el lettering.
+
+**Risks/Limitations:**
+- `mask-image` necesita prefijo `-webkit-` para Safari; van los dos. Si algún navegador ignorara ambos, el trazo se vería como bloque sólido — el mismo síntoma del error anterior.
+- Los trazos solo están en la landing. Cuando se lleve el estilo al resto de la app hay que cuidar que no aparezcan sobre el visor AR.

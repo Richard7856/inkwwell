@@ -97,7 +97,7 @@ def icono_legado(lado: int, redondo: bool) -> Image.Image:
     return img
 
 
-def _texto(cadena: str, px: int, peso: int = 600, tracking: float = 0.12,
+def _texto(cadena: str, px: int, peso: int = 500, tracking: float = 0.17,
            color=TINTA) -> Image.Image:
     """
     Dibuja texto con espaciado entre letras.
@@ -133,6 +133,10 @@ def logo(alto_mayuscula: int = 200, color=TINTA) -> Image.Image:
     La K se dibuja 1.9× la altura de mayúscula: su cuerpo queda a la altura de
     las letras y las salpicaduras sobresalen, que es como se comporta en el
     tablero de marca.
+
+    Peso 500 y espaciado amplio, no negrita: el mockup aprobado muestra la
+    palabra ligera y espaciada. Con peso 600 la tipografía compite con la K en
+    vez de acompañarla.
     """
     izq = _texto('IN', alto_mayuscula, color=color)
     der = _texto('AR', alto_mayuscula, color=color)
@@ -212,6 +216,28 @@ def main():
     # ── La K blanca sobre transparente, para la landing oscura ──
     render(512, color=(255, 255, 255, 255)).save(RAIZ / 'public/marca-k.png')
     print('  marca para la web')
+
+    # ── Trazos de tinta para la web ──
+    #
+    # Se guardan en modo LA: luminancia 0 (negro) más el alfa original.
+    #
+    # La máscara CSS de una imagen rasterizada recorta por ALFA, no por
+    # luminancia. Guardar solo la escala de grises produce una imagen opaca en
+    # todo el rectángulo y la máscara no recorta nada — se ve un bloque sólido.
+    # LA conserva el alfa y descarta los tres canales de color, que no aportan
+    # porque la tinta es negra en todos lados. El color final sale de
+    # `background-color`, así el mismo archivo sirve en claro y en oscuro.
+    origen = RAIZ / 'brand/tinta'
+    if origen.is_dir():
+        salida = RAIZ / 'public/tinta'
+        salida.mkdir(parents=True, exist_ok=True)
+        for archivo in sorted(origen.glob('*.png')):
+            im = Image.open(archivo).convert('RGBA')
+            im.thumbnail((1000, 1000), Image.LANCZOS)
+            alfa = im.split()[-1]
+            Image.merge('LA', (Image.new('L', alfa.size, 0), alfa)) \
+                .save(salida / archivo.name, optimize=True)
+        print(f'  trazos de tinta: {len(list(origen.glob("*.png")))}')
 
     # ── Favicon web ──
     (RAIZ / 'public').mkdir(exist_ok=True)

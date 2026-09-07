@@ -161,20 +161,10 @@ export default function Landing() {
   }
 
   return (
-    <div className="min-h-screen overflow-y-auto relative">
-      {/*
-        Textura de tinta al fondo. Es la propia K a gran escala y sangrada por
-        el borde: usar el asset real de la marca en vez de un pincel inventado
-        mantiene la coherencia del trazo, y los trazos sueltos del tablero no
-        llegaron. `select-none` y `aria-hidden` porque es decoración pura.
-      */}
-      <img
-        src="/marca-k.png"
-        alt=""
-        aria-hidden="true"
-        className="pointer-events-none select-none absolute -top-24 -right-40 w-[520px]
-                   opacity-[0.06] rotate-12 invert"
-      />
+    <div className="min-h-screen overflow-y-auto overflow-x-hidden relative">
+      {/* Trazo que entra por la esquina superior, detrás del logotipo */}
+      <Tinta src="/tinta/01-diagonal.png"
+             className="-top-20 -right-56 w-[620px] h-[420px] opacity-[0.13] rotate-[8deg]" />
       <div className="max-w-lg mx-auto px-6 py-14 relative">
 
         {/* ── Marca y promesa ── */}
@@ -277,7 +267,11 @@ export default function Landing() {
         </div>
 
         {/* ── La razón de la marca: por qué "segunda vida" ── */}
-        <Seccion titulo={c.vidaTitulo} className="mt-16">
+        <div className="relative">
+          <Tinta src="/tinta/02-curvo.png"
+                 className="-left-64 top-4 w-[560px] h-[380px] opacity-[0.10] -rotate-6" />
+        </div>
+        <Seccion titulo={c.vidaTitulo} className="mt-16 relative">
           {c.vida.map((t) => <Parrafo key={t}>{t}</Parrafo>)}
         </Seccion>
 
@@ -319,7 +313,11 @@ export default function Landing() {
         </section>
 
         {/* ── Estudios: el canal de distribución ── */}
-        <section className="mt-14 bg-white border border-black/10 rounded-2xl p-6 shadow-sm">
+        <div className="relative">
+          <Tinta src="/tinta/03-esquina.png"
+                 className="-right-52 -top-10 w-[520px] h-[350px] opacity-[0.11] rotate-[14deg]" />
+        </div>
+        <section className="mt-14 bg-white border border-black/10 rounded-2xl p-6 shadow-sm relative">
           <h2 className="text-lg font-semibold mb-3">{c.artistasTitulo}</h2>
           <p className="text-neutral-600 text-sm leading-relaxed">{c.artistasTexto}</p>
         </section>
@@ -344,6 +342,34 @@ export default function Landing() {
         </div>
       </div>
     </div>
+  )
+}
+
+/**
+ * Trazo de tinta decorativo.
+ *
+ * Se dibuja como MÁSCARA CSS y no como <img>: los archivos guardan solo el
+ * canal alfa —la tinta es negra en todos lados, el color no aporta nada— así
+ * que pesan una cuarta parte, y el color sale de `background-color`. El mismo
+ * archivo sirve sobre fondo claro y sobre oscuro sin duplicar assets.
+ *
+ * Van a baja opacidad porque viven DETRÁS del texto: a plena intensidad
+ * compiten con lo que hay que leer, y la página deja de leerse.
+ */
+function Tinta({ src, className = '' }) {
+  return (
+    <div
+      aria-hidden="true"
+      className={`pointer-events-none select-none absolute bg-tinta ${className}`}
+      style={{
+        maskImage: `url(${src})`,
+        WebkitMaskImage: `url(${src})`,
+        maskSize: 'contain',
+        WebkitMaskSize: 'contain',
+        maskRepeat: 'no-repeat',
+        WebkitMaskRepeat: 'no-repeat',
+      }}
+    />
   )
 }
 
