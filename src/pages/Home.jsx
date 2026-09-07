@@ -40,6 +40,20 @@ export default function Home() {
         Activa tu tatuaje una vez. Cualquier persona que apunte su cámara verá tu mundo 3D.
       </p>
 
+      {/*
+        TEMPORAL: acceso a la validación de multi-tatuaje.
+
+        Carga un .mind con los dos tatuajes de prueba ya fusionados, para
+        comprobar que MindAR los distingue antes de construir perfiles y links.
+        Se retira cuando exista el perfil de usuario real.
+      */}
+      <Link
+        to="/scan?demo=multi"
+        className="mt-8 text-xs text-gray-500 underline hover:text-gray-300 transition-colors"
+      >
+        Probar multi-tatuaje (demo)
+      </Link>
+
       {/* Identificador de build — permite confirmar de un vistazo qué versión
           corre el dispositivo. El APK se instala a mano y es fácil quedarse con
           uno viejo sin notarlo. Se inyecta en vite.config.js */}

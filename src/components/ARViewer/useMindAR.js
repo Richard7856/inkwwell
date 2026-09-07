@@ -11,11 +11,12 @@ import { MindARThree } from 'mind-ar/dist/mindar-image-three.prod.js'
  *
  * @param {string} mindUrl - URL del archivo .mind (image target compilado)
  * @param {HTMLDivElement} containerRef - ref al div contenedor del AR
+ * @param {number} targetCount - Cuántos tatuajes contiene el .mind
  * @returns {{ mindarRef, anchorRef, rendererRef, sceneRef, cameraRef, start, stop }}
  */
-export function useMindAR(mindUrl, containerRef) {
+export function useMindAR(mindUrl, containerRef, targetCount = 1) {
   const mindarRef = useRef(null)
-  const anchorRef = useRef(null)
+  const anchorsRef = useRef([])
   const isRunning = useRef(false)
   // Observa el tamaño del contenedor para re-sincronizar el layout de MindAR
   const resizeObserverRef = useRef(null)
@@ -28,8 +29,18 @@ export function useMindAR(mindUrl, containerRef) {
     const mindar = new MindARThree({
       container: containerRef.current,
       imageTargetSrc: mindUrl,
-      // Tracking de un solo target — suficiente para Phase 1
-      maxTrack: 1,
+      /*
+        Cuántos tatuajes se pueden rastrear AL MISMO TIEMPO.
+
+        No es lo mismo que cuántos contiene el archivo: MindAR solo busca nuevos
+        targets mientras rastrea menos de maxTrack. Con maxTrack:1 y dos tatuajes
+        en cámara, el segundo no aparecería hasta perder el primero.
+
+        Se limita a 2 porque cada target rastreado cuesta trabajo por frame, y en
+        gama media eso se nota en los fps. Dos permite el momento de "mis dos
+        tatuajes vivos a la vez" sin arriesgar la fluidez.
+      */
+      maxTrack: Math.min(targetCount, 2),
       // UI nativa de MindAR para loading/scanning — útil para el demo
       uiLoading: 'yes',
       uiScanning: 'yes',
@@ -58,9 +69,13 @@ export function useMindAR(mindUrl, containerRef) {
 
     mindarRef.current = mindar
 
-    // Anchor en targetIndex 0 — el primer (y único) image target
-    const anchor = mindar.addAnchor(0)
-    anchorRef.current = anchor
+    /*
+      Un ancla por tatuaje. El índice corresponde a la posición dentro del .mind,
+      que es el mismo orden en que se fusionaron al compilar — por eso el orden
+      de los targets debe conservarse en la base de datos.
+    */
+    const anchors = Array.from({ length: targetCount }, (_, i) => mindar.addAnchor(i))
+    anchorsRef.current = anchors
 
     try {
       await mindar.start()
@@ -168,8 +183,8 @@ export function useMindAR(mindUrl, containerRef) {
       resizeObserverRef.current.observe(containerRef.current)
     }
 
-    return { anchor, mindar }
-  }, [mindUrl, containerRef])
+    return { anchors, mindar }
+  }, [mindUrl, containerRef, targetCount])
 
   const stop = useCallback(() => {
     // Desconectar antes de destruir MindAR: si el observer dispara después
@@ -186,7 +201,7 @@ export function useMindAR(mindUrl, containerRef) {
       mindarRef.current.renderer.dispose()
     }
     mindarRef.current = null
-    anchorRef.current = null
+    anchorsRef.current = []
   }, [])
 
   // Cleanup automático al desmontar — previene cámara activa en background
@@ -196,7 +211,7 @@ export function useMindAR(mindUrl, containerRef) {
 
   return {
     mindarRef,
-    anchorRef,
+    anchorsRef,
     start,
     stop,
     // Exponer scene/camera/renderer de MindAR para que useThreeScene los use

@@ -14,9 +14,11 @@ import ARViewer from '../components/ARViewer/index.jsx'
 export default function Scan() {
   const [searchParams] = useSearchParams()
   const tattooId = searchParams.get('tattoo')
+  // Demos precargados para validar mecánicas sin depender de la base de datos
+  const demo = searchParams.get('demo')
 
-  // Sin ID — el usuario llegó directo a /scan sin un link de tatuaje
-  if (!tattooId) {
+  // Sin ID ni demo — el usuario llegó directo a /scan sin un link de tatuaje
+  if (!tattooId && !demo) {
     return <NoTattooScreen />
   }
 
@@ -34,7 +36,7 @@ export default function Scan() {
       si la barra de URL está visible o no, o si hay barra de navegación inferior.
     */
     <div style={{ position: 'fixed', inset: 0 }}>
-      <ARViewer tattooId={tattooId} />
+      <ARViewer tattooId={tattooId} demo={demo} />
     </div>
   )
 }

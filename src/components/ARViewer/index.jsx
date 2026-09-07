@@ -25,10 +25,13 @@ function hostOf(url) {
   }
 }
 
-export default function ARViewer({ tattooId = 'default' }) {
+export default function ARViewer({ tattooId = null, demo = null }) {
   const containerRef = useRef(null)
   const [status, setStatus] = useState('loading')
   const [errorMsg, setErrorMsg] = useState('')
+  // Qué tatuaje se está rastreando ahora mismo. Sus animaciones son las que
+  // se muestran en los botones — con varios tatuajes, cada uno tiene las suyas.
+  const [activeTarget, setActiveTarget] = useState(null)
   const [animations, setAnimations] = useState([])
   const [activeAnim, setActiveAnim] = useState('')
   const [urls, setUrls] = useState(null)
@@ -39,13 +42,13 @@ export default function ARViewer({ tattooId = 'default' }) {
   const [layoutInfo, setLayoutInfo] = useState(null)
   const tapTimesRef = useRef([])
 
-  const mindAR = useMindAR(urls?.mindUrl, containerRef)
-  const threeScene = useThreeScene(urls?.glbUrl)
+  const mindAR = useMindAR(urls?.mindUrl, containerRef, urls?.targets?.length ?? 1)
+  const threeScene = useThreeScene()
 
   // Paso 1: resolver URLs del tatuaje desde Supabase o hardcoded (demo)
   useEffect(() => {
     let cancelled = false
-    loadTarget(tattooId)
+    loadTarget({ tattooId, demo })
       .then((resolved) => { if (!cancelled) setUrls(resolved) })
       .catch((err) => {
         if (!cancelled) {
@@ -54,7 +57,7 @@ export default function ARViewer({ tattooId = 'default' }) {
         }
       })
     return () => { cancelled = true }
-  }, [tattooId])
+  }, [tattooId, demo])
 
   // Paso 2: iniciar MindAR y cargar GLB cuando las URLs estén listas
   useEffect(() => {
@@ -65,27 +68,43 @@ export default function ARViewer({ tattooId = 'default' }) {
     async function init() {
       try {
         setStatus('loading')
-        const { anchor, mindar } = await mindAR.start()
+        const { anchors, mindar } = await mindAR.start()
 
         if (cancelled) { mindAR.stop(); return }
 
-        anchor.onTargetFound = () => setStatus('tracking')
-        anchor.onTargetLost  = () => setStatus('scanning')
+        /*
+          Un handler por tatuaje. Al encontrar uno, se vuelve el target activo y
+          los botones pasan a mostrar SUS animaciones.
+
+          Al perderlo solo se limpia si sigue siendo el activo: con dos tatuajes
+          en cámara, perder el primero no debe borrar los controles del segundo
+          que aún se está rastreando.
+        */
+        anchors.forEach((anchor, i) => {
+          anchor.onTargetFound = () => {
+            setStatus('tracking')
+            setActiveTarget(i)
+            const names = threeScene.getAnimationNames(i)
+            setAnimations(names)
+            setActiveAnim(names[0] ?? '')
+          }
+          anchor.onTargetLost = () => {
+            setStatus('scanning')
+            setActiveTarget((actual) => (actual === i ? null : actual))
+          }
+        })
 
         // Pasamos renderer/scene/camera — MindAR NO renderiza internamente,
         // useThreeScene corre el loop RAF con renderer.render() por frame
-        await threeScene.loadModel(
-          anchor.group,
+        await threeScene.loadModels(
+          anchors.map((a) => a.group),
+          urls.targets,
           mindar.renderer,
           mindar.scene,
           mindar.camera
         )
 
         if (cancelled) { threeScene.cleanup(); mindAR.stop(); return }
-
-        const animNames = threeScene.getAnimationNames()
-        setAnimations(animNames)
-        if (animNames.length > 0) setActiveAnim(animNames[0])
 
         setStatus('scanning')
       } catch (err) {
@@ -177,9 +196,10 @@ export default function ARViewer({ tattooId = 'default' }) {
   }, [])
 
   const handleAnimationChange = useCallback((name) => {
-    threeScene.playAnimation(name)
+    if (activeTarget === null) return
+    threeScene.playAnimation(activeTarget, name)
     setActiveAnim(name)
-  }, [threeScene])
+  }, [threeScene, activeTarget])
 
   return (
     <div className="relative w-full h-full" onPointerDown={handleTripleTap}>
@@ -244,7 +264,7 @@ export default function ARViewer({ tattooId = 'default' }) {
           Modelos como el Fénix y el Shiba tienen 5 animaciones. En una sola fila
           no caben en 390px — se encimarían o desbordarían fuera de pantalla.
           Con wrap se acomodan en dos filas. */}
-      {animations.length > 1 && (
+      {activeTarget !== null && animations.length > 1 && (
         <div
           className="absolute left-0 right-0 flex flex-wrap justify-center gap-2 px-4 z-20"
           style={{ bottom: 'calc(env(safe-area-inset-bottom, 0px) + 5rem)' }}

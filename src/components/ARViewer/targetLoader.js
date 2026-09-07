@@ -1,57 +1,43 @@
 /**
- * Fuente de verdad para resolver qué .mind y GLB corresponde a cada tatuaje.
- * Phase 1: rutas hardcodeadas en /public/ para el demo
- * Phase 2: consulta Supabase por tattoo_id y devuelve URLs de Storage
+ * Resuelve qué .mind y qué modelos 3D corresponden a lo que se va a escanear.
+ *
+ * Un .mind puede contener VARIOS tatuajes (targets). Cada uno tiene su propio
+ * modelo 3D, y su posición dentro del archivo (targetIndex) es lo que los
+ * relaciona: el target 0 del .mind usa targets[0].glbUrl, y así.
  */
 import { supabase } from '../../lib/supabase.js'
 
-// Phase 1 — assets estáticos del demo
-const DEMO_TARGETS = {
-  default: {
-    mindUrl: '/targets/tattoo-demo.mind',
-    glbUrl: '/models/alaskan_malamute_dog.glb',
-  },
+/*
+  Demo multi-tatuaje.
+
+  TEMPORAL: sirve para validar que MindAR distingue entre dos tatuajes reales
+  antes de construir perfiles, links y toda la capa de producto encima. El .mind
+  se armó fusionando los archivos ya compilados de cada tatuaje, sin recompilar.
+
+  Se retira cuando exista el perfil de usuario, que resolverá esto mismo desde
+  la base de datos.
+*/
+const DEMO_MULTI = {
+  mindUrl: 'https://duzfvyfhsvhavptuxehi.supabase.co/storage/v1/object/public/mind-files/compiled/multi-demo-1788750830.mind',
+  targets: [
+    { glbUrl: '/models/shiba_negro.glb', label: 'Huella' },
+    { glbUrl: '/models/Fenix.glb', label: 'Esqueleto' },
+  ],
 }
 
 /**
- * Resuelve las URLs del .mind y GLB para un tatuaje.
- *
- * ¿Por qué validar que el .mind existe antes de devolver la URL?
- * MindAR intenta parsear el archivo como msgpack binario. Si la URL devuelve
- * un 404 (HTML), el parser lanza un RangeError críptico en lugar de un error
- * legible. Validar aquí permite mostrar un mensaje claro al usuario.
- *
- * @param {string} tattooId - ID del tatuaje o 'default' para el demo
- * @returns {Promise<{ mindUrl: string, glbUrl: string }>}
+ * @param {object} params
+ * @param {string|null} params.tattooId - UUID de un tatuaje concreto
+ * @param {string|null} params.demo - Nombre de un demo precargado
+ * @returns {Promise<{ mindUrl: string, targets: {glbUrl: string, label?: string}[] }>}
  */
-export async function loadTarget(tattooId = 'default') {
-  // Phase 1: usar assets hardcodeados del demo
-  if (DEMO_TARGETS[tattooId]) {
-    const target = DEMO_TARGETS[tattooId]
+export async function loadTarget({ tattooId = null, demo = null } = {}) {
+  if (demo === 'multi') return DEMO_MULTI
 
-    // Validar que el .mind existe antes de pasárselo a MindAR.
-    // HEAD request es suficiente — solo necesitamos el status code, no el body.
-    try {
-      const res = await fetch(target.mindUrl, { method: 'HEAD' })
-      if (!res.ok) {
-        throw new Error(
-          'El archivo de demo no está compilado aún. ' +
-          'Ve a /activate para activar tu tatuaje primero.'
-        )
-      }
-    } catch (err) {
-      // Re-lanzar errores con mensaje claro (incluyendo el nuestro de arriba)
-      if (err.message.includes('activar')) throw err
-      throw new Error(
-        'No se pudo verificar el archivo de demo. ' +
-        'Verifica tu conexión e intenta de nuevo.'
-      )
-    }
-
-    return target
+  if (!tattooId) {
+    throw new Error('No se indicó qué tatuaje escanear')
   }
 
-  // Phase 2: buscar en Supabase por UUID del tatuaje
   if (!supabase) {
     throw new Error(`Tatuaje "${tattooId}" no encontrado y Supabase no está configurado`)
   }
@@ -67,8 +53,10 @@ export async function loadTarget(tattooId = 'default') {
     throw new Error(`Tatuaje "${tattooId}" no encontrado: ${error?.message ?? 'sin datos'}`)
   }
 
+  // Un tatuaje suelto es el caso de un solo target — misma estructura, un
+  // elemento. Así el visor no necesita dos caminos distintos.
   return {
     mindUrl: data.mind_url,
-    glbUrl: data.glb_url,
+    targets: [{ glbUrl: data.glb_url }],
   }
 }
