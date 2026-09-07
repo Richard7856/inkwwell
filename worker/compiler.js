@@ -18,16 +18,24 @@
 import { OfflineCompiler } from 'mind-ar/src/image-target/offline-compiler.js'
 import { loadImage } from 'canvas'
 
-export async function compileTattooImage(imageBuffer) {
+export async function compileTattooImage(imageBuffer, onProgress = null) {
   // loadImage acepta Buffer directamente — no necesitamos escribir a disco
   const img = await loadImage(imageBuffer)
 
   const compiler = new OfflineCompiler()
 
-  // compileImageTargets acepta array de imágenes — en Phase 1 siempre es uno
-  // El callback de progreso es importante para debugging: compilar puede tomar 15-30s
+  /*
+    El callback de progreso de MindAR reporta avance real, no estimado:
+    0-50% corresponde a la extracción de features de detección (matchingData),
+    50-100% a los de seguimiento (trackingData).
+
+    Se expone hacia afuera (onProgress) para poder transmitirlo al cliente por SSE.
+    La compilación puede tomar decenas de segundos y sin feedback el usuario asume
+    que la app se colgó.
+  */
   await compiler.compileImageTargets([img], (progress) => {
     process.stdout.write(`\rCompilando image target: ${progress.toFixed(1)}%  `)
+    if (onProgress) onProgress(progress)
   })
 
   console.log('\n✓ Image target compilado correctamente')

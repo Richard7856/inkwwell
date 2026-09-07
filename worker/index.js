@@ -124,6 +124,79 @@ app.post('/analyze', upload.single('image'), async (req, res) => {
   }
 })
 
+
+/*
+  POST /compile-stream — igual que /compile pero transmitiendo el progreso.
+
+  Por qué existe aparte y no reemplaza a /compile:
+  compilar toma decenas de segundos y sin feedback el usuario asume que la app
+  se colgó. MindAR reporta avance real por callback; este endpoint lo retransmite
+  como Server-Sent Events.
+
+  Se deja /compile intacto para que un cliente viejo (o un APK ya instalado)
+  siga funcionando, y para que el cliente nuevo pueda caer a él si el streaming
+  falla por un proxy intermedio que no soporte respuestas incrementales.
+
+  Formato de los eventos:
+    {"type":"progress","value":0-100}
+    {"type":"done","mind":"<base64>","seconds":N}
+    {"type":"error","message":"..."}
+
+  El .mind viaja en base64 (infla ~33%) porque SSE es un canal de texto. Para un
+  archivo de ~500KB el sobrecosto es aceptable a cambio de tener progreso real.
+*/
+app.post('/compile-stream', upload.single('image'), async (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({
+      error: 'Se requiere campo "image" con el archivo de la foto del tatuaje',
+    })
+  }
+
+  res.set({
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache',
+    Connection: 'keep-alive',
+    // Desactiva el buffering de proxies intermedios; sin esto los eventos
+    // llegarían todos juntos al final y el progreso no serviría de nada
+    'X-Accel-Buffering': 'no',
+  })
+  res.flushHeaders?.()
+
+  const send = (payload) => res.write(`data: ${JSON.stringify(payload)}\n\n`)
+
+  console.log(`\n[compile-stream] ${req.file.originalname} (${(req.file.size / 1024).toFixed(0)}KB)`)
+  const startTime = Date.now()
+
+  try {
+    let lastSent = -1
+    const mindBuffer = await compileTattooImage(req.file.buffer, (progress) => {
+      // Emitir solo en cambios de punto porcentual entero: MindAR llama al
+      // callback muy seguido y mandar cada fracción satura la conexión
+      const whole = Math.floor(progress)
+      if (whole > lastSent) {
+        lastSent = whole
+        send({ type: 'progress', value: whole })
+      }
+    })
+
+    const elapsed = ((Date.now() - startTime) / 1000).toFixed(1)
+    console.log(`[compile-stream] ✓ ${elapsed}s — ${(mindBuffer.byteLength / 1024).toFixed(0)}KB`)
+
+    send({
+      type: 'done',
+      mind: Buffer.from(mindBuffer).toString('base64'),
+      seconds: Number(elapsed),
+    })
+    res.end()
+  } catch (err) {
+    console.error('[compile-stream] Error:', err.message)
+    // El error va como evento, no como status HTTP: los headers ya se enviaron
+    // al abrir el stream y no se puede cambiar el código de respuesta
+    send({ type: 'error', message: err.message })
+    res.end()
+  }
+})
+
 // Manejador de errores de multer (archivo muy grande, formato inválido)
 app.use((err, req, res, _next) => {
   if (err.code === 'LIMIT_FILE_SIZE') {

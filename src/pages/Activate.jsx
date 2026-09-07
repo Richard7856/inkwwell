@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import PhotoUpload from '../components/UploadFlow/PhotoUpload.jsx'
 import DesignPicker from '../components/UploadFlow/DesignPicker.jsx'
@@ -27,6 +27,29 @@ export default function Activate() {
   const [selectedDesign, setSelectedDesign] = useState(null)
   const [tattooId, setTattooId] = useState(null) // UUID del tatuaje en Supabase
   const [error, setError] = useState('')
+  // Progreso real de compilación (0-100) reportado por el worker vía SSE
+  const [compileProgress, setCompileProgress] = useState(0)
+  const [compileStage, setCompileStage] = useState('compiling')
+  const [elapsed, setElapsed] = useState(0)
+
+  /*
+    Cronómetro de la etapa de compilación.
+
+    Se muestra junto al porcentaje porque el avance de MindAR no es lineal en el
+    tiempo: la primera mitad (features de detección) es bastante más lenta que la
+    segunda. Ver solo el porcentaje daría la impresión de que se atoró.
+  */
+  useEffect(() => {
+    if (step !== 'compiling') {
+      setElapsed(0)
+      return
+    }
+    const startedAt = Date.now()
+    const id = setInterval(() => {
+      setElapsed(Math.floor((Date.now() - startedAt) / 1000))
+    }, 1000)
+    return () => clearInterval(id)
+  }, [step])
 
   const handlePhotoSelected = async (file) => {
     setStep('uploading')
@@ -49,17 +72,21 @@ export default function Activate() {
     setSelectedDesign(design)
     setStep('compiling')
     setError('')
+    setCompileProgress(0)
+    setCompileStage('compiling')
 
     try {
       // Paso 1: enviar la foto al worker — el worker ejecuta MindAR OfflineCompiler
       // Esto toma 10-30 segundos dependiendo del tamaño de la imagen y el servidor
-      const mindBuffer = await compileMindFile(imageFile)
+      const mindBuffer = await compileMindFile(imageFile, setCompileProgress)
 
       // Paso 2: subir el .mind compilado a Supabase Storage (bucket: mind-files)
+      setCompileStage('uploading')
       const { url: mindUrl } = await uploadMindFile(mindBuffer)
 
       // Paso 3: crear el registro en la tabla tattoos y obtener el UUID
       // Este UUID es el "identificador permanente" del tatuaje — vive en la URL de escaneo
+      setCompileStage('saving')
       const id = await createTattoo({
         imageUrl,
         mindUrl,
@@ -117,7 +144,11 @@ export default function Activate() {
       )}
 
       {step === 'compiling' && (
-        <CompileStatus />
+        <CompileStatus
+          stage={compileStage}
+          progress={compileProgress}
+          elapsedSeconds={elapsed}
+        />
       )}
 
       {step === 'done' && (

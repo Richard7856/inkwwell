@@ -11,6 +11,60 @@ import { useRef, useState } from 'react'
  * Valida resolución mínima (800x800) — fotos pequeñas generan .mind
  * de baja calidad que fallan en tracking.
  */
+/*
+  Reducción de la foto antes de compilar.
+
+  POR QUÉ ES NECESARIO (medido contra el worker en Railway):
+    1000x1000 (1.0 MP)  →  11 segundos
+    1500x1125 (1.7 MP)  → 111 segundos
+  1.7x más píxeles cuesta 10x más tiempo. Una foto de celular de 12 MP tardaría
+  minutos o tumbaría el contenedor por memoria — que es exactamente el bug que
+  aparecía como "compila mucho rato y regresa al selector".
+
+  POR QUÉ NO PERJUDICA EL TRACKING:
+  Medido con el analizador: 1000x1000 da 4429 puntos de detección en 11 escalas
+  (veredicto "bueno"); 1500x1125 da 5138 en 12 escalas. Prácticamente lo mismo por
+  10x el costo. Además, esos descriptores extra viven a una resolución que la
+  cámara nunca va a ver en runtime — el frame de video ronda los 640x480.
+
+  EL MÍNIMO MANDA SOBRE EL OBJETIVO:
+  Si reducir a ~1.1 MP dejaría el lado corto por debajo de 800px (el mínimo del
+  proyecto para tracking confiable), se respeta el mínimo aunque se exceda el
+  objetivo de píxeles. Calidad de tracking antes que velocidad.
+*/
+const TARGET_PIXELS = 1_100_000
+const MIN_SHORT_SIDE = 800
+
+async function downscaleImage(file, img) {
+  const { width: w, height: h } = img
+
+  let scale = Math.sqrt(TARGET_PIXELS / (w * h))
+  if (scale >= 1) return file // ya es pequeña — nunca ampliar, solo perdería nitidez
+
+  // No dejar que el lado corto caiga por debajo del mínimo de tracking
+  scale = Math.max(scale, MIN_SHORT_SIDE / Math.min(w, h))
+  if (scale >= 1) return file
+
+  const canvas = document.createElement('canvas')
+  canvas.width = Math.round(w * scale)
+  canvas.height = Math.round(h * scale)
+  const ctx = canvas.getContext('2d')
+  // Interpolación de alta calidad: el detalle fino es justo lo que alimenta
+  // la extracción de features, no conviene degradarlo con el escalado por defecto
+  ctx.imageSmoothingQuality = 'high'
+  ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
+
+  const blob = await new Promise((resolve) =>
+    canvas.toBlob(resolve, 'image/jpeg', 0.92)
+  )
+  if (!blob) return file // si el navegador falla, seguir con la original
+
+  return new File([blob], file.name.replace(/\.[^.]+$/, '') + '.jpg', {
+    type: 'image/jpeg',
+    lastModified: Date.now(),
+  })
+}
+
 export default function PhotoUpload({ onPhotoSelected }) {
   const cameraInputRef = useRef(null)
   const galleryInputRef = useRef(null)
@@ -38,14 +92,18 @@ export default function PhotoUpload({ onPhotoSelected }) {
 
     // Validar resolución mínima — 800x800 requerido para tracking confiable
     const img = new Image()
-    img.onload = () => {
+    img.onload = async () => {
       if (img.width < 800 || img.height < 800) {
         setError(`Resolución muy baja (${img.width}x${img.height}). Mínimo 800x800px.`)
         URL.revokeObjectURL(img.src)
         return
       }
       setPreview(img.src)
-      onPhotoSelected(file)
+
+      // Reducir antes de entregarla: el tiempo de compilación crece de forma
+      // explosiva con los píxeles (ver comentario en downscaleImage)
+      const optimized = await downscaleImage(file, img)
+      onPhotoSelected(optimized)
     }
     img.onerror = () => {
       setError('No se pudo leer la imagen. Intenta con otra.')
