@@ -23,6 +23,12 @@ export default function ARViewer({ tattooId = 'default' }) {
   const [animations, setAnimations] = useState([])
   const [activeAnim, setActiveAnim] = useState('')
   const [urls, setUrls] = useState(null)
+  // Diagnóstico de layout — con ?debug=1 en la URL o con triple-tap sobre la vista
+  const [debugOn, setDebugOn] = useState(
+    () => new URLSearchParams(window.location.search).has('debug')
+  )
+  const [layoutInfo, setLayoutInfo] = useState(null)
+  const tapTimesRef = useRef([])
 
   const mindAR = useMindAR(urls?.mindUrl, containerRef)
   const threeScene = useThreeScene(urls?.glbUrl)
@@ -90,13 +96,72 @@ export default function ARViewer({ tattooId = 'default' }) {
     }
   }, [urls]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  /*
+    Muestreo de dimensiones reales para diagnosticar problemas de layout.
+
+    Por qué existe: los bugs de encuadre en AR (video corrido, franjas negras)
+    dependen de valores que solo se pueden observar EN EL DISPOSITIVO —
+    clientWidth del contenedor, resolución real del stream, y qué estilos acabó
+    aplicando MindAR. Sin esto, cada hipótesis cuesta un ciclo completo de
+    rebuild + reinstalar el APK.
+
+    Se activa solo con ?debug=1 para que no cargue nada en el uso normal.
+  */
+  useEffect(() => {
+    if (!debugOn) {
+      setLayoutInfo(null)
+      return
+    }
+
+    const sample = () => {
+      const c = containerRef.current
+      if (!c) return
+      const v = c.querySelector('video')
+      const cv = c.querySelector('canvas')
+      const cs = (el) => (el ? getComputedStyle(el) : null)
+      const vs = cs(v)
+      const cvs = cs(cv)
+      setLayoutInfo({
+        screen: `${window.innerWidth}x${window.innerHeight} dpr${window.devicePixelRatio}`,
+        container: `${c.clientWidth}x${c.clientHeight}`,
+        stream: v ? `${v.videoWidth}x${v.videoHeight}` : 'sin video',
+        videoCss: vs ? `${vs.width} x ${vs.height} @ ${vs.left},${vs.top}` : '—',
+        videoFit: vs ? vs.objectFit : '—',
+        canvasCss: cvs ? `${cvs.width} x ${cvs.height} @ ${cvs.left},${cvs.top}` : '—',
+      })
+    }
+
+    sample()
+    const id = setInterval(sample, 1000)
+    return () => clearInterval(id)
+  }, [urls, debugOn])
+
+  /*
+    Triple-tap para activar el diagnóstico.
+
+    Por qué no basta con ?debug=1: dentro del APK no hay barra de direcciones,
+    así que no hay forma de agregar el parámetro a mano. El triple-tap funciona
+    desde cualquier punto de entrada (link compartido, flujo de activación) y es
+    invisible para quien vea el demo.
+  */
+  const handleTripleTap = useCallback(() => {
+    const now = Date.now()
+    // Conservar solo los taps de los últimos 800ms
+    const recent = [...tapTimesRef.current, now].filter((tm) => now - tm < 800)
+    tapTimesRef.current = recent
+    if (recent.length >= 3) {
+      tapTimesRef.current = []
+      setDebugOn((v) => !v)
+    }
+  }, [])
+
   const handleAnimationChange = useCallback((name) => {
     threeScene.playAnimation(name)
     setActiveAnim(name)
   }, [threeScene])
 
   return (
-    <div className="relative w-full h-full">
+    <div className="relative w-full h-full" onPointerDown={handleTripleTap}>
 
       {/*
         isolation: isolate crea un stacking context propio para el container.
@@ -113,6 +178,20 @@ export default function ARViewer({ tattooId = 'default' }) {
         className="w-full h-full"
         style={{ position: 'relative', overflow: 'hidden', isolation: 'isolate' }}
       />
+
+      {/* Overlay de diagnóstico (?debug=1) — pointer-events-none para no
+          bloquear la interacción con los botones de animación */}
+      {layoutInfo && (
+        <div className="absolute top-0 left-0 right-0 z-30 p-2 pointer-events-none">
+          <div className="bg-black/85 text-green-300 text-[10px] leading-tight font-mono p-2 rounded">
+            {Object.entries(layoutInfo).map(([k, v]) => (
+              <div key={k}>
+                <span className="text-green-600">{k}:</span> {v}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Error state */}
       {status === 'error' && (

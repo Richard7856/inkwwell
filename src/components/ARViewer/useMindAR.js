@@ -17,6 +17,8 @@ export function useMindAR(mindUrl, containerRef) {
   const mindarRef = useRef(null)
   const anchorRef = useRef(null)
   const isRunning = useRef(false)
+  // Observa el tamaño del contenedor para re-sincronizar el layout de MindAR
+  const resizeObserverRef = useRef(null)
 
   const start = useCallback(async () => {
     if (!containerRef.current || !mindUrl || isRunning.current) return
@@ -68,64 +70,50 @@ export function useMindAR(mindUrl, containerRef) {
     }
 
     /*
-      Forzar object-fit: cover en el <video> de MindAR para eliminar las barras
-      negras (letterboxing) que aparecen cuando el aspect ratio de la cámara
-      no coincide con el del container.
+      Re-cálculo de layout tras el arranque.
 
-      Por qué es seguro:
-      MindAR procesa frames directamente del stream de getUserMedia (datos reales del sensor),
-      no del elemento <video> como se muestra en pantalla. Cambiar object-fit solo afecta
-      cómo se renderiza visualmente el video — no las coordenadas que TensorFlow procesa
-      para el tracking. Los puntos de imagen target se mapean al stream original.
+      Por qué hace falta:
+      MindAR llama a su resize() dentro de start(), pero en ese momento el <video>
+      puede reportar videoWidth/videoHeight = 0 — el stream aún no entregó frame.
+      Con esas dimensiones el cálculo de cover sale mal y el video queda de un
+      tamaño que no corresponde al contenedor.
 
-      Por qué después de .start():
-      El <video> lo crea MindAR durante .start(). Si buscamos el elemento antes,
-      el querySelector devuelve null.
+      Por qué NO tocamos los estilos del video ni del canvas a mano:
+      resize() de MindAR (image-target/three.js:241) ya hace el ajuste correcto:
+      calcula vw/vh para cubrir el contenedor preservando el aspect ratio del
+      stream, centra el video con offsets negativos, y dimensiona el canvas al
+      contenedor. Ponerle encima width:100%/left:0 propios generaba una carrera:
+      MindAR sobrescribe los nuestros en cada resize y los nuestros los suyos al
+      arrancar — quién gana dependía del timing. De ahí el layout inconsistente.
+
+      ResizeObserver en vez de solo el evento resize de window:
+      el contenedor puede cambiar de tamaño sin que window dispare resize (barra
+      de URL que aparece/desaparece, teclado, cambio de safe-area). El observer
+      reacciona al tamaño real del contenedor, que es lo que MindAR necesita.
     */
-    /*
-      Forzar object-fit: cover en el <video> para eliminar barras negras.
-      El video element lo crea MindAR durante .start() — no existe antes.
-    */
-    const videoEl = containerRef.current?.querySelector('video')
-    if (videoEl) {
-      videoEl.style.position = 'absolute'
-      videoEl.style.top = '0'
-      videoEl.style.left = '0'
-      videoEl.style.width = '100%'
-      videoEl.style.height = '100%'
-      videoEl.style.objectFit = 'cover'
+    const scheduleResize = () => {
+      // Doble RAF: el primero espera al siguiente frame, el segundo garantiza que
+      // el layout ya se aplicó antes de que MindAR lea clientWidth/clientHeight
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => mindarRef.current?.resize?.())
+      })
     }
+    scheduleResize()
 
-    /*
-      Forzar recalculo de dimensiones del canvas de Three.js.
-
-      Por qué es necesario:
-      MindAR calcula el tamaño del renderer al inicializar, ANTES de que el video
-      tenga su resolución real del sensor. El video reporta videoWidth/videoHeight = 0
-      hasta que el stream está activo. MindAR entonces calcula el canvas con dimensiones
-      incorrectas → canvas queda corrido o más pequeño de lo que debería.
-
-      requestAnimationFrame garantiza que este resize corre en el SIGUIENTE frame de
-      pintado del browser — cuando el video ya tiene su resolución real. Dispatching
-      'resize' en window triggerea el handler interno de MindAR que recalcula el canvas.
-    */
-    requestAnimationFrame(() => {
-      window.dispatchEvent(new Event('resize'))
-
-      // Después del resize de MindAR, asegurar que el canvas también esté posicionado
-      // en esquina 0,0 del container — MindAR puede dejarlo con left en píxeles
-      const canvasEl = containerRef.current?.querySelector('canvas')
-      if (canvasEl) {
-        canvasEl.style.position = 'absolute'
-        canvasEl.style.top = '0'
-        canvasEl.style.left = '0'
-      }
-    })
+    if (typeof ResizeObserver !== 'undefined' && containerRef.current) {
+      resizeObserverRef.current = new ResizeObserver(scheduleResize)
+      resizeObserverRef.current.observe(containerRef.current)
+    }
 
     return { anchor, mindar }
   }, [mindUrl, containerRef])
 
   const stop = useCallback(() => {
+    // Desconectar antes de destruir MindAR: si el observer dispara después
+    // del dispose, llamaría resize() sobre un renderer ya liberado
+    resizeObserverRef.current?.disconnect()
+    resizeObserverRef.current = null
+
     if (mindarRef.current && isRunning.current) {
       mindarRef.current.stop()
       isRunning.current = false
