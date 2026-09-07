@@ -106,3 +106,19 @@ html, body {
   max-width: none;
   max-height: none;
 }
+
+/*
+  Tema claro — pantallas de marketing.
+
+  Se aplica sobre <html> y no sobre un contenedor porque el fondo del documento
+  asoma al rebotar el scroll y detrás de las barras del sistema; pintar solo un
+  div deja franjas del color equivocado justo en los bordes.
+
+  El visor AR NO lo usa: el 3D se dibuja sobre el video de la cámara y una
+  interfaz clara encima le lava el contraste.
+*/
+html[data-tema='claro'],
+html[data-tema='claro'] body {
+  background: var(--color-claridad);
+  color: var(--color-tinta);
+}

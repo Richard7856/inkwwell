@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { getIdioma, setIdioma, t } from '../lib/i18n.js'
 import { inscribirEnLista } from '../lib/waitlist.js'
+import { useTema } from '../lib/tema.js'
 
 /**
  * Landing pública de inkar.app.
@@ -90,6 +91,7 @@ const EN = {
 }
 
 export default function Landing() {
+  useTema('claro')
   const idioma = getIdioma()
   const c = idioma === 'es' ? ES : EN
 
@@ -115,8 +117,21 @@ export default function Landing() {
   }
 
   return (
-    <div className="min-h-screen overflow-y-auto">
-      <div className="max-w-lg mx-auto px-6 py-14">
+    <div className="min-h-screen overflow-y-auto relative">
+      {/*
+        Textura de tinta al fondo. Es la propia K a gran escala y sangrada por
+        el borde: usar el asset real de la marca en vez de un pincel inventado
+        mantiene la coherencia del trazo, y los trazos sueltos del tablero no
+        llegaron. `select-none` y `aria-hidden` porque es decoración pura.
+      */}
+      <img
+        src="/marca-k.png"
+        alt=""
+        aria-hidden="true"
+        className="pointer-events-none select-none absolute -top-24 -right-40 w-[520px]
+                   opacity-[0.06] rotate-12 invert"
+      />
+      <div className="max-w-lg mx-auto px-6 py-14 relative">
 
         {/* ── Marca y promesa ── */}
         <Marca descriptor={c.descriptor} />
@@ -126,7 +141,7 @@ export default function Landing() {
         {/* El ritmo de tres palabras es el eje de la voz de marca; se le da aire
             propio en vez de esconderlo dentro de un párrafo. */}
         <p className="marca text-realidad text-center text-sm mt-5">{c.ritmo}</p>
-        <p className="text-gray-400 text-center mt-5 leading-relaxed">{c.sub}</p>
+        <p className="text-neutral-600 text-center mt-5 leading-relaxed">{c.sub}</p>
 
         {/*
           El demo va ANTES del formulario.
@@ -137,20 +152,20 @@ export default function Landing() {
         */}
         <Link
           to="/demo"
-          className="block mt-8 bg-white/5 border border-realidad/40 rounded-2xl p-5
-                     hover:border-realidad transition-colors"
+          className="block mt-8 bg-white border border-black/10 rounded-2xl p-5 shadow-sm
+                     hover:border-tinta transition-colors"
         >
           <p className="font-semibold">{c.demoTitulo}</p>
-          <p className="text-gray-400 text-sm mt-1 leading-relaxed">{c.demoTexto}</p>
+          <p className="text-neutral-600 text-sm mt-1 leading-relaxed">{c.demoTexto}</p>
           <p className="text-realidad text-sm font-medium mt-3">{c.demoCta}</p>
         </Link>
 
         {/* ── Formulario ── */}
         <div className="mt-10">
           {estado === 'listo' ? (
-            <div className="bg-realidad/10 border border-realidad/30 rounded-2xl p-6 text-center">
+            <div className="bg-realidad/[0.07] border border-realidad/40 rounded-2xl p-6 text-center">
               <p className="text-xl font-semibold mb-2">{c.gracias}</p>
-              <p className="text-gray-400 text-sm leading-relaxed">
+              <p className="text-neutral-600 text-sm leading-relaxed">
                 {yaEstaba
                   ? c.yaEstabas
                   : c.graciasDetalle.replace('{email}', email.trim().toLowerCase())}
@@ -166,11 +181,11 @@ export default function Landing() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder={t('tu@correo.com')}
-                className="w-full py-4 px-4 rounded-2xl bg-white/10 border border-white/10
-                           text-white placeholder-gray-500 focus:outline-none focus:border-realidad"
+                className="w-full py-4 px-4 rounded-2xl bg-white border border-black/15
+                           text-black placeholder-neutral-400 focus:outline-none focus:border-realidad"
               />
 
-              <p className="text-gray-500 text-xs mt-1">{c.soy}</p>
+              <p className="text-neutral-500 text-xs mt-1">{c.soy}</p>
               <div className="grid grid-cols-1 gap-2">
                 <Opcion activo={perfil === 'persona'} onClick={() => setPerfil('persona')}>
                   {c.persona}
@@ -188,20 +203,20 @@ export default function Landing() {
                   value={ciudad}
                   onChange={(e) => setCiudad(e.target.value)}
                   placeholder={c.ciudad}
-                  className="w-full py-4 px-4 rounded-2xl bg-white/10 border border-white/10
-                             text-white placeholder-gray-500 focus:outline-none focus:border-realidad"
+                  className="w-full py-4 px-4 rounded-2xl bg-white border border-black/15
+                             text-black placeholder-neutral-400 focus:outline-none focus:border-realidad"
                 />
               )}
 
               <button
                 type="submit"
                 disabled={estado === 'enviando' || !email}
-                className="w-full py-4 rounded-2xl bg-realidad text-white font-semibold
-                           disabled:opacity-40 transition-opacity hover:opacity-90"
+                className="w-full py-4 rounded-2xl bg-tinta text-white font-semibold
+                           disabled:opacity-30 transition-opacity hover:opacity-85"
               >
                 {estado === 'enviando' ? c.enviando : c.cta}
               </button>
-              <p className="text-gray-600 text-xs text-center">{c.legalNota}</p>
+              <p className="text-neutral-500 text-xs text-center">{c.legalNota}</p>
               {error && <p className="text-red-400 text-sm text-center">{error}</p>}
             </form>
           )}
@@ -213,13 +228,13 @@ export default function Landing() {
           <ol className="flex flex-col gap-5">
             {c.pasos.map(([titulo, detalle], i) => (
               <li key={titulo} className="flex gap-4">
-                <span className="shrink-0 w-8 h-8 rounded-full bg-white/10 border border-white/10
+                <span className="shrink-0 w-8 h-8 rounded-full bg-tinta text-white
                                  flex items-center justify-center text-sm font-semibold">
                   {i + 1}
                 </span>
                 <div>
                   <p className="font-medium">{titulo}</p>
-                  <p className="text-gray-400 text-sm mt-0.5 leading-relaxed">{detalle}</p>
+                  <p className="text-neutral-600 text-sm mt-0.5 leading-relaxed">{detalle}</p>
                 </div>
               </li>
             ))}
@@ -233,31 +248,31 @@ export default function Landing() {
             {c.distinto.map(([titulo, detalle]) => (
               <div key={titulo}>
                 <p className="font-medium">{titulo}</p>
-                <p className="text-gray-400 text-sm mt-1 leading-relaxed">{detalle}</p>
+                <p className="text-neutral-600 text-sm mt-1 leading-relaxed">{detalle}</p>
               </div>
             ))}
           </div>
         </section>
 
         {/* ── Estudios: el canal de distribución ── */}
-        <section className="mt-14 bg-white/5 border border-white/10 rounded-2xl p-6">
+        <section className="mt-14 bg-white border border-black/10 rounded-2xl p-6 shadow-sm">
           <h2 className="text-lg font-semibold mb-3">{c.artistasTitulo}</h2>
-          <p className="text-gray-400 text-sm leading-relaxed">{c.artistasTexto}</p>
+          <p className="text-neutral-600 text-sm leading-relaxed">{c.artistasTexto}</p>
         </section>
 
         {/* ── Pie ── */}
-        <div className="mt-14 pt-6 border-t border-white/10 flex flex-col items-center gap-3">
-          <Link to="/activate" className="text-gray-400 text-sm underline hover:text-white transition-colors">
+        <div className="mt-14 pt-6 border-t border-black/10 flex flex-col items-center gap-3">
+          <Link to="/activate" className="text-neutral-600 text-sm underline hover:text-black transition-colors">
             {c.yaTengo}
           </Link>
-          <div className="flex gap-4 text-[11px] text-gray-600">
-            <Link to="/privacidad" className="underline hover:text-gray-400 transition-colors">
+          <div className="flex gap-4 text-[11px] text-neutral-500">
+            <Link to="/privacidad" className="underline hover:text-black transition-colors">
               {t('Privacidad')}
             </Link>
             <button
               type="button"
               onClick={() => setIdioma(idioma === 'es' ? 'en' : 'es')}
-              className="underline hover:text-gray-400 transition-colors"
+              className="underline hover:text-black transition-colors"
             >
               {idioma === 'es' ? 'English' : 'Español'}
             </button>
@@ -275,8 +290,8 @@ function Opcion({ activo, onClick, children }) {
       onClick={onClick}
       className={`w-full py-3 px-4 rounded-xl border text-left text-sm transition-colors ${
         activo
-          ? 'bg-realidad/20 border-realidad/60 text-white'
-          : 'bg-white/5 border-white/10 text-gray-400 hover:border-white/20'
+          ? 'bg-tinta border-tinta text-white'
+          : 'bg-white border-black/15 text-neutral-600 hover:border-black/40'
       }`}
     >
       {children}
@@ -300,7 +315,7 @@ function Marca({ descriptor }) {
         src="/marca-k.png"
         alt=""
         aria-hidden="true"
-        className="w-24 h-24 mx-auto"
+        className="w-24 h-24 mx-auto invert"
         width={512}
         height={512}
       />

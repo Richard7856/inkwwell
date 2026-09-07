@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { getIdioma } from '../lib/i18n.js'
+import { useTema } from '../lib/tema.js'
 
 /**
  * Demo público: probar el AR sin tener un tatuaje.
@@ -48,16 +49,17 @@ const EN = {
 }
 
 export default function Demo() {
+  useTema('claro')
   const c = getIdioma() === 'es' ? ES : EN
 
   return (
     <div className="min-h-screen overflow-y-auto">
       <div className="max-w-lg mx-auto px-6 py-12">
         <h1 className="text-2xl font-bold mb-3">{c.titulo}</h1>
-        <p className="text-gray-400 text-sm leading-relaxed mb-8">{c.intro}</p>
+        <p className="text-neutral-600 text-sm leading-relaxed mb-8">{c.intro}</p>
 
         {/* El marcador, en blanco para que se lea igual impreso que en pantalla */}
-        <div className="bg-white rounded-2xl p-4 mb-8">
+        <div className="bg-white border border-black/10 rounded-2xl p-4 mb-8 shadow-sm">
           <img
             src="/targets/marcador-demo.png"
             alt={c.titulo}
@@ -67,8 +69,8 @@ export default function Demo() {
 
         <ol className="flex flex-col gap-4 mb-8">
           {c.pasos.map((paso, i) => (
-            <li key={paso} className="flex gap-3 text-sm text-gray-300 leading-relaxed">
-              <span className="shrink-0 w-6 h-6 rounded-full bg-white/10 border border-white/10
+            <li key={paso} className="flex gap-3 text-sm text-neutral-700 leading-relaxed">
+              <span className="shrink-0 w-6 h-6 rounded-full bg-tinta text-white
                                flex items-center justify-center text-xs font-semibold">
                 {i + 1}
               </span>
@@ -79,8 +81,8 @@ export default function Demo() {
 
         <Link
           to="/scan?demo=marcador"
-          className="block w-full py-4 rounded-2xl bg-realidad text-white font-semibold
-                     text-center hover:opacity-90 transition-colors"
+          className="block w-full py-4 rounded-2xl bg-tinta text-white font-semibold
+                     text-center hover:opacity-85 transition-opacity"
         >
           {c.abrir}
         </Link>
@@ -93,14 +95,14 @@ export default function Demo() {
         <a
           href="/targets/marcador-demo.png"
           download="inkar-marcador.png"
-          className="block text-center text-gray-400 text-sm underline mt-4 hover:text-white transition-colors"
+          className="block text-center text-neutral-600 text-sm underline mt-4 hover:text-black transition-colors"
         >
           {c.descargar}
         </a>
 
-        <p className="text-gray-600 text-xs leading-relaxed mt-8">{c.nota}</p>
+        <p className="text-neutral-500 text-xs leading-relaxed mt-8">{c.nota}</p>
 
-        <Link to="/" className="block text-center text-gray-500 text-sm underline mt-8">
+        <Link to="/" className="block text-center text-neutral-500 text-sm underline mt-8">
           {c.volver}
         </Link>
       </div>

@@ -309,3 +309,20 @@ Detalles de implementación:
 **Risks/Limitations:**
 - Las fuentes dependen de la red en el primer pintado dentro del APK. Se acepta porque la app ya no funciona sin red, y `display=swap` evita que el texto quede invisible.
 - El marcador del demo usa la gota como motivo. Cuando entre la K habrá que decidir si se rehace — implica recompilar el `.mind` y volver a medir el rastreo.
+
+## [2026-09-07] Tema claro en marketing, oscuro en el visor
+**Context:** El tablero de marca es mayormente claro —papel y tinta— y el estilo que buscan los estudios de tatuaje va por ahí. La app venía toda oscura por herencia del visor AR.
+
+**Decision:** Tema por pantalla. Landing y demo en claro (`#F7F7F7` sobre `#000000`); el visor AR se queda oscuro.
+
+**Por qué el visor NO puede ser claro:** el 3D se dibuja SOBRE el video de la cámara. Una interfaz clara encima compite con la imagen y lava el contraste del modelo, que es justo lo que hay que hacer resaltar. No es preferencia estética, es legibilidad del producto.
+
+**Por qué se marca `<html>` y no un contenedor:** el color de fondo del documento asoma al rebotar el scroll y detrás de las barras del sistema. Pintar solo un div deja franjas del color equivocado en los bordes, que es donde más se nota. El hook restaura el tema anterior al desmontar — sin eso, volver de la landing al visor dejaba el fondo claro debajo de la cámara. Verificado navegando en ambas direcciones.
+
+**El botón principal es negro, no violeta.** El tablero usa el violeta como acento, no como color de acción; en un diseño de papel y tinta, el negro es el que manda y el violeta gana fuerza justamente por ser escaso.
+
+**La textura de fondo es la propia K** a gran escala, sangrada por el borde y al 6% de opacidad. Los trazos de tinta sueltos del tablero nunca llegaron —el archivo entregado era la K duplicada— y usar el asset real en vez de inventar un pincel mantiene la coherencia del trazo.
+
+**Risks/Limitations:**
+- El resto de la app (activación, perfil, borrado de cuenta, privacidad) sigue en oscuro. Es mezcla deliberada por ahora, pero si se decide llevar todo a claro hay que convertir esas pantallas: usan clases de tema oscuro (`text-white`, `bg-white/5`) que no se adaptan solas.
+- El `data-tema` vive en el DOM y no en estado de React. Es correcto para algo que afecta al documento entero, pero significa que un componente no puede reaccionar al tema sin leerlo del DOM.
