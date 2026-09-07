@@ -362,3 +362,17 @@ Resultado: 390KB los tres, contra 1.2MB en RGBA. Y como el color sale del CSS, e
 **Risks/Limitations:**
 - `mask-image` necesita prefijo `-webkit-` para Safari; van los dos. Si algún navegador ignorara ambos, el trazo se vería como bloque sólido — el mismo síntoma del error anterior.
 - Los trazos solo están en la landing. Cuando se lleve el estilo al resto de la app hay que cuidar que no aparezcan sobre el visor AR.
+
+## [2026-09-07] Corrección del copy: el producto no es solo para duelos
+**Context:** La versión anterior abría con "casi nadie se tatúa por decorarse" y ejemplificaba solo con pérdidas: el perro que murió, la letra de la abuela. Es una premisa falsa y además excluyente — mucha gente lleva un dragón, una cruz o trabajo geométrico porque le gustó cómo se veía, y el producto les sirve igual.
+
+**Decision:** El eje pasa de *duelo* a **movimiento**. "Un tatuaje es una imagen que no se mueve. Ese es su límite, no su defecto." Y los ejemplos cubren los dos casos en la misma frase: el dragón abre las alas, la cruz se enciende, el perro vuelve a correr. Se cierra explícitamente: "da igual si tu tatuaje guarda una historia o simplemente te gustó cómo se veía".
+
+**Se elimina "el activador es tu piel, no tu cara".** La comparación con los filtros faciales no significaba nada para quien no piensa en filtros como categoría. Se reemplaza por diferencias observables: no vive dentro de una app, está atado al dibujo y no a tu teléfono, y se registra una vez pero se cambia cuando quieras.
+
+**Beneficios segmentados.** Lo que le sirve a un tatuado (entrar antes, créditos) y lo que le sirve a un estudio (programa, material para el local, aparecer en su ciudad) no se parecen. Una lista genérica obliga a cada uno a ignorar la mitad, y la mitad ignorada suele ser la que más pesa. La lista cambia con la selección del formulario.
+
+**Se retira el enlace "¿Ya tienes la app? Activa tu tatuaje"** del pie: la app no se ha liberado, así que le hablaba a un público que no existe y mandaba a una pantalla que quien llega no puede usar.
+
+**Risks/Limitations:**
+- Los beneficios son **promesas de negocio**, no texto de relleno: créditos de lanzamiento sin costo, material impreso para estudios, y aparecer en un directorio por ciudad. Ese directorio **no existe todavía**. Si alguno no se va a cumplir, hay que quitarlo de la landing antes de mandar tráfico.
