@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Gráfico destacado de la ficha de Play: 1024x500, medida fija que exige Google.
+
+  Sin texto pequeño a propósito: Play recorta este gráfico de forma distinta en
+  cada superficie (tarjeta, banner, TV) y cualquier texto cerca del borde se
+  pierde. Solo la marca, centrada y con margen amplio.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 500" width="1024" height="500">
+  <defs>
+    <linearGradient id="fondo" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#6D28D9"/>
+      <stop offset="100%" stop-color="#3B0F82"/>
+    </linearGradient>
+  </defs>
+  <rect width="1024" height="500" fill="url(#fondo)"/>
+
+  <!-- Marca a escala: el dibujo del icono vive en el centro de un lienzo de
+       108, así que se traslada y escala tomando ese centro como origen. -->
+  <g transform="translate(512 250) scale(3.1) translate(-54 -54)">
+    <path d="M54 33 C54 33 69 51 69 61 A15 15 0 1 1 39 61 C39 51 54 33 54 33 Z" fill="#fff"/>
+    <g fill="none" stroke="#fff" stroke-width="5" stroke-linecap="square">
+      <path d="M32 44 V32 H44"/><path d="M76 64 V76 H64"/>
+    </g>
+  </g>
+</svg>
