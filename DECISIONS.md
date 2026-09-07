@@ -79,3 +79,22 @@ El veredicto lo determina la métrica MÁS DÉBIL, no el promedio: un target con
 - Calibrar umbrales con datos reales y registrar el dataset.
 - Reutilizar el .mind entre analyze y compile.
 - Exponer el analizador en el UI de activación con feedback visual (heatmap de zonas débiles sobre la foto).
+
+## [2026-09-06] Worker de compilación desplegado en Railway
+**Context:** El worker corría local expuesto por ngrok. La URL cambia en cada reinicio, y como se compila DENTRO del bundle (`VITE_COMPILER_URL`), cada cambio obligaba a actualizar `.env`, Vercel y regenerar el APK. Pasó tres veces en un día. Para un demo a inversores era riesgo inaceptable: si ngrok cae cinco minutos antes, no hay demo.
+
+**Decision:** Railway con Dockerfile multi-etapa. URL fija: `inkwwell-production.up.railway.app`. Root Directory del servicio apuntando a `worker/`.
+
+**Alternatives considered:**
+- *ngrok con dominio reservado (~$8/mes):* da URL fija pero sigue dependiendo de la Mac encendida. No resuelve el problema real.
+- *Vercel Edge Function:* imposible. El worker usa `canvas` (módulo nativo de C) y consume CPU sostenida 10-30s — lo contrario del perfil serverless.
+- *Dockerfile de una sola etapa:* obliga a elegir entre imagen de ~1GB con toolchain, o apostar a que exista binario precompilado de `canvas` para la arquitectura destino. Dos etapas evita la apuesta.
+
+**Risks/Limitations:**
+- **Railway inyecta `PORT=8080`** ignorando el `EXPOSE 3001` del Dockerfile. El target port en Networking debe ser 8080. Con 3001 da 502 "Application failed to respond" mientras los logs muestran el servidor sano — el síntoma engaña.
+- No se pudo hacer smoke test local de la imagen (Docker Hub inalcanzable desde la Mac ese día). Se mitigó con el build de dos etapas, que funciona compile o no compile. Verificado después contra el deploy real: `/analyze` compiló 1000×1000 en 9.5s con resultados idénticos a los locales.
+- Cold start: si el servicio duerme, la primera petición paga arranque de contenedor además de la compilación.
+
+**Improvement opportunities:**
+- Reutilizar el `.mind` entre `/analyze` y `/compile` — hoy el flujo "analizar y luego activar" compilaría dos veces.
+- Rate limiting: los endpoints están abiertos sin auth. Aceptable en Phase 1, no en producción.
