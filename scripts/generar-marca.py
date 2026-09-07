@@ -14,11 +14,12 @@ Requiere: rsvg-convert (brew install librsvg) y Pillow.
 import subprocess
 import sys
 from pathlib import Path
-from PIL import Image, ImageDraw
+from PIL import Image, ImageDraw, ImageFont
 
 RAIZ = Path(__file__).resolve().parent.parent
 RES = RAIZ / 'android/app/src/main/res'
 K = RAIZ / 'brand/K.svg'
+FUENTE = RAIZ / 'brand/Montserrat.ttf'
 
 # Paleta del tablero de marca
 TINTA = (0, 0, 0, 255)          # #000000
@@ -96,6 +97,63 @@ def icono_legado(lado: int, redondo: bool) -> Image.Image:
     return img
 
 
+def _texto(cadena: str, px: int, peso: int = 600, tracking: float = 0.12,
+           color=TINTA) -> Image.Image:
+    """
+    Dibuja texto con espaciado entre letras.
+
+    PIL no soporta tracking, así que se avanza carácter por carácter usando el
+    avance real de la fuente (getlength) y no el ancho del glifo: con el ancho
+    se comerían los laterales y las letras quedarían pegadas de forma despareja.
+    """
+    f = ImageFont.truetype(str(FUENTE), px)
+    f.set_variation_by_axes([peso])
+    sep = int(px * tracking)
+    avances = [f.getlength(c) for c in cadena]
+    ancho = int(sum(avances) + sep * (len(cadena) - 1)) + px
+    alto = int(px * 1.6)
+    im = Image.new('RGBA', (ancho, alto), (0, 0, 0, 0))
+    d = ImageDraw.Draw(im)
+    x = px // 2
+    for c, av in zip(cadena, avances):
+        d.text((x, alto // 2), c, font=f, fill=color, anchor='lm')
+        x += av + sep
+    caja = im.getbbox()
+    return im.crop(caja) if caja else im
+
+
+def logo(alto_mayuscula: int = 200, color=TINTA) -> Image.Image:
+    """
+    Logotipo completo: IN + la K a pincel + AR.
+
+    Se genera como imagen en vez de componerse en HTML con texto real porque si
+    Montserrat carga tarde el logo brincaría al cambiar de tipografía — y lo
+    hace justo en la primera pantalla, que es donde más se nota.
+
+    La K se dibuja 1.9× la altura de mayúscula: su cuerpo queda a la altura de
+    las letras y las salpicaduras sobresalen, que es como se comporta en el
+    tablero de marca.
+    """
+    izq = _texto('IN', alto_mayuscula, color=color)
+    der = _texto('AR', alto_mayuscula, color=color)
+    k = _k_recortada(int(alto_mayuscula * 1.9))
+    if color != TINTA:
+        tinte = Image.new('RGBA', k.size, color)
+        tinte.putalpha(k.split()[-1])
+        k = tinte
+
+    hueco = int(alto_mayuscula * 0.10)
+    ancho = izq.width + hueco + k.width + hueco + der.width
+    alto = max(izq.height, k.height, der.height)
+    im = Image.new('RGBA', (ancho, alto), (0, 0, 0, 0))
+    for pieza, x in ((izq, 0),
+                     (k, izq.width + hueco),
+                     (der, izq.width + hueco + k.width + hueco)):
+        im.alpha_composite(pieza, (x, (alto - pieza.height) // 2))
+    caja = im.getbbox()
+    return im.crop(caja) if caja else im
+
+
 def main():
     if not K.exists():
         sys.exit(f'Falta {K}')
@@ -145,6 +203,11 @@ def main():
     (RES / 'drawable').mkdir(parents=True, exist_ok=True)
     generico.convert('RGB').save(RES / 'drawable/splash.png')
     print('  splash genérico')
+
+    # ── Logotipo completo, en tinta y en blanco ──
+    logo(220, color=TINTA).save(RAIZ / 'public/logo-inkar.png')
+    logo(220, color=(255, 255, 255, 255)).save(RAIZ / 'public/logo-inkar-blanco.png')
+    print('  logotipo completo')
 
     # ── La K blanca sobre transparente, para la landing oscura ──
     render(512, color=(255, 255, 255, 255)).save(RAIZ / 'public/marca-k.png')
