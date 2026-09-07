@@ -285,17 +285,26 @@ function Opcion({ activo, onClick, children }) {
 }
 
 /**
- * Logotipo tipográfico — la variante "sin descriptor" del tablero de marca.
+ * Marca completa: símbolo, logotipo y descriptor — la variante "vertical" del
+ * tablero.
  *
- * Se usa la palabra y no el símbolo de la K a propósito: el archivo vectorial
- * disponible de la K es un autotrazado que se lee como una mancha astillada, y
- * una marca mal reproducida daña más que su ausencia. Cuando llegue la K limpia
- * (1024px con transparencia real, o SVG de un programa de diseño) entra aquí.
+ * La K va como imagen y no como SVG en línea porque son ~180 trazos: en línea
+ * engordarían el HTML de todas las páginas que la muestren, mientras que como
+ * archivo se guarda en caché una vez y se reusa. Se sirve en blanco sobre
+ * transparente, generada desde brand/K.svg por scripts/generar-marca.py.
  */
 function Marca({ descriptor }) {
   return (
     <div className="text-center">
-      <p className="marca text-4xl sm:text-5xl">InkAR</p>
+      <img
+        src="/marca-k.png"
+        alt=""
+        aria-hidden="true"
+        className="w-24 h-24 mx-auto"
+        width={512}
+        height={512}
+      />
+      <p className="marca text-3xl sm:text-4xl mt-2">InkAR</p>
       <div className="w-10 h-px bg-realidad mx-auto my-4" />
       <p className="marca text-tecnologia text-[11px]">{descriptor}</p>
     </div>

@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Violeta de marca InkAR. Es el fondo del icono adaptativo: el lanzador
-         lo recorta con la forma que use el sistema (círculo, cuadrado
-         redondeado, gota), así que debe ser un color plano y no un dibujo. -->
-    <color name="ic_launcher_background">#6D28D9</color>
+    <!-- "Claridad" del tablero de marca (#F7F7F7). Fondo del icono adaptativo:
+         el lanzador lo recorta con la forma del sistema, así que debe ser color
+         plano. Se elige el claro y no el negro porque una K negra sobre claro
+         se distingue entre iconos que hoy son casi todos oscuros, y porque es
+         la variante principal del tablero. -->
+    <color name="ic_launcher_background">#F7F7F7</color>
 </resources>

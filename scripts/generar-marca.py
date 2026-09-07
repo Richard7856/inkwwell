@@ -18,9 +18,11 @@ from PIL import Image, ImageDraw
 
 RAIZ = Path(__file__).resolve().parent.parent
 RES = RAIZ / 'android/app/src/main/res'
-ICONO = RAIZ / 'brand/icono.svg'
+K = RAIZ / 'brand/K.svg'
 
-VIOLETA = (109, 40, 217, 255)   # #6D28D9 — color de marca
+# Paleta del tablero de marca
+TINTA = (0, 0, 0, 255)          # #000000
+CLARIDAD = (247, 247, 247, 255) # #F7F7F7 — fondo del icono
 NEGRO = (11, 11, 15, 255)       # #0B0B0F — fondo de la app y del splash
 
 # Densidades de Android. El icono adaptativo se dibuja en un lienzo de 108dp;
@@ -30,15 +32,53 @@ DENSIDADES = {'mdpi': 1, 'hdpi': 1.5, 'xhdpi': 2, 'xxhdpi': 3, 'xxxhdpi': 4}
 ESCALA_LEGADO = 108 / 72
 
 
-def render(px: int) -> Image.Image:
-    """Rasteriza el SVG del frente a `px` cuadrados, con transparencia."""
-    salida = Path('/tmp/_marca_tmp.png')
+# Proporción del lienzo de 108dp que puede ocupar el dibujo.
+#
+# El icono adaptativo mide 108dp pero el lanzador solo garantiza el círculo
+# central de 66dp: fuera de ahí recorta según la forma que use el sistema. La K
+# lleva salpicaduras, y una salpicadura cortada por la máscara no se lee como
+# estilo sino como un error de dibujo, así que TODO el arte —salpicaduras
+# incluidas— se encierra dentro de ese círculo.
+PROPORCION_SEGURA = 0.60
+
+
+def _k_recortada(px: int) -> Image.Image:
+    """La K rasterizada a `px` de alto y recortada a su contenido real."""
+    salida = Path('/tmp/_k_tmp.png')
     subprocess.run(['rsvg-convert', '-w', str(px), '-h', str(px),
-                    str(ICONO), '-o', str(salida)], check=True)
-    return Image.open(salida).convert('RGBA')
+                    str(K), '-o', str(salida)], check=True)
+    img = Image.open(salida).convert('RGBA')
+    # El SVG trae márgenes; se recorta al alfa para poder centrar de verdad.
+    caja = img.getbbox()
+    return img.crop(caja) if caja else img
 
 
-def sobre_fondo(frente: Image.Image, color=VIOLETA) -> Image.Image:
+def render(px: int, color=TINTA) -> Image.Image:
+    """
+    Capa FRENTE del icono: lienzo transparente de `px` con la K centrada.
+
+    Se compone aquí y no en un SVG con transform porque el arte no está
+    centrado en su propio viewBox: recortar al alfa y centrar por código evita
+    calcular a mano un desplazamiento que cambiaría con cada versión del asset.
+    """
+    lienzo = Image.new('RGBA', (px, px), (0, 0, 0, 0))
+    objetivo = int(px * PROPORCION_SEGURA)
+    k = _k_recortada(max(objetivo * 3, 600))
+    prop = min(objetivo / k.width, objetivo / k.height)
+    k = k.resize((max(1, int(k.width * prop)), max(1, int(k.height * prop))), Image.LANCZOS)
+
+    if color != TINTA:
+        # Recolorear conservando el alfa: la textura del pincel vive en el alfa,
+        # así que pintar encima con la máscara preserva cada salpicadura.
+        tinte = Image.new('RGBA', k.size, color)
+        tinte.putalpha(k.split()[-1])
+        k = tinte
+
+    lienzo.alpha_composite(k, ((px - k.width) // 2, (px - k.height) // 2))
+    return lienzo
+
+
+def sobre_fondo(frente: Image.Image, color=CLARIDAD) -> Image.Image:
     fondo = Image.new('RGBA', frente.size, color)
     return Image.alpha_composite(fondo, frente)
 
@@ -57,8 +97,8 @@ def icono_legado(lado: int, redondo: bool) -> Image.Image:
 
 
 def main():
-    if not ICONO.exists():
-        sys.exit(f'Falta {ICONO}')
+    if not K.exists():
+        sys.exit(f'Falta {K}')
 
     # ── Icono ──
     for nombre, factor in DENSIDADES.items():
@@ -90,7 +130,7 @@ def main():
             # Android, así que el dibujo real ocupa 61% del lienzo. Sin
             # compensarlo, la marca del splash se ve diminuta.
             lado = int(min(w, h) * 0.57)
-            marca = render(lado)
+            marca = render(lado, color=(255, 255, 255, 255))
             lienzo.alpha_composite(marca, ((w - lado) // 2, (h - lado) // 2))
             carpeta = RES / f'drawable-{orientacion}-{nombre}'
             carpeta.mkdir(parents=True, exist_ok=True)
@@ -100,10 +140,15 @@ def main():
     # También el splash genérico que algunos temas resuelven sin calificador
     generico = Image.new('RGBA', (1280, 1920), NEGRO)
     lado = int(1280 * 0.57)
-    generico.alpha_composite(render(lado), ((1280 - lado) // 2, (1920 - lado) // 2))
+    generico.alpha_composite(render(lado, color=(255, 255, 255, 255)),
+                             ((1280 - lado) // 2, (1920 - lado) // 2))
     (RES / 'drawable').mkdir(parents=True, exist_ok=True)
     generico.convert('RGB').save(RES / 'drawable/splash.png')
     print('  splash genérico')
+
+    # ── La K blanca sobre transparente, para la landing oscura ──
+    render(512, color=(255, 255, 255, 255)).save(RAIZ / 'public/marca-k.png')
+    print('  marca para la web')
 
     # ── Favicon web ──
     (RAIZ / 'public').mkdir(exist_ok=True)

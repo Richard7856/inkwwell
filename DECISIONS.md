@@ -285,12 +285,20 @@ El elegido usa la gota de la marca como motivo ornamental repetido: la densidad 
 
 **Adoptado:** paleta como tokens en `@theme` (`tinta` #000000, `realidad` #8B5CF6, `claridad` #F7F7F7, `tecnologia` #6B6B6B), Montserrat para títulos e Inter para cuerpo, y la voz — "Historias que siguen vivas", "Más que tinta. Otra realidad.", "Escanea. Descubre. Revive.". Los tokens se nombran por su PAPEL y no por su color, para que un ajuste de paleta no obligue a tocar cada componente.
 
-**Aplazado: el símbolo de la K.** Los archivos entregados no dan la talla y usarlos habría degradado la marca:
+**Aplazado y luego resuelto: el símbolo de la K.** El primer envío de archivos no daba la talla:
 - `INKAR_K_imagotipo.svg` es un autotrazado —su propio README lo admite— y renderizado se lee como una mancha astillada, no como el trazo del tablero.
 - El PNG es un recorte del tablero a 120×182 con fragmentos de elementos vecinos en el borde y fondo gris en vez de transparencia. El icono adaptativo necesita 432×432 limpios.
 - `INKAR_K_imagotipo.svg` y `INKAR_trazos_tinta.svg` son **el mismo archivo**: los trazos sueltos no llegaron.
 
-Mientras tanto la landing usa el **logotipo tipográfico** (la variante "sin descriptor" del tablero), que es identidad legítima y no una imitación. El icono de la app conserva la gota hasta que exista una K limpia.
+Se pidió el archivo bueno y llegó: `INKAR_K.svg`, 1254×1254 con ~180 trazos vectoriales que conservan la textura del pincel y las salpicaduras. **La K ya es la marca en todos lados**: icono adaptativo (fondo `#F7F7F7`, K negra), splash (K blanca sobre el negro de la app), favicon y encabezado de la landing.
+
+Detalles de implementación:
+- El arte no está centrado en su propio viewBox, así que el generador **recorta al alfa y centra por código** en vez de calcular a mano un desplazamiento que cambiaría con cada versión del asset.
+- Todo el arte —salpicaduras incluidas— se encierra en el 60% del lienzo: el lanzador solo garantiza el círculo central de 66 de 108dp, y una salpicadura cortada por la máscara no se lee como estilo sino como un error de dibujo. Verificado contra las tres máscaras (círculo, squircle, cuadrado).
+- La K blanca se obtiene recoloreando con el alfa como máscara: la textura del pincel vive en el alfa, así que pintar encima la conserva entera.
+- En la landing va como imagen y no como SVG en línea: son ~180 trazos que engordarían el HTML de cada página, mientras que un archivo se guarda en caché una vez.
+
+**Fondo claro y no negro** para el icono: la K negra sobre claro se distingue entre iconos que hoy son casi todos oscuros, y es la variante principal del tablero.
 
 **El nombre no cambia.** El tablero muestra "INKAR" en mayúsculas; eso es tratamiento tipográfico (clase `.marca`), no un cambio de nombre. En la tienda y en el sistema la app se sigue llamando InkAR, que es lo que está en revisión — cambiarlo obligaría a editar la ficha y sacar versión nueva sin ganancia.
 
