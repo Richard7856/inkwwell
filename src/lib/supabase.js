@@ -12,14 +12,19 @@ export const supabase = (supabaseUrl && supabaseAnonKey)
 /**
  * Crea un registro de tatuaje en la tabla `tattoos`.
  *
- * En Phase 1 no hay auth, por lo tanto user_id queda null.
- * El UUID generado por Supabase es el "identificador" del tatuaje
- * y se usa como parámetro en la URL de escaneo: /scan?tattoo=<uuid>
+ * El UUID que devuelve identifica al tatuaje y se usa en la URL de escaneo.
  *
- * @param {{ imageUrl: string, mindUrl: string, glbUrl: string }} tattooData
+ * @param {object} datos
+ * @param {string} datos.imageUrl
+ * @param {string} datos.mindUrl
+ * @param {string} datos.glbUrl
+ * @param {string|null} [datos.userId] - Dueño del tatuaje. Las políticas de la
+ *   base exigen que coincida con la sesión activa; enviarlo distinto es
+ *   rechazado por el servidor, no solo por el cliente.
+ * @param {number} [datos.targetIndex] - Posición dentro del .mind combinado
  * @returns {Promise<string>} UUID del tatuaje recién creado
  */
-export async function createTattoo({ imageUrl, mindUrl, glbUrl }) {
+export async function createTattoo({ imageUrl, mindUrl, glbUrl, userId = null, targetIndex = 0 }) {
   if (!supabase) {
     throw new Error('Supabase no configurado. Agrega VITE_SUPABASE_URL y VITE_SUPABASE_ANON_KEY a .env')
   }
@@ -31,7 +36,8 @@ export async function createTattoo({ imageUrl, mindUrl, glbUrl }) {
       mind_url: mindUrl,
       glb_url: glbUrl,
       is_active: true,
-      // user_id: null — Phase 1 sin auth. Phase 2: pasar el user id de Supabase Auth
+      user_id: userId,
+      target_index: targetIndex,
     })
     .select('id')
     .single()

@@ -6,6 +6,9 @@ import CompileStatus from '../components/UploadFlow/CompileStatus.jsx'
 import { uploadTattooImage, uploadMindFile } from '../lib/storage.js'
 import { createTattoo } from '../lib/supabase.js'
 import { compileMindFile } from '../lib/compiler.js'
+import { useAuth } from '../hooks/useAuth.js'
+import { ensureProfile } from '../lib/profile.js'
+import LoginGate from '../components/Auth/LoginGate.jsx'
 
 /**
  * Flujo de activación — Flujo A.
@@ -21,6 +24,7 @@ import { compileMindFile } from '../lib/compiler.js'
  * intentar con otro diseño o reintentar el mismo. Esto también preserva imageUrl.
  */
 export default function Activate() {
+  const { user, isLoggedIn, loading: cargandoSesion } = useAuth()
   const [step, setStep] = useState('upload') // upload | uploading | design | compiling | done
   const [imageUrl, setImageUrl] = useState(null)
   const [imageFile, setImageFile] = useState(null) // referencia al File original para el worker
@@ -90,10 +94,18 @@ export default function Activate() {
       // Paso 3: crear el registro en la tabla tattoos y obtener el UUID
       // Este UUID es el "identificador permanente" del tatuaje — vive en la URL de escaneo
       setCompileStage('saving')
+      /*
+        Se asegura el perfil antes de guardar: las políticas de la base exigen
+        que user_id coincida con la sesión, y el perfil es lo que sostiene el
+        link compartible del usuario.
+      */
+      const perfil = await ensureProfile(user)
+
       const id = await createTattoo({
         imageUrl,
         mindUrl,
         glbUrl: design.glbUrl,
+        userId: perfil.id,
       })
 
       setTattooId(id)
@@ -103,6 +115,35 @@ export default function Activate() {
       // Volver a 'design' — la foto ya está subida, no hace falta repetir ese paso
       setStep('design')
     }
+  }
+
+  /*
+    Solo se pide sesión a quien ACTIVA. Quien escanea nunca pasa por aquí.
+
+    Mientras se recupera la sesión del almacenamiento se muestra un intermedio:
+    sin él, en cada arranque aparecería el login por un instante aunque el
+    usuario ya estuviera dentro.
+  */
+  if (cargandoSesion) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="w-8 h-8 border-4 border-white/20 border-t-white rounded-full animate-spin" />
+      </div>
+    )
+  }
+
+  if (!isLoggedIn) {
+    return (
+      <div className="min-h-screen px-6 py-8 pb-safe">
+        <div className="flex items-center gap-3 mb-6">
+          <Link to="/" className="text-gray-500 hover:text-white transition-colors">
+            <BackArrow />
+          </Link>
+          <h1 className="text-2xl font-bold">Activa tu tatuaje</h1>
+        </div>
+        <LoginGate />
+      </div>
+    )
   }
 
   return (
