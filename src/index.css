@@ -42,3 +42,31 @@ html, body {
 .pb-safe {
   padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 2rem);
 }
+
+/*
+  Escenario AR — anula el recorte de tamaño del preflight de Tailwind.
+
+  EL BUG QUE ESTO RESUELVE:
+  El preflight de Tailwind incluye `img, video { max-width: 100%; height: auto }`.
+  MindAR dimensiona su <video> con estilos inline calculados para CUBRIR el
+  contenedor: sobre uno de 384x832 con un stream de 480x640 calcula
+  width:624px con left:-120px (sobresale a ambos lados y se recorta con
+  overflow:hidden — el equivalente a object-fit: cover).
+
+  max-width:100% recortaba ese ancho a 384px. No es cuestión de especificidad:
+  max-width es una restricción que se aplica DESPUÉS de calcular el ancho, así
+  que ni los estilos inline se le escapan. El left:-120px sí se aplicaba, así
+  que el video quedaba corrido a la izquierda y sobraba negro a la derecha.
+
+  Peor aún: el canvas del 3D NO se recortaba (la regla solo cubre img y video),
+  así que las dos capas dejaban de corresponder y el modelo aparecía desplazado
+  del tatuaje aunque el tracking funcionara bien.
+
+  Se limita al contenedor AR: el resto de la app sí quiere el comportamiento
+  responsivo del preflight.
+*/
+.ar-stage video,
+.ar-stage canvas {
+  max-width: none;
+  max-height: none;
+}

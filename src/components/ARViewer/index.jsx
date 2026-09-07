@@ -200,7 +200,7 @@ export default function ARViewer({ tattooId = 'default' }) {
       */}
       <div
         ref={containerRef}
-        className="w-full h-full"
+        className="ar-stage w-full h-full"
         style={{ position: 'relative', overflow: 'hidden', isolation: 'isolate' }}
       />
 
