@@ -1,6 +1,8 @@
 import { useEffect } from 'react'
+import { Capacitor } from '@capacitor/core'
 import { Routes, Route } from 'react-router-dom'
 import Home from './pages/Home.jsx'
+import Landing from './pages/Landing.jsx'
 import Scan from './pages/Scan.jsx'
 import Activate from './pages/Activate.jsx'
 import Profile from './pages/Profile.jsx'
@@ -26,7 +28,19 @@ function App() {
 
   return (
     <Routes>
-      <Route path="/" element={<Home />} />
+      {/*
+        La raíz sirve a dos públicos distintos.
+
+        En el navegador llega gente que no conoce el producto: va la landing,
+        cuyo único objetivo es recoger su correo. Dentro del APK arranca quien
+        YA instaló: mostrarle una página de marketing pidiéndole el correo que
+        ya dio sería absurdo, así que ve el inicio de la app.
+
+        Se resuelve aquí y no con dos rutas distintas porque Capacitor arranca
+        siempre en "/" y cambiar eso exige configuración nativa.
+      */}
+      <Route path="/" element={Capacitor.isNativePlatform() ? <Home /> : <Landing />} />
+      <Route path="/app" element={<Home />} />
       <Route path="/scan" element={<Scan />} />
       <Route path="/activate" element={<Activate />} />
       <Route path="/profile" element={<Profile />} />

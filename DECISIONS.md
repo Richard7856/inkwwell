@@ -227,3 +227,24 @@ Además, si el borrado de la identidad falla de todos modos (por ejemplo si esa 
 **Risks/Limitations:**
 - La comprobación depende de tablas de OTRA aplicación. Si esa app se reestructura, este resguardo puede quedar obsoleto en silencio. El arreglo de fondo sigue siendo separar los proyectos de Supabase.
 - Un usuario invitado a un espacio que nunca aceptó podría quedar clasificado como "usuario real" de la otra app y recibir borrado parcial. Es el lado seguro del error.
+
+## [2026-09-07] Landing pública con lista de espera
+**Context:** El bundle quedó en revisión de Play. Mientras Google responde, no hay nada que capture demanda — y el premio mayor del Shipaton pondera crecimiento post-lanzamiento, que se construye antes de lanzar, no después.
+
+**Decision:** Landing en `inkar.app` con un solo objetivo: recoger correos. Un formulario, visible antes de tener que desplazarse.
+
+**Por qué la landing y la app comparten la ruta `/`:** Capacitor arranca siempre en `/` y cambiarlo exige configuración nativa. Si `/` fuera la landing, quien ya instaló la app abriría cada vez una página de marketing pidiéndole el correo que ya dio; si la landing viviera en otra ruta, quien llega de una búsqueda o del cartel de un estudio caería en la app sin contexto. `App.jsx` decide con `Capacitor.isNativePlatform()`: navegador → landing, app → inicio.
+
+**Cambios a la tabla `waitlist`** (existía de un concepto anterior, vacía):
+- **Índice único sobre `lower(email)`.** Sin él la misma persona se inscribe varias veces y el tamaño de la lista deja de significar algo. Se eligió `lower()` y no un unique simple porque la prueba con el mismo correo en distinta capitalización sí colaba un duplicado.
+- **Columna `perfil`** (`persona` | `artista`). Los estudios son el CANAL de distribución, no un segmento más: 15 estudios valen más que 200 personas sueltas porque cada uno trae su cartera. Sin la columna habría que adivinar quién es quién leyendo correos.
+- **Columna `ciudad`**, pedida solo a estudios: para una persona es fricción sin propósito, pero decide en qué plaza arrancar el canal.
+
+**Sobre el acceso:** existe política de INSERT público y **ninguna de SELECT**, deliberadamente. Verificado contra producción: leyendo `/rest/v1/waitlist` con la llave anónima del bundle devuelve `[]`. La lista se consulta desde el panel o con llave de servicio.
+
+**Verificado de punta a punta:** alta correcta (correo, perfil, ciudad, origen), alta repetida con distinta capitalización devuelve "ya estabas" en vez de un error, y ambos idiomas. La fila de prueba se eliminó.
+
+**Risks/Limitations:**
+- El correo del duplicado se responde con éxito. Es deliberado —el usuario hizo lo correcto— pero significa que la landing no distingue entre "te acabas de inscribir" y "ya estabas" en las métricas del cliente.
+- No hay confirmación por correo: la lista puede acumular direcciones inválidas. Aceptable para una lista de espera; no lo sería para enviar el lanzamiento sin verificar antes.
+- El contenido de la landing vive en dos objetos por idioma dentro del componente. Si crece mucho conviene moverlo a archivos aparte.
