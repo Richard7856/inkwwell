@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react'
+import { extractInk } from '../../lib/inkExtractor.js'
 
 /**
  * Captura o selección de foto del tatuaje.
@@ -100,10 +101,24 @@ export default function PhotoUpload({ onPhotoSelected }) {
       }
       setPreview(img.src)
 
+      /*
+        Extraer la capa de tinta para mostrarla durante la compilación.
+
+        Va envuelto en try/catch porque es puramente decorativo: si el canvas
+        falla (memoria, un filtro no soportado), la activación debe continuar
+        igual. Nunca se compila esta máscara — se compila la foto con piel.
+      */
+      let inkLayer = null
+      try {
+        inkLayer = extractInk(img).maskCanvas.toDataURL('image/png')
+      } catch (err) {
+        console.warn('[PhotoUpload] No se pudo extraer la capa de tinta:', err.message)
+      }
+
       // Reducir antes de entregarla: el tiempo de compilación crece de forma
       // explosiva con los píxeles (ver comentario en downscaleImage)
       const optimized = await downscaleImage(file, img)
-      onPhotoSelected(optimized)
+      onPhotoSelected(optimized, inkLayer)
     }
     img.onerror = () => {
       setError('No se pudo leer la imagen. Intenta con otra.')

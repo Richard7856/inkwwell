@@ -31,6 +31,8 @@ export default function Activate() {
   const [compileProgress, setCompileProgress] = useState(0)
   const [compileStage, setCompileStage] = useState('compiling')
   const [elapsed, setElapsed] = useState(0)
+  // Capa de tinta extraída de la foto — solo para mostrar durante la compilación
+  const [inkLayer, setInkLayer] = useState(null)
 
   /*
     Cronómetro de la etapa de compilación.
@@ -51,12 +53,13 @@ export default function Activate() {
     return () => clearInterval(id)
   }, [step])
 
-  const handlePhotoSelected = async (file) => {
+  const handlePhotoSelected = async (file, extractedInk = null) => {
     setStep('uploading')
     setError('')
 
     // Guardar referencia al File — lo necesitamos después para el worker de compilación
     setImageFile(file)
+    setInkLayer(extractedInk)
 
     try {
       const { url } = await uploadTattooImage(file)
@@ -148,6 +151,7 @@ export default function Activate() {
           stage={compileStage}
           progress={compileProgress}
           elapsedSeconds={elapsed}
+          inkLayer={inkLayer}
         />
       )}
 
