@@ -122,3 +122,81 @@ El veredicto lo determina la métrica MÁS DÉBIL, no el promedio: un target con
 **Improvement opportunities:**
 - Selector visual cuando hay varios tatuajes rastreados a la vez.
 - Carga diferida del modelo: hoy se cargan todos al iniciar; con muchos tatuajes convendría cargar el modelo al detectar su target.
+
+## [2026-09-07] Borrado de cuenta: Edge Function, y por qué NO borra siempre la identidad
+**Context:** Google Play no aprueba una app con cuentas si no ofrece dos caminos de borrado: uno dentro de la app y una dirección web pública donde cualquiera pueda pedirlo **sin instalar nada**. Sin esto no hay publicación, y sin publicación no hay concurso.
+
+**Decision:** Una Edge Function de Supabase (`eliminar-cuenta`) y una sola pantalla (`/eliminar-cuenta`) que sirve a los dos caminos. La función borra al **dueño del token de sesión**, nunca a un correo recibido en la petición; quien llega por web sin la app se identifica con el mismo código de 6 dígitos del login.
+
+**El hallazgo que cambió el diseño:** este proyecto de Supabase está compartido con otra aplicación (la de `spaces`/`projects`/`tasks`), que cuelga su tabla `profiles` del mismo `auth.users`. Se verificó contra la base: hoy los **2 únicos usuarios de `auth.users` son de esa otra app**, y `spaces_owner_id_fkey` es **RESTRICT**, no cascade. Borrar la identidad a ciegas tenía dos finales, ambos malos: destruir la cuenta que esa persona tiene en la otra app sin haberlo pedido, o fallar con un error de llave foránea incomprensible.
+
+Por eso el borrado es en dos niveles: **los datos de Inkwell se borran siempre**; la identidad de acceso solo cuando ninguna otra app la usa. Con cero traslape hoy, el camino normal es el borrado completo.
+
+**Orden de operaciones (no es arbitrario):** las llaves foráneas son `on delete cascade`, pero **los archivos de Storage no cascadean**. Borrar las filas primero destruiría las URLs y dejaría fotos y descriptores huérfanos y públicos para siempre — una fuga permanente disfrazada de borrado exitoso. Secuencia: leer URLs → borrar archivos → borrar filas → borrar identidad. Si el borrado de archivos falla, se aborta **sin tocar las filas**, para que un reintento aún pueda localizarlos.
+
+**Alternatives considered:**
+- *Endpoint en el worker de Railway:* descartado. Ya tiene endpoints abiertos sin auth (riesgo registrado en este mismo documento); darle la llave de servicio ampliaría el radio de daño de algo ya expuesto.
+- *Confiar solo en `verify_jwt` de la pasarela:* descartado y **comprobado como insuficiente**. La pasarela acepta la llave anónima —que va pública en el bundle— como JWT válido. Verificado contra el despliegue real: con la llave anónima como token la petición **llega** a la función y solo la muere el `getUser()` explícito (HTTP 401).
+- *Borrado diferido con periodo de gracia de 30 días:* descartado por ahora. Play acepta el borrado inmediato, y el diferido exige un trabajo programado que hoy no existe.
+- *Separar los proyectos de Supabase:* es el arreglo de fondo, pero es una migración completa a 23 días del cierre. Se difiere.
+
+**Risks/Limitations:**
+- **El camino feliz no está probado de extremo a extremo.** No hay llave de servicio local para fabricar una sesión, y hoy existen 0 cuentas de Inkwell. Lo verificado es el rechazo de credenciales inválidas (4 casos) y el preflight CORS. Falta que una persona real active un tatuaje y lo borre.
+- Los 5 tatuajes existentes tienen `user_id` nulo (previos al login): nadie es su dueño y **nadie puede borrarlos** por este camino. Son datos de prueba del founder; la política transitoria de RLS que permite el nulo debe retirarse.
+- Mientras el traslape con la otra app no sea cero, algunas cuentas quedarán en borrado parcial. Es correcto, pero hay que sostener la explicación si un revisor pregunta.
+- La política de privacidad afirma cosas verificables en el código (la cámara no sube frames, Railway no guarda la foto). Si eso cambia, **la política miente**: hay una nota en el encabezado del archivo pidiendo revisarla al tocar esas rutas.
+
+**Improvement opportunities:**
+- Separar los proyectos de Supabase y eliminar el borrado en dos niveles.
+- Registro de borrados (fecha y alcance, sin datos personales) para poder responder a un reclamo.
+- Retirar la rama de `user_id` nulo en las políticas de RLS y limpiar los 5 tatuajes huérfanos.
+
+## [2026-09-07] Cambio de marca a InkAR y renombre del paquete
+**Context:** Ya existía en Play Store una app llamada Inkwell en el mismo nicho de tatuajes. Se adoptó el dominio `inkar.app` y el correo `contacto@inkar.app`.
+
+**Decision:** El nombre visible pasa a **InkAR** y el identificador del paquete de `ar.inkwell.app` a **`app.inkar`** (dominio invertido).
+
+**Por qué el renombre del paquete tenía que ser AHORA:** el `applicationId` queda congelado en el momento de publicar y no se puede cambiar nunca más — cambiarlo después obliga a publicar una app distinta, perdiendo instalaciones y reseñas. Como la app aún no se publica, esta era la única ventana. Dejar "inkwell" dentro del identificador, además, sería evidencia incómoda si el conflicto de nombre escalara a un reclamo de marca.
+
+Alcance del renombre: paquete Java (`MainActivity`), `namespace` y `applicationId` de Gradle, `strings.xml`, `capacitor.config.json`, título y descripción del HTML, textos visibles, y el correo de contacto en la política de privacidad y en la Edge Function. El valor `solo_inkwell` que la función devuelve al cliente pasó a `solo_inkar` en ambos lados. **No** se renombraron el directorio del proyecto, el repositorio ni el proyecto de Vercel: son internos y renombrarlos rompe rutas y despliegues sin beneficio.
+
+**Risks/Limitations:**
+- El APK instalado en los dispositivos de prueba tiene el paquete viejo: no se actualiza, se instala **al lado**. Hay que desinstalar el anterior a mano.
+- El dominio `inkar.app` todavía no está conectado en Vercel. Las URLs legales que se registren en Play Console deben ser las definitivas: registrar las de `inkwwell.vercel.app` obligaría a volver a pasar por revisión al cambiarlas.
+
+## [2026-09-07] SDK de RevenueCat instalado ANTES del primer bundle
+**Context:** Google Play no habilita la creación de productos de compra hasta que se sube un bundle que ya incluya la librería de facturación. Instalar el SDK después del primer envío habría costado un ciclo completo de recompilar y volver a subir, dentro del bloque más apretado del sprint.
+
+**Decision:** `@revenuecat/purchases-capacitor@13.5.0` instalado y sincronizado antes de generar el primer AAB. **Verificado contra un build real**, no supuesto: el manifiesto fusionado (`processDebugMainManifest`) declara `com.android.vending.BILLING` y el paquete `app.inkar`. El manifiesto propio del plugin viene vacío — el permiso llega por fusión desde la librería de facturación transitiva, así que leer el plugin no bastaba para confirmarlo.
+
+**Decisiones de diseño en `src/lib/billing.js`:**
+- **No-op en navegador.** El plugin es un puente a código Android y revienta en web. La web es justo donde vive el circuito de crecimiento (abrir la liga de un tatuaje sin instalar nada); que el cobro tumbara esa pantalla rompería lo viral del producto por una función que esa persona no va a usar.
+- **`appUserID` = id de Supabase.** Sin él RevenueCat inventa un identificador anónimo por instalación y las compras quedan atadas al teléfono, no a la persona: al cambiar de celular se perderían los créditos y no habría forma de reconciliarlos con Supabase.
+- **Nunca lanza.** Un fallo de cobro no puede impedir que la app abra; se registra en consola y el cobro queda inhabilitado.
+
+**Alternatives considered:**
+- *Instalarlo en el Bloque 2, junto con el paywall:* descartado por el orden de Play descrito arriba.
+- *Cobro web con Stripe en vez de in-app:* la decisión de cobrar todo por RevenueCat sigue en pie. RevenueCat también factura por web, y el patrocinio de Stripe abre una categoría de premio para el funnel web-a-app; se revisará cuando el motor de video esté conectado, no antes.
+
+**Risks/Limitations:**
+- **Sin probar de extremo a extremo.** Falta la llave `VITE_REVENUECAT_ANDROID_KEY`, que no existe hasta crear el proyecto en RevenueCat. Lo verificado es que el permiso entra al bundle y que la web no se rompe.
+- La cuenta de servicio de Google Cloud que RevenueCat necesita **tarda hasta ~36 horas** en propagar permisos. Es el trámite más lento de la cadena y hay que arrancarlo el día que se cree la app en Play Console.
+
+## [2026-09-07] Identidad visual: generador en vez de PNGs a mano
+**Context:** El icono y el splash eran los genéricos de Capacitor. Son 20+ archivos en 5 densidades; hechos a mano, cualquier ajuste obliga a rehacerlos uno por uno y basta olvidar una densidad para que un teléfono muestre el icono viejo.
+
+**Decision:** Una sola fuente en `brand/icono.svg` y un generador (`scripts/generar-marca.py`) que produce icono adaptativo, icono legado, versión redonda, los 512×512 de la ficha de Play, los splash en ambas orientaciones y el favicon web.
+
+**Marca:** gota de tinta (el tatuaje) enmarcada por dos corchetes de visor (la cámara que la reconoce). Violeta `#6D28D9` sobre el negro `#0B0B0F` de la app.
+
+**Lo que se descartó al probarlo, no antes:** una primera versión tenía muescas cuadradas mordiendo el borde de la gota para sugerir lo digital. Renderizada a 48px leen como suciedad, no como pixelado, y el corchete inferior chocaba con la gota. A ese tamaño cada forma extra resta legibilidad en vez de sumar significado. La gota se encogió para que los corchetes respiren.
+
+**Verificado, no supuesto:**
+- El dibujo vive dentro del círculo seguro de 66dp: se simularon las tres máscaras reales de lanzador (círculo, squircle, cuadrado) y ninguna recorta contenido.
+- El 512 de la ficha salió en RGB sin canal alfa — Play rechaza iconos con transparencia.
+- El bundle firmado contiene los 15 PNG de icono en las 5 densidades, con los tamaños correctos.
+
+**Risks/Limitations:**
+- El generador depende de `rsvg-convert` (`brew install librsvg`). En una máquina sin él, falla en vez de producir assets malos, que es lo correcto.
+- El splash no lleva texto a propósito: depender de una fuente del sistema haría que el resultado cambie según la máquina que lo genere.
+- `OU=InkAr` (con r minúscula) quedó en el certificado de firma. Campo cosmético que nadie ve; no justifica rehacer la llave.

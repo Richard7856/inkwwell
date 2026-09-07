@@ -13,7 +13,7 @@ export default function Home() {
   return (
     <div className="flex flex-col items-center justify-center min-h-screen px-6 text-center">
       <h1 className="text-4xl font-bold tracking-tight mb-2">
-        Inkwell AR
+        InkAR
       </h1>
       <p className="text-gray-400 text-lg mb-10 max-w-xs">
         Tu tatuaje cobra vida en realidad aumentada
@@ -58,6 +58,17 @@ export default function Home() {
           corre el dispositivo. El APK se instala a mano y es fácil quedarse con
           uno viejo sin notarlo. Se inyecta en vite.config.js */}
       <p className="text-gray-800 text-[10px] mt-6 font-mono">{__BUILD_ID__}</p>
+
+      {/* Play exige que ambos caminos sean alcanzables DENTRO de la app, no solo
+          por su dirección web. Aquí abajo porque son trámite, no producto. */}
+      <div className="flex gap-4 mt-6 text-[11px] text-gray-600">
+        <Link to="/privacidad" className="underline hover:text-gray-400 transition-colors">
+          Privacidad
+        </Link>
+        <Link to="/eliminar-cuenta" className="underline hover:text-gray-400 transition-colors">
+          Eliminar mi cuenta
+        </Link>
+      </div>
     </div>
   )
 }

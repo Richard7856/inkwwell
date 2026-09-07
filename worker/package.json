@@ -1,7 +1,7 @@
 {
-  "name": "inkwell-ar-worker",
+  "name": "inkar-worker",
   "version": "1.0.0",
-  "description": "Worker de compilación .mind para Inkwell AR — recibe foto de tatuaje, devuelve image target compilado",
+  "description": "Worker de compilación .mind para InkAR — recibe foto de tatuaje, devuelve image target compilado",
   "type": "module",
   "scripts": {
     "start": "node index.js",

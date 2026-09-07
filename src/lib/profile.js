@@ -1,11 +1,11 @@
 /**
- * Perfil de Inkwell del usuario: su link compartible y el .mind con todos sus
+ * Perfil de InkAR del usuario: su link compartible y el .mind con todos sus
  * tatuajes.
  *
  * El perfil se crea desde aquí y NO con un disparador sobre auth.users, porque
  * este proyecto de Supabase se comparte con otra aplicación: un disparador se
  * ejecutaría también con las altas de esa app y generaría perfiles de gente que
- * nunca usó Inkwell.
+ * nunca usó InkAR.
  */
 import { supabase } from './supabase.js'
 

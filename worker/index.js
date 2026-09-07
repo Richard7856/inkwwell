@@ -1,5 +1,5 @@
 /**
- * Worker de compilación .mind para Inkwell AR.
+ * Worker de compilación .mind para InkAR.
  *
  * Responsabilidad única: recibir la foto de un tatuaje (multipart/form-data),
  * compilarla en un image target MindAR (.mind), y devolver el binario.
@@ -21,7 +21,7 @@ import { analyzeTattooImage } from './analyzer.js'
 const app = express()
 
 // CORS abierto — el frontend viene de un origen diferente (Vite :5173 o Vercel)
-// En producción Railway se puede restringir al dominio de Inkwell AR
+// En producción Railway se puede restringir al dominio de InkAR
 app.use(cors())
 
 // multer con memory storage — la imagen nunca toca disco, vive en RAM durante compilación
@@ -42,7 +42,7 @@ const upload = multer({
 
 // Health check — usado por Railway y para verificar que ngrok está activo
 app.get('/health', (_, res) => {
-  res.json({ status: 'ok', service: 'inkwell-ar-worker', timestamp: new Date().toISOString() })
+  res.json({ status: 'ok', service: 'inkar-worker', timestamp: new Date().toISOString() })
 })
 
 // POST /compile — endpoint principal
@@ -207,7 +207,7 @@ app.use((err, req, res, _next) => {
 
 const PORT = process.env.PORT || 3001
 app.listen(PORT, () => {
-  console.log(`\n🖋️  Inkwell AR Worker corriendo en http://localhost:${PORT}`)
+  console.log(`\n🖋️  InkAR Worker corriendo en http://localhost:${PORT}`)
   console.log(`   Health check: http://localhost:${PORT}/health`)
   console.log(`   Compile:      POST http://localhost:${PORT}/compile`)
   console.log(`   Analyze:      POST http://localhost:${PORT}/analyze\n`)

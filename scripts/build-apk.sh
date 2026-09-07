@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Genera el APK de debug de Inkwell AR para instalar en Android.
+# Genera el APK de debug de InkAR para instalar en Android.
 #
 # POR QUÉ ESTE SCRIPT EXISTE:
 # Capacitor 8 exige JDK 21 para compilar. Muchas Macs tienen JDK 17 como default
@@ -48,7 +48,7 @@ cd android
 cd "$PROJECT_ROOT"
 
 APK="android/app/build/outputs/apk/debug/app-debug.apk"
-OUT="inkwell-ar.apk"
+OUT="inkar.apk"
 cp "$APK" "$OUT"
 
 echo ""
@@ -60,7 +60,7 @@ if [ "${1:-}" = "--install" ]; then
     echo "Instalando en el device conectado..."
     # -r reinstala conservando datos; -d permite downgrade de versionCode
     adb install -r -d "$OUT"
-    echo "✓ Instalado. Busca 'Inkwell AR' en el cajón de apps."
+    echo "✓ Instalado. Busca 'InkAR' en el cajón de apps."
   else
     echo ""
     echo "No hay device conectado por adb."

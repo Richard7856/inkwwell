@@ -8,18 +8,21 @@
 #
 # PRIMERA VEZ — crear la llave de firma:
 #
-#   keytool -genkey -v -keystore ~/inkwell-release.jks \
-#     -keyalg RSA -keysize 2048 -validity 10000 -alias inkwell
+#   keytool -genkey -v -keystore ~/inkar-release.jks \
+#     -keyalg RSA -keysize 2048 -validity 10000 -alias inkar
 #
 #   Después crear android/keystore.properties con:
-#     storeFile=/Users/TU_USUARIO/inkwell-release.jks
+#     storeFile=/Users/TU_USUARIO/inkar-release.jks
 #     storePassword=...
-#     keyAlias=inkwell
+#     keyAlias=inkar
 #     keyPassword=...
 #
 # ⚠️ RESPALDA LA LLAVE EN MÁS DE UN LUGAR.
-# Si se pierde, no se puede volver a actualizar la app jamás: hay que publicarla
-# de cero con otro identificador, perdiendo instalaciones y reseñas.
+#
+# Matiz importante: las apps nuevas usan obligatoriamente Play App Signing, donde
+# Google guarda la llave REAL de firma y esta .jks es solo la "llave de subida".
+# Perderla NO es irreversible — se pide a Google restablecerla — pero el trámite
+# tarda días. En un sprint con fecha dura, días es igual de caro.
 
 set -euo pipefail
 
@@ -59,7 +62,7 @@ cd android
 cd "$PROJECT_ROOT"
 
 AAB="android/app/build/outputs/bundle/release/app-release.aab"
-OUT="inkwell-ar.aab"
+OUT="inkar.aab"
 cp "$AAB" "$OUT"
 
 echo ""

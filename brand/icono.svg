@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Capa FRENTE del icono adaptativo de InkAR.
+
+  Lienzo de 108x108 como exige Android. Todo el contenido vive dentro del
+  círculo seguro de 66 de diámetro centrado en (54,54): fuera de ahí, los
+  lanzadores que recortan en círculo se comen el dibujo. Por eso el mark se ve
+  pequeño en el archivo — es correcto, la máscara amplía.
+
+  Concepto: gota de tinta (el tatuaje) enmarcada por dos corchetes de visor
+  (la cámara que la reconoce).
+
+  Se probó agregar muescas cuadradas en el borde de la gota para sugerir lo
+  digital: a 48px leen como suciedad, no como pixelado. Retiradas a propósito —
+  a este tamaño, cada forma extra resta legibilidad en vez de sumar significado.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 108 108" width="108" height="108">
+  <!-- Gota: vértice arriba, cuerpo circular abajo. Deliberadamente compacta
+       para que los corchetes respiren y no la toquen. -->
+  <path d="M54 33 C54 33 69 51 69 61 A15 15 0 1 1 39 61 C39 51 54 33 54 33 Z"
+        fill="#ffffff"/>
+
+  <!-- Corchetes de visor en esquinas opuestas. Trazo 5 para que sobrevivan
+       al escalado a 48px; más delgado se deshace. -->
+  <g fill="none" stroke="#ffffff" stroke-width="5" stroke-linecap="square">
+    <path d="M32 44 V32 H44"/>
+    <path d="M76 64 V76 H64"/>
+  </g>
+</svg>

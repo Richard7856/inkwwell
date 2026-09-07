@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">Inkwell AR</string>
-    <string name="title_activity_main">Inkwell AR</string>
-    <string name="package_name">ar.inkwell.app</string>
-    <string name="custom_url_scheme">ar.inkwell.app</string>
+    <string name="app_name">InkAR</string>
+    <string name="title_activity_main">InkAR</string>
+    <string name="package_name">app.inkar</string>
+    <string name="custom_url_scheme">app.inkar</string>
 </resources>

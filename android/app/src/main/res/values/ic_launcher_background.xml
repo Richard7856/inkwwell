@@ -1,4 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="ic_launcher_background">#FFFFFF</color>
+    <!-- Violeta de marca InkAR. Es el fondo del icono adaptativo: el lanzador
+         lo recorta con la forma que use el sistema (círculo, cuadrado
+         redondeado, gota), así que debe ser un color plano y no un dibujo. -->
+    <color name="ic_launcher_background">#6D28D9</color>
 </resources>

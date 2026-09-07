@@ -5,7 +5,7 @@
 
 ## Meta
 
-Competir en el **RevenueCat Shipaton 2026** con Inkwell AR, publicando en Google
+Competir en el **RevenueCat Shipaton 2026** con InkAR, publicando en Google
 Play y consiguiendo los primeros clientes reales.
 
 **Fecha límite: 30 de septiembre de 2026, 11:45pm PDT.**
@@ -19,7 +19,7 @@ Fuente: https://revenuecat-shipaton-2026.devpost.com/rules (consultado 7 sep 202
 |---|---|
 | La app debe estar **PUBLICADA** (no solo enviada) para el 30 de septiembre | Publicar temprano, no el último día |
 | SDK de RevenueCat obligatorio para al menos una compra in-app **o web** | Todo el cobro pasa por ahí |
-| La primera versión pública debe salir entre el 31 jul y el 30 sep | Inkwell nunca se publicó → califica |
+| La primera versión pública debe salir entre el 31 jul y el 30 sep | InkAR nunca se publicó → califica |
 | Actualizaciones a apps publicadas ANTES no califican | Las otras apps de Richard no estorban |
 | Debe ser accesible desde Estados Unidos, con prueba gratis o código promocional | Los jueces deben poder probarla |
 | El premio mayor pondera lanzamiento temprano, crecimiento post-lanzamiento y monetización | **Facturar por RevenueCat es la métrica** |
@@ -48,13 +48,15 @@ Meta: **app viva en Play antes del día 14**, aunque sea mínima.
 |---|---|---|
 | Richard | Generar y **respaldar** la llave de firma | ⬜ |
 | Richard | Crear la app en Play Console, subir primer bundle a prueba interna | ⬜ |
+| Richard | Conectar el dominio inkar.app en Vercel (las URLs legales viven ahí) | ⬜ |
+| Richard | Cuenta de servicio de Google Cloud para RevenueCat (**tarda ~36h**) | ⬜ |
 | Richard | Crear productos de compra (créditos) en Play Console | ⬜ |
 | Richard | Conectar RevenueCat con esos productos | ⬜ |
-| Claude | Icono y splash propios (hoy son los de Capacitor) | ⬜ |
+| Claude | Icono y splash propios (hoy son los de Capacitor) | ✅ |
 | Claude | **Modo "activa cualquier cosa"** para jueces sin tatuaje | ⬜ |
-| Claude | Borrado de cuenta (lo exige Play) | ⬜ |
-| Claude | Política de privacidad publicada | ⬜ |
-| Claude | SDK de RevenueCat en la app | ⬜ |
+| Claude | Borrado de cuenta (lo exige Play) | 🟡 hecho, falta desplegar |
+| Claude | Política de privacidad publicada | 🟡 hecha, falta desplegar |
+| Claude | SDK de RevenueCat en la app | 🟡 instalado y configurado, falta la llave |
 | Claude | Conectar el analizador al flujo de activación | ⬜ |
 
 ### Bloque 2 · Motor de video (14–21 sep)
@@ -86,7 +88,7 @@ Meta: **app viva en Play antes del día 14**, aunque sea mínima.
 | Rechazo en la revisión de Play | Alto si pasa tarde | Publicar el día 14, no el 28 | Mitigado por calendario |
 | Tatuajes que trackean mal generan reembolsos | Alto para la reputación | Conectar el analizador y rechazar fotos malas **antes** de cobrar | ⬜ |
 | Límite de correos de Supabase corta el registro | Medio | SMTP propio (Resend/SendGrid) antes del lanzamiento | ⬜ |
-| Perder la llave de firma | **Irreversible** | Respaldo en dos lugares distintos | ⬜ |
+| Perder la llave de subida | Alto | Respaldo en dos lugares distintos. Con Play App Signing es recuperable pidiéndoselo a Google, pero tarda días | ⬜ |
 
 ## Decisiones tomadas
 

@@ -11,7 +11,7 @@ enlace y el usuario nunca llegaría a ver el código.
 Reemplazar el cuerpo por:
 
 ```html
-<h2>Tu código de acceso a Inkwell</h2>
+<h2>Tu código de acceso a InkAR</h2>
 <p>Escribe este código en la app:</p>
 <p style="font-size:32px;font-weight:bold;letter-spacing:8px;font-family:monospace">
   {{ .Token }}

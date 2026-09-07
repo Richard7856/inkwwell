@@ -35,13 +35,13 @@ Por eso: un contenedor de larga vida (Railway, Render, Fly, un VPS).
    logs se vea el servidor arrancado perfectamente.
 
    Para saber en qué puerto quedó escuchando, mirar el Deploy Log:
-   `🖋️  Inkwell AR Worker corriendo en http://localhost:____`
+   `🖋️  InkAR Worker corriendo en http://localhost:____`
    Ese número es el que va en el target port.
 
 5. Verificar:
    ```bash
    curl https://TU-URL.up.railway.app/health
-   # → {"status":"ok","service":"inkwell-ar-worker",...}
+   # → {"status":"ok","service":"inkar-worker",...}
    ```
 
 No hacen falta variables de entorno: `PORT` la inyecta Railway y el server ya la

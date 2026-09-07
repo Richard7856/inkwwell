@@ -24,5 +24,8 @@ dist-ssr
 *.sln
 *.sw?
 
-# APK compilado (se regenera con: npm run apk)
+# Artefactos compilados (se regeneran con: npm run apk / npm run aab).
+# El .aab pesa ~10MB: versionarlo infla el repositorio para siempre y no
+# aporta nada, porque sale del código que sí está versionado.
 *.apk
+*.aab

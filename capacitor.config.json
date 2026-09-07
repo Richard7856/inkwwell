@@ -1,6 +1,6 @@
 {
-  "appId": "ar.inkwell.app",
-  "appName": "Inkwell AR",
+  "appId": "app.inkar",
+  "appName": "InkAR",
   "webDir": "dist",
   "server": {
     "androidScheme": "https"

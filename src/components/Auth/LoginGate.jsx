@@ -14,8 +14,16 @@ import { sendLoginCode, verifyLoginCode } from '../../lib/auth.js'
  * APK requiere configuración nativa de deep links. El código se teclea sin salir.
  *
  * @param {() => void} [onSuccess] - Se llama al abrir sesión correctamente
+ * @param {string} [titulo] - Encabezado del primer paso. Se parametriza porque
+ *   el borrado de cuenta reusa este mismo formulario y allí "Identifícate para
+ *   activar" sería desconcertante.
+ * @param {string} [descripcion] - Texto bajo el encabezado del primer paso
  */
-export default function LoginGate({ onSuccess }) {
+export default function LoginGate({
+  onSuccess,
+  titulo = 'Identifícate para activar',
+  descripcion = 'Tu cuenta guarda tus tatuajes y tu link, para que no los pierdas si cambias de celular.',
+}) {
   const [paso, setPaso] = useState('email')   // email | codigo
   const [email, setEmail] = useState('')
   const [codigo, setCodigo] = useState('')
@@ -53,12 +61,10 @@ export default function LoginGate({ onSuccess }) {
   return (
     <div className="max-w-sm mx-auto mt-8">
       <h2 className="text-xl font-semibold mb-2 text-center">
-        {paso === 'email' ? 'Identifícate para activar' : 'Revisa tu correo'}
+        {paso === 'email' ? titulo : 'Revisa tu correo'}
       </h2>
       <p className="text-gray-400 text-sm text-center mb-8">
-        {paso === 'email'
-          ? 'Tu cuenta guarda tus tatuajes y tu link, para que no los pierdas si cambias de celular.'
-          : `Enviamos un código de 6 dígitos a ${email}`}
+        {paso === 'email' ? descripcion : `Enviamos un código de 6 dígitos a ${email}`}
       </p>
 
       {paso === 'email' ? (

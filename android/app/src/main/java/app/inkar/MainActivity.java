@@ -1,4 +1,4 @@
-package ar.inkwell.app;
+package app.inkar;
 
 import com.getcapacitor.BridgeActivity;
 
