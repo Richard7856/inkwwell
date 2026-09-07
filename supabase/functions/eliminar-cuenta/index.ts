@@ -126,22 +126,33 @@ Deno.serve(async (req) => {
   }
 
   /*
-    ── 4. La identidad de acceso, solo si no la comparte otra aplicación ──
+    ── 4. La identidad de acceso, solo si otra aplicación la está usando ──
 
     Este proyecto de Supabase está compartido con otra app, que cuelga su tabla
-    `profiles` del mismo `auth.users`. Borrar la identidad de alguien que también
-    usa esa app tendría uno de dos finales, ambos malos: destruir la cuenta que
-    esa persona tiene allá sin haberlo pedido, o fallar con un error de llave
-    foránea incomprensible (`spaces_owner_id_fkey` es RESTRICT).
+    `profiles` del mismo `auth.users`. Borrar la identidad de alguien que
+    también usa esa app tendría uno de dos finales, ambos malos: destruir la
+    cuenta que esa persona tiene allá sin haberlo pedido, o fallar con un error
+    de llave foránea incomprensible (`spaces_owner_id_fkey` es RESTRICT).
 
-    Por eso: los datos de InkAR se borran siempre; la identidad solo cuando
-    nadie más la usa. El arreglo de fondo es separar los proyectos de Supabase
-    — ver DECISIONS.md.
+    OJO — aquí antes se preguntaba si EXISTE la fila de `profiles`, y estaba
+    mal: esa app tiene un disparador (`on_auth_user_created`) que crea la fila
+    para TODO usuario nuevo, incluidos los que solo vienen de InkAR. Con esa
+    comprobación, nadie habría podido borrar su identidad jamás — el usuario
+    pedía borrar su cuenta y su login seguía funcionando. Se detectó probando
+    el borrado de punta a punta, no leyendo el código.
+
+    Lo que sí distingue a un usuario real de esa app es tener ACTIVIDAD: es una
+    app de espacios, y sin pertenecer a uno no se puede hacer nada allá.
+
+    El arreglo de fondo es separar los proyectos de Supabase — ver DECISIONS.md.
   */
-  const { data: perfilAjeno } = await admin
-    .from('profiles').select('id').eq('id', user.id).maybeSingle()
+  const [membresias, espacios] = await Promise.all([
+    admin.from('space_members').select('user_id', { count: 'exact', head: true }).eq('user_id', user.id),
+    admin.from('spaces').select('id', { count: 'exact', head: true }).eq('owner_id', user.id),
+  ])
+  const usaLaOtraApp = (membresias.count ?? 0) > 0 || (espacios.count ?? 0) > 0
 
-  if (perfilAjeno) {
+  if (usaLaOtraApp) {
     return json(200, {
       alcance: 'solo_inkar',
       tatuajes: tatuajes?.length ?? 0,
@@ -153,9 +164,20 @@ Deno.serve(async (req) => {
 
   const { error: errorBorrado } = await admin.auth.admin.deleteUser(user.id)
   if (errorBorrado) {
-    return json(500, {
-      error: `Tus datos se borraron, pero la cuenta de acceso no: ${errorBorrado.message}. ` +
-             `Escribe a contacto@inkar.app citando el identificador ${user.id}.`,
+    /*
+      Red de seguridad: si la otra app agrega mañana una tabla que referencie al
+      usuario con RESTRICT, este borrado fallará por llave foránea. Antes que
+      devolver un error crudo, se reporta lo que SÍ pasó — los datos de InkAR ya
+      no existen — para no dejar al usuario creyendo que no se borró nada.
+    */
+    console.error('[eliminar-cuenta] identidad no borrada', user.id, errorBorrado.message)
+    return json(200, {
+      alcance: 'solo_inkar',
+      tatuajes: tatuajes?.length ?? 0,
+      archivos: archivosBorrados,
+      mensaje: 'Se borraron todos tus datos de InkAR. Tu cuenta de acceso no se ' +
+               'pudo eliminar porque otra aplicación la está usando. Escribe a ' +
+               'contacto@inkar.app si necesitas eliminarla por completo.',
     })
   }
 

@@ -1,5 +1,8 @@
 import { useState } from 'react'
-import { sendLoginCode, verifyLoginCode } from '../../lib/auth.js'
+import {
+  sendLoginCode, verifyLoginCode,
+  signInWithPassword, signUpWithPassword, MIN_PASSWORD,
+} from '../../lib/auth.js'
 
 /**
  * Pide identificarse antes de activar un tatuaje.
@@ -9,9 +12,13 @@ import { sendLoginCode, verifyLoginCode } from '../../lib/auth.js'
  * no ve esta pantalla nunca: si viera un muro de login, no escanearía, y sin
  * escaneos el producto pierde lo que lo hace viral.
  *
- * ── Por qué código y no enlace ──
- * Un enlace saca al usuario al correo y lo obliga a volver, cosa que dentro del
- * APK requiere configuración nativa de deep links. El código se teclea sin salir.
+ * ── Dos vías, y por qué ──
+ * El CÓDIGO por correo es la vía por defecto: nada que inventar ni recordar, y
+ * funciona igual en web y dentro del APK sin configurar deep links.
+ * La CONTRASEÑA existe porque el código depende de que un correo llegue, y el
+ * servicio integrado de Supabase está topado a unos pocos envíos por hora. Sin
+ * ella no habría credenciales fijas que entregarle al revisor de Google Play
+ * —que rechaza la app si no logra entrar— ni a los jueces del concurso.
  *
  * @param {() => void} [onSuccess] - Se llama al abrir sesión correctamente
  * @param {string} [titulo] - Encabezado del primer paso. Se parametriza porque
@@ -24,19 +31,23 @@ export default function LoginGate({
   titulo = 'Identifícate para activar',
   descripcion = 'Tu cuenta guarda tus tatuajes y tu link, para que no los pierdas si cambias de celular.',
 }) {
-  const [paso, setPaso] = useState('email')   // email | codigo
+  const [metodo, setMetodo] = useState('codigo')   // codigo | password
+  const [paso, setPaso] = useState('email')        // email | codigo (solo vía código)
+  const [esRegistro, setEsRegistro] = useState(false)
   const [email, setEmail] = useState('')
   const [codigo, setCodigo] = useState('')
+  const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [enviando, setEnviando] = useState(false)
 
-  const pedirCodigo = async (e) => {
+  /* Envuelve cada envío para no repetir el mismo manejo de error y estado en
+     los cuatro caminos posibles. */
+  const ejecutar = (accion) => async (e) => {
     e.preventDefault()
     setError('')
     setEnviando(true)
     try {
-      await sendLoginCode(email)
-      setPaso('codigo')
+      await accion()
     } catch (err) {
       setError(err.message)
     } finally {
@@ -44,50 +55,70 @@ export default function LoginGate({
     }
   }
 
-  const confirmarCodigo = async (e) => {
-    e.preventDefault()
-    setError('')
-    setEnviando(true)
-    try {
-      await verifyLoginCode(email, codigo)
-      onSuccess?.()
-    } catch (err) {
-      setError(err.message)
-    } finally {
-      setEnviando(false)
-    }
+  const pedirCodigo = ejecutar(async () => {
+    await sendLoginCode(email)
+    setPaso('codigo')
+  })
+
+  const confirmarCodigo = ejecutar(async () => {
+    await verifyLoginCode(email, codigo)
+    onSuccess?.()
+  })
+
+  const entrarConPassword = ejecutar(async () => {
+    if (esRegistro) await signUpWithPassword(email, password)
+    else await signInWithPassword(email, password)
+    onSuccess?.()
+  })
+
+  const cambiarMetodo = () => {
+    setMetodo(metodo === 'codigo' ? 'password' : 'codigo')
+    setPaso('email'); setCodigo(''); setPassword(''); setError('')
   }
+
+  const encabezado = paso === 'codigo'
+    ? { t: 'Revisa tu correo', d: `Enviamos un código de 6 dígitos a ${email}` }
+    : { t: titulo, d: descripcion }
 
   return (
     <div className="max-w-sm mx-auto mt-8">
-      <h2 className="text-xl font-semibold mb-2 text-center">
-        {paso === 'email' ? titulo : 'Revisa tu correo'}
-      </h2>
-      <p className="text-gray-400 text-sm text-center mb-8">
-        {paso === 'email' ? descripcion : `Enviamos un código de 6 dígitos a ${email}`}
-      </p>
+      <h2 className="text-xl font-semibold mb-2 text-center">{encabezado.t}</h2>
+      <p className="text-gray-400 text-sm text-center mb-8">{encabezado.d}</p>
 
-      {paso === 'email' ? (
-        <form onSubmit={pedirCodigo} className="flex flex-col gap-3">
+      {metodo === 'password' ? (
+        <form onSubmit={entrarConPassword} className="flex flex-col gap-3">
+          <CampoCorreo value={email} onChange={setEmail} />
           <input
-            type="email"
-            inputMode="email"
-            autoComplete="email"
+            type="password"
+            // 'new-password' cuando se registra hace que el gestor de
+            // contraseñas ofrezca generar una, en vez de rellenar una vieja
+            autoComplete={esRegistro ? 'new-password' : 'current-password'}
             required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="tu@correo.com"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder={esRegistro ? `Al menos ${MIN_PASSWORD} caracteres` : 'Tu contraseña'}
             className="w-full py-4 px-4 rounded-2xl bg-white/10 border border-white/10
                        text-white placeholder-gray-500 focus:outline-none focus:border-white/40"
           />
+          <Boton disabled={enviando || !email || !password}>
+            {enviando
+              ? (esRegistro ? 'Creando...' : 'Entrando...')
+              : (esRegistro ? 'Crear cuenta' : 'Entrar')}
+          </Boton>
           <button
-            type="submit"
-            disabled={enviando || !email}
-            className="w-full py-4 rounded-2xl bg-white text-black font-semibold
-                       disabled:opacity-40 transition-opacity"
+            type="button"
+            onClick={() => { setEsRegistro(!esRegistro); setError('') }}
+            className="text-gray-400 text-sm underline mt-1"
           >
-            {enviando ? 'Enviando...' : 'Enviar código'}
+            {esRegistro ? 'Ya tengo cuenta' : 'Crear una cuenta nueva'}
           </button>
+        </form>
+      ) : paso === 'email' ? (
+        <form onSubmit={pedirCodigo} className="flex flex-col gap-3">
+          <CampoCorreo value={email} onChange={setEmail} />
+          <Boton disabled={enviando || !email}>
+            {enviando ? 'Enviando...' : 'Enviar código'}
+          </Boton>
         </form>
       ) : (
         <form onSubmit={confirmarCodigo} className="flex flex-col gap-3">
@@ -108,14 +139,9 @@ export default function LoginGate({
                        text-white text-center text-2xl tracking-[0.5em] font-mono
                        placeholder-gray-600 focus:outline-none focus:border-white/40"
           />
-          <button
-            type="submit"
-            disabled={enviando || codigo.length < 6}
-            className="w-full py-4 rounded-2xl bg-white text-black font-semibold
-                       disabled:opacity-40 transition-opacity"
-          >
+          <Boton disabled={enviando || codigo.length < 6}>
             {enviando ? 'Verificando...' : 'Entrar'}
-          </button>
+          </Boton>
           <button
             type="button"
             onClick={() => { setPaso('email'); setCodigo(''); setError('') }}
@@ -126,9 +152,46 @@ export default function LoginGate({
         </form>
       )}
 
-      {error && (
-        <p className="text-red-400 text-sm mt-4 text-center">{error}</p>
+      {error && <p className="text-red-400 text-sm mt-4 text-center">{error}</p>}
+
+      {paso === 'email' && (
+        <button
+          type="button"
+          onClick={cambiarMetodo}
+          className="w-full text-gray-500 text-sm underline mt-6"
+        >
+          {metodo === 'codigo' ? 'Prefiero usar contraseña' : 'Prefiero recibir un código'}
+        </button>
       )}
     </div>
+  )
+}
+
+function CampoCorreo({ value, onChange }) {
+  return (
+    <input
+      type="email"
+      inputMode="email"
+      autoComplete="email"
+      required
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      placeholder="tu@correo.com"
+      className="w-full py-4 px-4 rounded-2xl bg-white/10 border border-white/10
+                 text-white placeholder-gray-500 focus:outline-none focus:border-white/40"
+    />
+  )
+}
+
+function Boton({ disabled, children }) {
+  return (
+    <button
+      type="submit"
+      disabled={disabled}
+      className="w-full py-4 rounded-2xl bg-white text-black font-semibold
+                 disabled:opacity-40 transition-opacity"
+    >
+      {children}
+    </button>
   )
 }

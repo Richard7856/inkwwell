@@ -200,3 +200,30 @@ Alcance del renombre: paquete Java (`MainActivity`), `namespace` y `applicationI
 - El generador depende de `rsvg-convert` (`brew install librsvg`). En una máquina sin él, falla en vez de producir assets malos, que es lo correcto.
 - El splash no lleva texto a propósito: depender de una fuente del sistema haría que el resultado cambie según la máquina que lo genere.
 - `OU=InkAr` (con r minúscula) quedó en el certificado de firma. Campo cosmético que nadie ve; no justifica rehacer la llave.
+
+## [2026-09-07] Contraseña como segunda vía de acceso
+**Context:** El login era solo código de 6 dígitos por correo. Dos huecos: no hay credenciales fijas que entregarle al revisor de Google Play —que rechaza la app si no logra entrar— ni a los jueces del concurso; y el servicio de correo integrado de Supabase está topado a unos pocos envíos por hora y documentado como "solo para pruebas", así que un tope alcanzado durante una demo deja a todos fuera.
+
+**Decision:** Se agrega correo + contraseña **sin quitar** el código. El código sigue siendo la vía por defecto porque es mejor para el usuario real (nada que inventar ni recordar); la contraseña es la vía que no depende de que un correo llegue.
+
+**Alternatives considered:**
+- *Reemplazar el código por contraseña:* descartado. Tirarìa código que ya funciona y le agregaría fricción al usuario que sí importa — el tatuado en un estudio.
+- *Cuenta de prueba con código fijo:* imposible, el OTP se genera por envío.
+- *Conectar SMTP propio (Resend) y quedarse solo con el código:* resuelve el tope de envíos pero no las credenciales fijas para el revisor. Sigue pendiente y conviene igual.
+
+**Verificado contra el proyecto real:** alta con contraseña (abre sesión inmediata porque la confirmación de correo está desactivada), reingreso, rechazo con contraseña incorrecta, y borrado de cuenta con esa sesión. Las cuentas de prueba se eliminaron después.
+
+## [2026-09-07] El resguardo del borrado estaba mal razonado
+**Context:** El borrado de cuenta preguntaba si EXISTE una fila en `public.profiles` para decidir si eliminar la identidad de acceso, suponiendo que esa fila significaba "esta persona también usa la otra app".
+
+**El error:** esa app tiene un disparador `on_auth_user_created` → `handle_new_user` que crea la fila de `profiles` para **todo** usuario nuevo, incluidos los que solo vienen de InkAR. Con esa comprobación **ningún usuario habría podido borrar su identidad jamás**: pedía borrar su cuenta, la app respondía que sí, y su login seguía funcionando. Exactamente lo que Google Play exige que no ocurra.
+
+**Cómo se detectó:** probando el borrado de punta a punta con una cuenta recién creada. La lectura del código no lo revelaba — el resguardo se ve razonable hasta que se observa que `profiles` y `auth.users` tienen el mismo número de filas.
+
+**Decision:** la pregunta correcta no es si existe el perfil, sino si la persona tiene **actividad** en la otra app. Es una app de espacios: sin pertenecer a uno no se puede hacer nada allá. Se consulta `space_members` y `spaces`.
+
+Además, si el borrado de la identidad falla de todos modos (por ejemplo si esa app agrega mañana una tabla con RESTRICT), se degrada a borrado parcial y se le dice al usuario qué sí se borró, en vez de devolver un error crudo que lo dejaría creyendo que no se borró nada.
+
+**Risks/Limitations:**
+- La comprobación depende de tablas de OTRA aplicación. Si esa app se reestructura, este resguardo puede quedar obsoleto en silencio. El arreglo de fondo sigue siendo separar los proyectos de Supabase.
+- Un usuario invitado a un espacio que nunca aceptó podría quedar clasificado como "usuario real" de la otra app y recibir borrado parcial. Es el lado seguro del error.
