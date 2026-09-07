@@ -16,6 +16,15 @@ import { loadTarget } from './targetLoader.js'
  * stacking context. isolation: isolate hace exactamente eso sin afectar el layout.
  * Sin esto, z-index:-2 saca el video FUERA del container → fondo negro.
  */
+/** Extrae solo el host de una URL, para mostrarla compacta en diagnóstico */
+function hostOf(url) {
+  try {
+    return new URL(url).host
+  } catch {
+    return '(sin configurar)'
+  }
+}
+
 export default function ARViewer({ tattooId = 'default' }) {
   const containerRef = useRef(null)
   const [status, setStatus] = useState('loading')
@@ -122,6 +131,11 @@ export default function ARViewer({ tattooId = 'default' }) {
       const vs = cs(v)
       const cvs = cs(cv)
       setLayoutInfo({
+        build: __BUILD_ID__,
+        // Host (no la URL completa) para confirmar contra qué backend corre
+        // este APK sin llenar la pantalla ni exponer la key
+        worker: hostOf(import.meta.env.VITE_COMPILER_URL),
+        db: hostOf(import.meta.env.VITE_SUPABASE_URL),
         screen: `${window.innerWidth}x${window.innerHeight} dpr${window.devicePixelRatio}`,
         container: `${c.clientWidth}x${c.clientHeight}`,
         stream: v ? `${v.videoWidth}x${v.videoHeight}` : 'sin video',

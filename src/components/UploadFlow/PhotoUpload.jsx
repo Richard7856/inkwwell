@@ -22,8 +22,17 @@ export default function PhotoUpload({ onPhotoSelected }) {
 
     setError('')
 
-    if (!file.type.startsWith('image/')) {
-      setError('Solo se aceptan imágenes JPG o PNG')
+    /*
+      Validar contra los formatos que acepta el worker (worker/index.js fileFilter).
+      Es más estricto que el accept del input: ese ahora dice "image/*" por el
+      requisito de Capacitor para abrir la cámara, así que la galería podría
+      devolver un HEIC o un GIF que el compilador rechazaría con un error críptico.
+    */
+    const ACCEPTED = ['image/jpeg', 'image/png', 'image/webp']
+    if (!ACCEPTED.includes(file.type)) {
+      setError(
+        `Formato no soportado (${file.type || 'desconocido'}). Usa JPG, PNG o WebP.`
+      )
       return
     }
 
@@ -95,7 +104,7 @@ export default function PhotoUpload({ onPhotoSelected }) {
             Subir de galería
           </button>
 
-          <p className="text-gray-600 text-xs mt-2">JPG o PNG, mínimo 800x800px</p>
+          <p className="text-gray-600 text-xs mt-2">JPG, PNG o WebP · mínimo 800x800px</p>
         </div>
       )}
 
@@ -103,11 +112,23 @@ export default function PhotoUpload({ onPhotoSelected }) {
         <p className="text-red-400 text-sm mt-3">{error}</p>
       )}
 
-      {/* Input cámara — capture="environment" abre cámara trasera en mobile */}
+      {/*
+        Input cámara.
+
+        accept DEBE ser exactamente "image/*" — no una lista de tipos concretos.
+        Capacitor (BridgeWebChromeClient.onShowFileChooser:283) decide si abre la
+        cámara con:
+            capturePhoto = captureEnabled && acceptTypes.contains("image/*")
+        Con accept="image/jpeg,image/png" esa condición es falsa aunque capture
+        esté presente, y cae a showFilePicker() → abre la galería.
+
+        El filtrado real de formatos se hace en validateAndSelect(), que valida
+        contra los mismos tipos que acepta el worker.
+      */}
       <input
         ref={cameraInputRef}
         type="file"
-        accept="image/jpeg,image/png"
+        accept="image/*"
         capture="environment"
         onChange={(e) => validateAndSelect(e.target.files?.[0])}
         className="hidden"

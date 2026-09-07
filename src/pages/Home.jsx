@@ -39,6 +39,11 @@ export default function Home() {
       <p className="text-gray-600 text-xs mt-12 max-w-xs leading-relaxed">
         Activa tu tatuaje una vez. Cualquier persona que apunte su cámara verá tu mundo 3D.
       </p>
+
+      {/* Identificador de build — permite confirmar de un vistazo qué versión
+          corre el dispositivo. El APK se instala a mano y es fácil quedarse con
+          uno viejo sin notarlo. Se inyecta en vite.config.js */}
+      <p className="text-gray-800 text-[10px] mt-6 font-mono">{__BUILD_ID__}</p>
     </div>
   )
 }
