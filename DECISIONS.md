@@ -277,3 +277,27 @@ El elegido usa la gota de la marca como motivo ornamental repetido: la densidad 
 - **Sin probar con cámara real.** Lo verificado es la calidad medida del marcador y que los tres archivos se sirven con el tipo correcto (un `.mind` que devuelva HTML de 404 revienta MindAR con un error de msgpack ilegible). Falta apuntarle un teléfono.
 - El marcador impreso en papel mate rastrea mejor que en pantalla: el brillo y el refresco de un monitor le quitan puntos. Hay que decirlo si alguien reporta que le cuesta.
 - El `.mind` suma 694KB al bundle web y al APK.
+
+## [2026-09-07] Adopción de la identidad de marca del tablero
+**Context:** Llegó un tablero de identidad de InkAR con paleta, tipografía, símbolo (una K a pincel), elementos gráficos y voz. La identidad previa era la que se improvisó al hacer el icono: violeta `#6D28D9` y una gota de tinta.
+
+**Decision:** Se adopta lo que se puede reproducir con fidelidad y se aplaza lo que no.
+
+**Adoptado:** paleta como tokens en `@theme` (`tinta` #000000, `realidad` #8B5CF6, `claridad` #F7F7F7, `tecnologia` #6B6B6B), Montserrat para títulos e Inter para cuerpo, y la voz — "Historias que siguen vivas", "Más que tinta. Otra realidad.", "Escanea. Descubre. Revive.". Los tokens se nombran por su PAPEL y no por su color, para que un ajuste de paleta no obligue a tocar cada componente.
+
+**Aplazado: el símbolo de la K.** Los archivos entregados no dan la talla y usarlos habría degradado la marca:
+- `INKAR_K_imagotipo.svg` es un autotrazado —su propio README lo admite— y renderizado se lee como una mancha astillada, no como el trazo del tablero.
+- El PNG es un recorte del tablero a 120×182 con fragmentos de elementos vecinos en el borde y fondo gris en vez de transparencia. El icono adaptativo necesita 432×432 limpios.
+- `INKAR_K_imagotipo.svg` y `INKAR_trazos_tinta.svg` son **el mismo archivo**: los trazos sueltos no llegaron.
+
+Mientras tanto la landing usa el **logotipo tipográfico** (la variante "sin descriptor" del tablero), que es identidad legítima y no una imitación. El icono de la app conserva la gota hasta que exista una K limpia.
+
+**El nombre no cambia.** El tablero muestra "INKAR" en mayúsculas; eso es tratamiento tipográfico (clase `.marca`), no un cambio de nombre. En la tienda y en el sistema la app se sigue llamando InkAR, que es lo que está en revisión — cambiarlo obligaría a editar la ficha y sacar versión nueva sin ganancia.
+
+**La app sigue siendo oscura** aunque el tablero sea claro: el AR se mira sobre video de cámara, y una interfaz clara encima compite con la imagen y lava el contraste del 3D.
+
+**Sobre las fuentes:** se cargan desde Google Fonts con `preconnect` desde el HTML, no con `@import` en el CSS. En CSS los `@import` deben preceder a toda regla y colocado tras `@theme` el navegador lo ignora en silencio — pasó en el primer intento. Verificado que cargan de verdad y no caen al respaldo: Montserrat mide 132px donde el sistema mide 117px.
+
+**Risks/Limitations:**
+- Las fuentes dependen de la red en el primer pintado dentro del APK. Se acepta porque la app ya no funciona sin red, y `display=swap` evita que el texto quede invisible.
+- El marcador del demo usa la gota como motivo. Cuando entre la K habrá que decidir si se rehace — implica recompilar el `.mind` y volver a medir el rastreo.

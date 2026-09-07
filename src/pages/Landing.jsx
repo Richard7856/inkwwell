@@ -20,8 +20,10 @@ import { inscribirEnLista } from '../lib/waitlist.js'
  */
 
 const ES = {
-  promesa: 'Tu tatuaje cobra vida en realidad aumentada',
-  sub: 'No es un filtro ni una prueba de tatuajes. Tu tatuaje real queda vinculado a una experiencia en 3D que cualquiera puede ver apuntando su cámara.',
+  descriptor: 'Historias que siguen vivas',
+  promesa: 'Tus tatuajes también tienen historias que contar',
+  ritmo: 'Escanea. Descubre. Revive.',
+  sub: 'No es un filtro ni una prueba de tatuajes. Tu tatuaje real queda vinculado a una experiencia en 3D que cualquiera puede ver apuntando su cámara. Más que tinta: otra realidad.',
   cta: 'Quiero avisarme cuando salga',
   demoTitulo: 'Pruébalo ahora, sin tatuaje',
   demoTexto: 'No hace falta que tengas un tatuaje activado ni que instales nada. Te damos una imagen, le apuntas la cámara y ves exactamente lo que verá cualquiera que apunte al tuyo.',
@@ -53,8 +55,10 @@ const ES = {
 }
 
 const EN = {
-  promesa: 'Your tattoo comes alive in augmented reality',
-  sub: 'Not a filter, not a tattoo try-on. Your real tattoo gets linked to a 3D experience anyone can see by pointing their camera at it.',
+  descriptor: 'Stories that stay alive',
+  promesa: 'Your tattoos have stories to tell, too',
+  ritmo: 'Scan. Discover. Relive.',
+  sub: 'Not a filter, not a tattoo try-on. Your real tattoo gets linked to a 3D experience anyone can see by pointing their camera at it. More than ink: another reality.',
   cta: 'Tell me when it launches',
   demoTitulo: 'Try it now, no tattoo needed',
   demoTexto: 'You don’t need an activated tattoo or an install. We give you an image, you point your camera at it, and you see exactly what anyone pointing at yours would see.',
@@ -115,11 +119,14 @@ export default function Landing() {
       <div className="max-w-lg mx-auto px-6 py-14">
 
         {/* ── Marca y promesa ── */}
-        <Marca />
-        <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-center mt-6 leading-tight">
+        <Marca descriptor={c.descriptor} />
+        <h1 className="text-3xl sm:text-4xl font-semibold text-center mt-10 leading-tight">
           {c.promesa}
         </h1>
-        <p className="text-gray-400 text-center mt-4 leading-relaxed">{c.sub}</p>
+        {/* El ritmo de tres palabras es el eje de la voz de marca; se le da aire
+            propio en vez de esconderlo dentro de un párrafo. */}
+        <p className="marca text-realidad text-center text-sm mt-5">{c.ritmo}</p>
+        <p className="text-gray-400 text-center mt-5 leading-relaxed">{c.sub}</p>
 
         {/*
           El demo va ANTES del formulario.
@@ -130,18 +137,18 @@ export default function Landing() {
         */}
         <Link
           to="/demo"
-          className="block mt-8 bg-white/5 border border-violet-500/40 rounded-2xl p-5
-                     hover:border-violet-400 transition-colors"
+          className="block mt-8 bg-white/5 border border-realidad/40 rounded-2xl p-5
+                     hover:border-realidad transition-colors"
         >
           <p className="font-semibold">{c.demoTitulo}</p>
           <p className="text-gray-400 text-sm mt-1 leading-relaxed">{c.demoTexto}</p>
-          <p className="text-violet-400 text-sm font-medium mt-3">{c.demoCta}</p>
+          <p className="text-realidad text-sm font-medium mt-3">{c.demoCta}</p>
         </Link>
 
         {/* ── Formulario ── */}
         <div className="mt-10">
           {estado === 'listo' ? (
-            <div className="bg-violet-600/10 border border-violet-500/30 rounded-2xl p-6 text-center">
+            <div className="bg-realidad/10 border border-realidad/30 rounded-2xl p-6 text-center">
               <p className="text-xl font-semibold mb-2">{c.gracias}</p>
               <p className="text-gray-400 text-sm leading-relaxed">
                 {yaEstaba
@@ -160,7 +167,7 @@ export default function Landing() {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder={t('tu@correo.com')}
                 className="w-full py-4 px-4 rounded-2xl bg-white/10 border border-white/10
-                           text-white placeholder-gray-500 focus:outline-none focus:border-violet-400"
+                           text-white placeholder-gray-500 focus:outline-none focus:border-realidad"
               />
 
               <p className="text-gray-500 text-xs mt-1">{c.soy}</p>
@@ -182,15 +189,15 @@ export default function Landing() {
                   onChange={(e) => setCiudad(e.target.value)}
                   placeholder={c.ciudad}
                   className="w-full py-4 px-4 rounded-2xl bg-white/10 border border-white/10
-                             text-white placeholder-gray-500 focus:outline-none focus:border-violet-400"
+                             text-white placeholder-gray-500 focus:outline-none focus:border-realidad"
                 />
               )}
 
               <button
                 type="submit"
                 disabled={estado === 'enviando' || !email}
-                className="w-full py-4 rounded-2xl bg-violet-600 text-white font-semibold
-                           disabled:opacity-40 transition-opacity hover:bg-violet-500"
+                className="w-full py-4 rounded-2xl bg-realidad text-white font-semibold
+                           disabled:opacity-40 transition-opacity hover:opacity-90"
               >
                 {estado === 'enviando' ? c.enviando : c.cta}
               </button>
@@ -268,7 +275,7 @@ function Opcion({ activo, onClick, children }) {
       onClick={onClick}
       className={`w-full py-3 px-4 rounded-xl border text-left text-sm transition-colors ${
         activo
-          ? 'bg-violet-600/20 border-violet-500/60 text-white'
+          ? 'bg-realidad/20 border-realidad/60 text-white'
           : 'bg-white/5 border-white/10 text-gray-400 hover:border-white/20'
       }`}
     >
@@ -277,15 +284,20 @@ function Opcion({ activo, onClick, children }) {
   )
 }
 
-/** La marca del icono, en grande. Misma geometría que brand/icono.svg. */
-function Marca() {
+/**
+ * Logotipo tipográfico — la variante "sin descriptor" del tablero de marca.
+ *
+ * Se usa la palabra y no el símbolo de la K a propósito: el archivo vectorial
+ * disponible de la K es un autotrazado que se lee como una mancha astillada, y
+ * una marca mal reproducida daña más que su ausencia. Cuando llegue la K limpia
+ * (1024px con transparencia real, o SVG de un programa de diseño) entra aquí.
+ */
+function Marca({ descriptor }) {
   return (
-    <svg viewBox="0 0 108 108" className="w-20 h-20 mx-auto" aria-label="InkAR">
-      <rect width="108" height="108" rx="26" fill="#6D28D9" />
-      <path d="M54 33 C54 33 69 51 69 61 A15 15 0 1 1 39 61 C39 51 54 33 54 33 Z" fill="#fff" />
-      <g fill="none" stroke="#fff" strokeWidth="5" strokeLinecap="square">
-        <path d="M32 44 V32 H44" /><path d="M76 64 V76 H64" />
-      </g>
-    </svg>
+    <div className="text-center">
+      <p className="marca text-4xl sm:text-5xl">InkAR</p>
+      <div className="w-10 h-px bg-realidad mx-auto my-4" />
+      <p className="marca text-tecnologia text-[11px]">{descriptor}</p>
+    </div>
   )
 }

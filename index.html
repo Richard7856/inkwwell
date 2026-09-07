@@ -3,6 +3,24 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
+    <!--
+      Tipografía de marca: Montserrat para títulos, Inter para cuerpo.
+
+      Va aquí y no como @import en el CSS por dos razones: en CSS los @import
+      deben preceder a toda regla, y colocado después de @theme el navegador lo
+      ignora en silencio; y desde el HTML se puede precalentar la conexión, que
+      es lo que ahorra el retraso visible del primer pintado.
+
+      display=swap evita que el texto quede invisible mientras la fuente carga
+      — dentro del APK la red puede tardar y la pila del sistema cubre el hueco.
+    -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <meta name="theme-color" content="#0B0B0F" />

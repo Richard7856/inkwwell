@@ -1,6 +1,42 @@
 @import "tailwindcss";
 
 /*
+  ── Identidad de marca InkAR ──
+  Tomada del tablero de marca. Los nombres describen el papel, no el color, para
+  que un ajuste de paleta no obligue a tocar cada componente.
+
+  La app es de fondo oscuro aunque el tablero sea claro: el AR se mira sobre
+  video de cámara, y una interfaz clara encima compite con la imagen y lava el
+  contraste del 3D.
+*/
+@theme {
+  --color-tinta: #000000;        /* Tinta · confianza */
+  --color-realidad: #8B5CF6;     /* Realidad · creatividad — el acento */
+  --color-claridad: #F7F7F7;     /* Equilibrio · claridad */
+  --color-tecnologia: #6B6B6B;   /* Tecnología · modernidad */
+
+  --font-titulo: Montserrat, ui-sans-serif, system-ui, sans-serif;
+  --font-cuerpo: Inter, ui-sans-serif, system-ui, sans-serif;
+}
+
+h1, h2, h3 {
+  font-family: var(--font-titulo);
+  letter-spacing: -0.01em;
+}
+
+/*
+  Tratamiento del nombre: el tablero lo muestra en mayúsculas con mucho tracking.
+  Es tratamiento TIPOGRÁFICO, no un cambio de nombre — en la tienda y en el
+  sistema la app se sigue llamando InkAR, que es lo que está en revisión.
+*/
+.marca {
+  font-family: var(--font-titulo);
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-weight: 600;
+}
+
+/*
   Layout base mobile-first.
 
   Por qué NO hay overflow:hidden global:
@@ -16,7 +52,7 @@ html, body {
   padding: 0;
   background: #0a0a0a;
   color: white;
-  font-family: system-ui, -apple-system, sans-serif;
+  font-family: var(--font-cuerpo);
 
   /* Evita el rebote elástico al llegar al final del scroll. Dentro de un WebView
      ese efecto se siente como si la app se despegara del contenedor nativo. */

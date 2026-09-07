@@ -79,8 +79,8 @@ export default function Demo() {
 
         <Link
           to="/scan?demo=marcador"
-          className="block w-full py-4 rounded-2xl bg-violet-600 text-white font-semibold
-                     text-center hover:bg-violet-500 transition-colors"
+          className="block w-full py-4 rounded-2xl bg-realidad text-white font-semibold
+                     text-center hover:opacity-90 transition-colors"
         >
           {c.abrir}
         </Link>
