@@ -415,12 +415,9 @@ function Marca({ descriptor }) {
   return (
     <div className="text-center">
       {/*
-        Logotipo completo (IN + la K a pincel + AR), generado por
-        scripts/generar-marca.py desde brand/K.svg y Montserrat.
-
-        Va como imagen y no compuesto en HTML con texto real: si la fuente carga
-        tarde, un logo mitad-texto mitad-imagen brinca al cambiar de tipografía,
-        y lo hace en la primera pantalla, que es donde más se nota.
+        Logotipo original aprobado (brand/logo.png). Trae el triángulo dentro de
+        la A y el ajuste fino entre las letras y la K — detalles que una
+        recomposición con texto más el símbolo por separado no reproduce.
 
         Las dimensiones declaradas reservan el espacio antes de que cargue, para
         que el contenido de abajo no salte.
@@ -428,9 +425,9 @@ function Marca({ descriptor }) {
       <img
         src="/logo-inkar.png"
         alt="InkAR"
-        className="w-full max-w-[300px] mx-auto"
-        width={915}
-        height={373}
+        className="w-full max-w-[320px] mx-auto"
+        width={1400}
+        height={467}
       />
       <div className="w-10 h-px bg-realidad mx-auto my-5" />
       <p className="marca text-tecnologia text-[11px]">{descriptor}</p>

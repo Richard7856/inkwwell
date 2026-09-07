@@ -1,9 +1,10 @@
 # Fuentes de la marca
 
-`Montserrat.ttf` está versionado aquí a propósito, no instalado en la máquina:
-`scripts/generar-marca.py` compone el logotipo dibujando texto, y si la fuente
-dependiera del sistema el logo saldría distinto —o no saldría— según quién corra
-el script.
+Montserrat (títulos) e Inter (cuerpo) se cargan desde Google Fonts en
+`index.html`; ver los tokens en `src/index.css`.
 
-Es la versión variable descargada de Google Fonts. Licencia SIL Open Font
-License 1.1, que permite usarla, incrustarla y redistribuirla.
+**No hay archivos de fuente versionados aquí.** Los hubo mientras el generador
+componía el logotipo dibujando texto — necesitaba la fuente para que el
+resultado no dependiera de qué tuviera instalado quien corriera el script. Desde
+que existe `brand/logo.png` (el logotipo original aprobado) esa composición
+desapareció, y con ella la necesidad del archivo.

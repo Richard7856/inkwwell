@@ -357,7 +357,7 @@ Resultado: 390KB los tres, contra 1.2MB en RGBA. Y como el color sale del CSS, e
 
 **Van a opacidad 0.10-0.13** porque viven detrás del texto. A plena intensidad compiten con lo que hay que leer. Se verifica también que no capturen clics (`pointer-events: none`) y que el contenedor recorte lo que sangra, o la página haría scroll horizontal en móvil.
 
-**Logotipo: peso 500 y espaciado 0.17**, no negrita. El mockup aprobado muestra la palabra ligera y muy espaciada; con peso 600 la tipografía competía con la K en vez de acompañarla. La caligrafía original del tablero no se puede reproducir, y el tablero mismo especifica Montserrat — así que el camino es usarla bien, no imitar el lettering.
+**Logotipo: se descarta la composición tipográfica.** Se llegó a armar dibujando "IN" y "AR" en Montserrat alrededor de la K, con Montserrat versionada en el repo para que el resultado no dependiera de qué tuviera instalado quien corriera el script. Funcionaba, pero después llegó `brand/logo.png` — el logotipo original aprobado, 2172×724 con transparencia real — que trae el triángulo dentro de la A y el ajuste fino entre las letras y la K. Ninguna recomposición reproduce eso. Se adopta el original, y se retiran la composición y el archivo de fuente, que quedaron sin uso.
 
 **Risks/Limitations:**
 - `mask-image` necesita prefijo `-webkit-` para Safari; van los dos. Si algún navegador ignorara ambos, el trazo se vería como bloque sólido — el mismo síntoma del error anterior.
