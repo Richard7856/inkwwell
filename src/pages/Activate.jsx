@@ -103,7 +103,7 @@ export default function Activate() {
   }
 
   return (
-    <div className="min-h-screen px-6 py-8">
+    <div className="min-h-screen px-6 py-8 pb-safe">
       {/* Header con botón de regreso */}
       <div className="flex items-center gap-3 mb-6">
         <Link to="/" className="text-gray-500 hover:text-white transition-colors">

@@ -1,12 +1,44 @@
 @import "tailwindcss";
 
-/* Mobile-first fullscreen layout — AR needs 100% viewport */
-html, body, #root {
-  height: 100%;
+/*
+  Layout base mobile-first.
+
+  Por qué NO hay overflow:hidden global:
+  Lo tenía, puesto para que la vista AR no hiciera scroll. Pero aplicaba a todas
+  las pantallas y rompía el catálogo de diseños: el contenido se cortaba detrás
+  de la barra del sistema y no había forma de bajar.
+
+  La vista AR no lo necesita — usa position:fixed + inset:0, que ya impide el
+  scroll por sí sola sin afectar al resto de la app.
+*/
+html, body {
   margin: 0;
   padding: 0;
-  overflow: hidden;
   background: #0a0a0a;
   color: white;
   font-family: system-ui, -apple-system, sans-serif;
+
+  /* Evita el rebote elástico al llegar al final del scroll. Dentro de un WebView
+     ese efecto se siente como si la app se despegara del contenedor nativo. */
+  overscroll-behavior-y: none;
+}
+
+/*
+  min-height en vez de height: el contenedor debe poder CRECER con el contenido.
+  Con height:100% fijo, todo lo que excediera la pantalla quedaba inalcanzable.
+*/
+#root {
+  min-height: 100%;
+}
+
+/*
+  Utilidad para páginas con scroll bajo viewport-fit=cover.
+
+  index.html declara viewport-fit=cover para que la cámara ocupe toda la
+  pantalla, incluida el área bajo la barra de navegación del sistema. El efecto
+  secundario es que el final del contenido queda debajo de esa barra. Esta clase
+  reserva ese espacio en las pantallas que sí hacen scroll.
+*/
+.pb-safe {
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 2rem);
 }

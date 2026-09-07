@@ -141,6 +141,7 @@ export default function ARViewer({ tattooId = 'default' }) {
         stream: v ? `${v.videoWidth}x${v.videoHeight}` : 'sin video',
         videoCss: vs ? `${vs.width} x ${vs.height} @ ${vs.left},${vs.top}` : '—',
         videoFit: vs ? vs.objectFit : '—',
+        fallback: mindAR.didApplyVideoFallback?.() ? 'SÍ (video no cubría)' : 'no',
         canvasCss: cvs ? `${cvs.width} x ${cvs.height} @ ${cvs.left},${cvs.top}` : '—',
       })
     }

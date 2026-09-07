@@ -19,6 +19,8 @@ export function useMindAR(mindUrl, containerRef) {
   const isRunning = useRef(false)
   // Observa el tamaño del contenedor para re-sincronizar el layout de MindAR
   const resizeObserverRef = useRef(null)
+  // true si hubo que corregir el tamaño del video — lo muestra el overlay de debug
+  const videoFallbackRef = useRef(false)
 
   const start = useCallback(async () => {
     if (!containerRef.current || !mindUrl || isRunning.current) return
@@ -91,14 +93,75 @@ export function useMindAR(mindUrl, containerRef) {
       de URL que aparece/desaparece, teclado, cambio de safe-area). El observer
       reacciona al tamaño real del contenedor, que es lo que MindAR necesita.
     */
+    /*
+      Red de seguridad: verificar que el video realmente quedó cubriendo el contenedor.
+
+      MindAR NO le aplica CSS de tamaño al video cuando lo crea (three.js:97-100
+      solo pone position/top/left/z-index). El tamaño se lo da exclusivamente
+      resize(). Si esa función corre con dimensiones inválidas —contenedor con
+      clientWidth 0 porque aún no se hizo el layout, o videoWidth 0 porque el
+      stream no entregó frame— sus cálculos producen NaN, el navegador descarta
+      esos estilos, y el video se queda a su tamaño intrínseco: más chico que la
+      pantalla, con franjas negras alrededor.
+
+      No se imponen estilos por adelantado (eso fue el error anterior: competía
+      con resize() y el resultado dependía del timing). Se MIDE el resultado y
+      solo se corrige si de verdad quedó mal. Si MindAR hizo bien su trabajo,
+      esta función no toca nada.
+    */
+    const ensureVideoCoversContainer = () => {
+      const container = containerRef.current
+      const video = container?.querySelector('video')
+      if (!container || !video) return
+
+      const cw = container.clientWidth
+      const ch = container.clientHeight
+      if (cw === 0 || ch === 0) return // aún sin layout; el observer volverá a llamar
+
+      const rect = video.getBoundingClientRect()
+      // Tolerancia de 2px por redondeo sub-pixel
+      const cubre = rect.width >= cw - 2 && rect.height >= ch - 2
+      if (cubre) {
+        videoFallbackRef.current = false
+        return
+      }
+
+      // object-fit: cover recorta preservando el aspect ratio, igual que el
+      // resultado que busca MindAR con su cálculo de vw/vh
+      video.style.width = '100%'
+      video.style.height = '100%'
+      video.style.left = '0px'
+      video.style.top = '0px'
+      video.style.objectFit = 'cover'
+      videoFallbackRef.current = true
+      console.warn(
+        `[MindAR] video ${Math.round(rect.width)}x${Math.round(rect.height)} no cubría ` +
+        `el contenedor ${cw}x${ch} — aplicado cover de respaldo`
+      )
+    }
+
     const scheduleResize = () => {
       // Doble RAF: el primero espera al siguiente frame, el segundo garantiza que
       // el layout ya se aplicó antes de que MindAR lea clientWidth/clientHeight
       requestAnimationFrame(() => {
-        requestAnimationFrame(() => mindarRef.current?.resize?.())
+        requestAnimationFrame(() => {
+          mindarRef.current?.resize?.()
+          // Un frame más para que el navegador aplique lo que puso resize()
+          // antes de medirlo
+          requestAnimationFrame(ensureVideoCoversContainer)
+        })
       })
     }
     scheduleResize()
+
+    /*
+      El stream puede cambiar de resolución después del primer frame (algunas
+      cámaras arrancan en baja y suben). Cuando pasa, hay que recalcular:
+      resize() usa videoWidth/videoHeight para el cálculo de cover.
+    */
+    const videoEl = containerRef.current?.querySelector('video')
+    videoEl?.addEventListener('resize', scheduleResize)
+    videoEl?.addEventListener('loadedmetadata', scheduleResize)
 
     if (typeof ResizeObserver !== 'undefined' && containerRef.current) {
       resizeObserverRef.current = new ResizeObserver(scheduleResize)
@@ -140,5 +203,6 @@ export function useMindAR(mindUrl, containerRef) {
     getScene: () => mindarRef.current?.scene ?? null,
     getCamera: () => mindarRef.current?.camera ?? null,
     getRenderer: () => mindarRef.current?.renderer ?? null,
+    didApplyVideoFallback: () => videoFallbackRef.current,
   }
 }
