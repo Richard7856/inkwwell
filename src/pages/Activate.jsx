@@ -8,6 +8,7 @@ import { createTattoo } from '../lib/supabase.js'
 import { compileMindFile } from '../lib/compiler.js'
 import { useAuth } from '../hooks/useAuth.js'
 import { ensureProfile } from '../lib/profile.js'
+import { ligaDeTatuaje } from '../lib/urls.js'
 import LoginGate from '../components/Auth/LoginGate.jsx'
 
 /**
@@ -220,10 +221,10 @@ export default function Activate() {
           <div className="bg-white/5 border border-white/10 rounded-xl p-4 max-w-xs mx-auto">
             <p className="text-gray-500 text-xs mb-2">Tu link de escaneo:</p>
             <p className="text-gray-300 text-xs font-mono break-all">
-              /scan?tattoo={tattooId}
+              {ligaDeTatuaje(tattooId)}
             </p>
             <button
-              onClick={() => navigator.clipboard?.writeText(`${window.location.origin}/scan?tattoo=${tattooId}`)}
+              onClick={() => navigator.clipboard?.writeText(ligaDeTatuaje(tattooId))}
               className="mt-3 text-xs text-gray-400 hover:text-white transition-colors underline"
             >
               Copiar link
