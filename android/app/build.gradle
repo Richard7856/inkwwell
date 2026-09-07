@@ -16,8 +16,43 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    /*
+      Firma de release.
+
+      Las credenciales se leen de android/keystore.properties, que está fuera del
+      control de versiones. Meter una llave de firma en el repositorio permitiría
+      a cualquiera con acceso publicar actualizaciones suplantando la app.
+
+      Si el archivo no existe, la compilación de release sigue funcionando sin
+      firmar: así quien clone el repo puede compilar sin necesitar la llave.
+    */
+    signingConfigs {
+        release {
+            def propsFile = rootProject.file("keystore.properties")
+            if (propsFile.exists()) {
+                def props = new Properties()
+                props.load(new FileInputStream(propsFile))
+                storeFile file(props['storeFile'])
+                storePassword props['storePassword']
+                keyAlias props['keyAlias']
+                keyPassword props['keyPassword']
+            }
+        }
+    }
     buildTypes {
         release {
+            def propsFile = rootProject.file("keystore.properties")
+            if (propsFile.exists()) {
+                signingConfig signingConfigs.release
+            }
+            /*
+              minifyEnabled queda en false a propósito.
+
+              El bundle web ya viene minificado por Vite, así que R8 solo actuaría
+              sobre el código Java del contenedor de Capacitor: ganancia marginal
+              a cambio de riesgo real de romper la reflexión que usa el puente
+              nativo. No vale la pena en una app cuyo peso lo dominan los modelos 3D.
+            */
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
