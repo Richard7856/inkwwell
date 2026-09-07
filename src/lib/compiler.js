@@ -1,6 +1,19 @@
 // Client del worker de compilación .mind
 
-const COMPILER_URL = import.meta.env.VITE_COMPILER_URL || ''
+/*
+  Se normaliza el esquema en vez de confiar en la variable de entorno.
+
+  Sin esto, un valor sin `https://` (fácil de producir al copiar y pegar en el
+  panel de un hosting) convierte cada llamada en una ruta RELATIVA: el navegador
+  pide `midominio.com/mi-worker.railway.app/compile-stream`, recibe el index.html
+  del sitio y falla al interpretarlo. El síntoma no menciona la URL por ningún
+  lado. Pasó en producción.
+*/
+const COMPILER_URL = (() => {
+  const crudo = (import.meta.env.VITE_COMPILER_URL || '').trim().replace(/\/+$/, '')
+  if (!crudo) return ''
+  return /^https?:\/\//i.test(crudo) ? crudo : `https://${crudo}`
+})()
 
 // ngrok (plan gratuito) intercepta con una página de advertencia que rompe el
 // request. Con Railway es innecesario, pero se conserva por si se vuelve a

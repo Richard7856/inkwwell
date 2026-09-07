@@ -18,6 +18,7 @@
  * @param {number} elapsedSeconds
  * @param {string|null} inkLayer - dataURL PNG de la tinta extraída
  */
+import { t } from '../../lib/i18n.js'
 export default function CompileStatus({
   stage = 'compiling',
   progress = 0,
@@ -26,16 +27,16 @@ export default function CompileStatus({
 }) {
   const STAGES = {
     compiling: {
-      title: 'Analizando tu tatuaje',
-      detail: 'Extrayendo los puntos que lo hacen único.',
+      title: t('Analizando tu tatuaje'),
+      detail: t('Extrayendo los puntos que lo hacen único.'),
     },
     uploading: {
-      title: 'Guardando',
-      detail: 'Subiendo el descriptor visual de tu tatuaje.',
+      title: t('Guardando'),
+      detail: t('Subiendo el descriptor visual de tu tatuaje.'),
     },
     saving: {
-      title: 'Activando',
-      detail: 'Vinculando tu tatuaje con el diseño 3D.',
+      title: t('Activando'),
+      detail: t('Vinculando tu tatuaje con el diseño 3D.'),
     },
   }
   const { title, detail } = STAGES[stage] ?? STAGES.compiling
@@ -54,7 +55,7 @@ export default function CompileStatus({
               oscuro. El filtro evita tener que generar una segunda máscara. */}
           <img
             src={inkLayer}
-            alt="Tu tatuaje"
+            alt={t('Tu tatuaje')}
             className="absolute inset-0 w-full h-full object-contain"
             style={{ filter: 'invert(1)' }}
           />
@@ -107,7 +108,7 @@ export default function CompileStatus({
           creyendo que se trabó */}
       {showBar && elapsedSeconds > 45 && (
         <p className="text-gray-600 text-xs mt-4 max-w-xs mx-auto">
-          Está tardando más de lo normal. No cierres la app.
+          {t('Está tardando más de lo normal. No cierres la app.')}
         </p>
       )}
     </div>

@@ -3,6 +3,7 @@
  * Phase 1: lista estática hardcodeada.
  * Phase 2: carga dinámica desde tabla `designs` en Supabase.
  */
+import { t } from '../../lib/i18n.js'
 
 // Catálogo de Phase 1 — assets disponibles en /public/models/
 // Phase 2: esta lista se carga dinámicamente desde la tabla `designs` en Supabase
@@ -44,7 +45,7 @@ const CATALOG = [
 export default function DesignPicker({ onDesignSelected }) {
   return (
     <div>
-      <p className="text-gray-400 mb-6">Elige el diseño 3D para tu tatuaje</p>
+      <p className="text-gray-400 mb-6">{t('Elige el diseño 3D para tu tatuaje')}</p>
 
       <div className="grid gap-4">
         {CATALOG.map((design) => (
@@ -57,8 +58,8 @@ export default function DesignPicker({ onDesignSelected }) {
             <div className="flex items-center gap-3">
               <span className="text-3xl">{design.emoji}</span>
               <div>
-                <h3 className="font-semibold text-lg">{design.name}</h3>
-                <p className="text-gray-400 text-sm mt-0.5">{design.description}</p>
+                <h3 className="font-semibold text-lg">{t(design.name)}</h3>
+                <p className="text-gray-400 text-sm mt-0.5">{t(design.description)}</p>
               </div>
             </div>
             <span className="inline-block mt-3 text-xs bg-white/10 px-3 py-1 rounded-full text-gray-300">
@@ -69,7 +70,7 @@ export default function DesignPicker({ onDesignSelected }) {
       </div>
 
       <p className="text-gray-600 text-xs text-center mt-6">
-        Más diseños disponibles próximamente
+        {t('Más diseños disponibles próximamente')}
       </p>
     </div>
   )

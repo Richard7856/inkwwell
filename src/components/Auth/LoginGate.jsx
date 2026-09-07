@@ -3,6 +3,7 @@ import {
   sendLoginCode, verifyLoginCode,
   signInWithPassword, signUpWithPassword, MIN_PASSWORD,
 } from '../../lib/auth.js'
+import { t } from '../../lib/i18n.js'
 
 /**
  * Pide identificarse antes de activar un tatuaje.
@@ -28,8 +29,8 @@ import {
  */
 export default function LoginGate({
   onSuccess,
-  titulo = 'Identifícate para activar',
-  descripcion = 'Tu cuenta guarda tus tatuajes y tu link, para que no los pierdas si cambias de celular.',
+  titulo = t('Identifícate para activar'),
+  descripcion = t('Tu cuenta guarda tus tatuajes y tu link, para que no los pierdas si cambias de celular.'),
 }) {
   const [metodo, setMetodo] = useState('codigo')   // codigo | password
   const [paso, setPaso] = useState('email')        // email | codigo (solo vía código)
@@ -77,7 +78,7 @@ export default function LoginGate({
   }
 
   const encabezado = paso === 'codigo'
-    ? { t: 'Revisa tu correo', d: `Enviamos un código de 6 dígitos a ${email}` }
+    ? { t: t('Revisa tu correo'), d: t('Enviamos un código de 6 dígitos a {email}', { email }) }
     : { t: titulo, d: descripcion }
 
   return (
@@ -96,28 +97,30 @@ export default function LoginGate({
             required
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            placeholder={esRegistro ? `Al menos ${MIN_PASSWORD} caracteres` : 'Tu contraseña'}
+            placeholder={esRegistro
+              ? t('Al menos {n} caracteres', { n: MIN_PASSWORD })
+              : t('Tu contraseña')}
             className="w-full py-4 px-4 rounded-2xl bg-white/10 border border-white/10
                        text-white placeholder-gray-500 focus:outline-none focus:border-white/40"
           />
           <Boton disabled={enviando || !email || !password}>
             {enviando
-              ? (esRegistro ? 'Creando...' : 'Entrando...')
-              : (esRegistro ? 'Crear cuenta' : 'Entrar')}
+              ? (esRegistro ? t('Creando...') : t('Entrando...'))
+              : (esRegistro ? t('Crear cuenta') : t('Entrar'))}
           </Boton>
           <button
             type="button"
             onClick={() => { setEsRegistro(!esRegistro); setError('') }}
             className="text-gray-400 text-sm underline mt-1"
           >
-            {esRegistro ? 'Ya tengo cuenta' : 'Crear una cuenta nueva'}
+            {esRegistro ? t('Ya tengo cuenta') : t('Crear una cuenta nueva')}
           </button>
         </form>
       ) : paso === 'email' ? (
         <form onSubmit={pedirCodigo} className="flex flex-col gap-3">
           <CampoCorreo value={email} onChange={setEmail} />
           <Boton disabled={enviando || !email}>
-            {enviando ? 'Enviando...' : 'Enviar código'}
+            {enviando ? t('Enviando...') : t('Enviar código')}
           </Boton>
         </form>
       ) : (
@@ -140,14 +143,14 @@ export default function LoginGate({
                        placeholder-gray-600 focus:outline-none focus:border-white/40"
           />
           <Boton disabled={enviando || codigo.length < 6}>
-            {enviando ? 'Verificando...' : 'Entrar'}
+            {enviando ? t('Verificando...') : t('Entrar')}
           </Boton>
           <button
             type="button"
             onClick={() => { setPaso('email'); setCodigo(''); setError('') }}
             className="text-gray-500 text-sm underline mt-2"
           >
-            Usar otro correo
+            {t('Usar otro correo')}
           </button>
         </form>
       )}
@@ -160,7 +163,7 @@ export default function LoginGate({
           onClick={cambiarMetodo}
           className="w-full text-gray-500 text-sm underline mt-6"
         >
-          {metodo === 'codigo' ? 'Prefiero usar contraseña' : 'Prefiero recibir un código'}
+          {metodo === 'codigo' ? t('Prefiero usar contraseña') : t('Prefiero recibir un código')}
         </button>
       )}
     </div>
@@ -176,7 +179,7 @@ function CampoCorreo({ value, onChange }) {
       required
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      placeholder="tu@correo.com"
+      placeholder={t('tu@correo.com')}
       className="w-full py-4 px-4 rounded-2xl bg-white/10 border border-white/10
                  text-white placeholder-gray-500 focus:outline-none focus:border-white/40"
     />

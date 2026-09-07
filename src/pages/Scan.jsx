@@ -1,5 +1,6 @@
 import { Link, useSearchParams } from 'react-router-dom'
 import ARViewer from '../components/ARViewer/index.jsx'
+import { t } from '../lib/i18n.js'
 
 /**
  * Página de experiencia AR — Flujo B.
@@ -46,20 +47,19 @@ function NoTattooScreen() {
   return (
     <div className="flex flex-col items-center justify-center min-h-screen px-6 text-center">
       <div className="text-5xl mb-6">🔍</div>
-      <h1 className="text-xl font-semibold mb-3">Sin tatuaje seleccionado</h1>
+      <h1 className="text-xl font-semibold mb-3">{t('Sin tatuaje seleccionado')}</h1>
       <p className="text-gray-400 text-sm mb-8 max-w-xs leading-relaxed">
-        Para escanear un tatuaje, necesitas el link que te compartió el dueño.
-        Si quieres activar el tuyo, empieza aquí:
+        {t('Para escanear un tatuaje, necesitas el link que te compartió el dueño. Si quieres activar el tuyo, empieza aquí:')}
       </p>
       <Link
         to="/activate"
         className="bg-white text-black font-semibold py-3 px-6 rounded-full
                    hover:bg-gray-200 transition-colors"
       >
-        Activar mi tatuaje
+        {t('Activar mi tatuaje')}
       </Link>
       <Link to="/" className="text-gray-600 text-sm mt-4 hover:text-gray-400 transition-colors">
-        Volver al inicio
+        {t('Volver al inicio')}
       </Link>
     </div>
   )

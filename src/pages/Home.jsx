@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { t, getIdioma, setIdioma } from '../lib/i18n.js'
 
 /**
  * Landing page — primer contacto del usuario.
@@ -16,7 +17,7 @@ export default function Home() {
         InkAR
       </h1>
       <p className="text-gray-400 text-lg mb-10 max-w-xs">
-        Tu tatuaje cobra vida en realidad aumentada
+        {t('Tu tatuaje cobra vida en realidad aumentada')}
       </p>
 
       <div className="flex flex-col gap-4 w-full max-w-xs">
@@ -26,18 +27,18 @@ export default function Home() {
           className="bg-white text-black font-semibold py-3 px-6 rounded-full text-center
                      hover:bg-gray-200 transition-colors"
         >
-          Activar mi tatuaje
+          {t('Activar mi tatuaje')}
         </Link>
 
         {/* CTA secundario — para quien ya tiene un link */}
         <p className="text-gray-500 text-sm">
-          ¿Te compartieron un link de tatuaje?{' '}
-          <span className="text-gray-300">Ábrelo directo desde tu celular.</span>
+          {t('¿Te compartieron un link de tatuaje?')}{' '}
+          <span className="text-gray-300">{t('Ábrelo directo desde tu celular.')}</span>
         </p>
       </div>
 
       <p className="text-gray-600 text-xs mt-12 max-w-xs leading-relaxed">
-        Activa tu tatuaje una vez. Cualquier persona que apunte su cámara verá tu mundo 3D.
+        {t('Activa tu tatuaje una vez. Cualquier persona que apunte su cámara verá tu mundo 3D.')}
       </p>
 
       {/*
@@ -51,7 +52,7 @@ export default function Home() {
         to="/scan?demo=multi"
         className="mt-8 text-xs text-gray-500 underline hover:text-gray-300 transition-colors"
       >
-        Probar multi-tatuaje (demo)
+        {t('Probar multi-tatuaje (demo)')}
       </Link>
 
       {/* Identificador de build — permite confirmar de un vistazo qué versión
@@ -63,11 +64,26 @@ export default function Home() {
           por su dirección web. Aquí abajo porque son trámite, no producto. */}
       <div className="flex gap-4 mt-6 text-[11px] text-gray-600">
         <Link to="/privacidad" className="underline hover:text-gray-400 transition-colors">
-          Privacidad
+          {t('Privacidad')}
         </Link>
         <Link to="/eliminar-cuenta" className="underline hover:text-gray-400 transition-colors">
-          Eliminar mi cuenta
+          {t('Eliminar mi cuenta')}
         </Link>
+        {/*
+          Cambio de idioma manual.
+
+          Se detecta solo del navegador, pero el juez del concurso o un revisor
+          puede tener el teléfono en un idioma y querer ver el otro. Sin este
+          interruptor no habría forma de comprobarlo sin cambiar el idioma del
+          sistema entero.
+        */}
+        <button
+          type="button"
+          onClick={() => setIdioma(getIdioma() === 'es' ? 'en' : 'es')}
+          className="underline hover:text-gray-400 transition-colors"
+        >
+          {getIdioma() === 'es' ? 'English' : 'Español'}
+        </button>
       </div>
     </div>
   )

@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { t } from '../lib/i18n.js'
 
 /**
  * Perfil del usuario con su tatuaje activo.
@@ -8,14 +9,11 @@ import { Link } from 'react-router-dom'
 export default function Profile() {
   return (
     <div className="min-h-screen px-6 py-8">
-      <h1 className="text-2xl font-bold mb-6">Mi perfil</h1>
+      <h1 className="text-2xl font-bold mb-6">{t('Mi perfil')}</h1>
 
       <div className="bg-white/5 rounded-2xl p-6 border border-white/10">
         <p className="text-gray-400 text-center">
-          Inicia sesión para ver tus tatuajes activados
-        </p>
-        <p className="text-gray-600 text-xs text-center mt-2">
-          Auth disponible en Phase 2
+          {t('Inicia sesión para ver tus tatuajes activados')}
         </p>
       </div>
 
@@ -23,7 +21,7 @@ export default function Profile() {
         to="/"
         className="block text-center text-gray-500 mt-8 hover:text-white transition-colors"
       >
-        Volver al inicio
+        {t('Volver al inicio')}
       </Link>
     </div>
   )

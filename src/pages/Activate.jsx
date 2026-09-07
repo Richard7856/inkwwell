@@ -10,6 +10,7 @@ import { useAuth } from '../hooks/useAuth.js'
 import { ensureProfile } from '../lib/profile.js'
 import { ligaDeTatuaje } from '../lib/urls.js'
 import LoginGate from '../components/Auth/LoginGate.jsx'
+import { t } from '../lib/i18n.js'
 
 /**
  * Flujo de activación — Flujo A.
@@ -140,7 +141,7 @@ export default function Activate() {
           <Link to="/" className="text-gray-500 hover:text-white transition-colors">
             <BackArrow />
           </Link>
-          <h1 className="text-2xl font-bold">Activa tu tatuaje</h1>
+          <h1 className="text-2xl font-bold">{t('Activa tu tatuaje')}</h1>
         </div>
         <LoginGate />
       </div>
@@ -154,7 +155,7 @@ export default function Activate() {
         <Link to="/" className="text-gray-500 hover:text-white transition-colors">
           <BackArrow />
         </Link>
-        <h1 className="text-2xl font-bold">Activa tu tatuaje</h1>
+        <h1 className="text-2xl font-bold">{t('Activa tu tatuaje')}</h1>
       </div>
 
       {/* Indicador de pasos */}
@@ -168,7 +169,7 @@ export default function Activate() {
         <div className="text-center mt-12">
           <div className="w-10 h-10 border-4 border-white/20 border-t-white rounded-full
                           animate-spin mx-auto mb-4" />
-          <p className="text-gray-400">Subiendo foto...</p>
+          <p className="text-gray-400">{t('Subiendo foto...')}</p>
         </div>
       )}
 
@@ -177,10 +178,10 @@ export default function Activate() {
           {/* Thumbnail de la foto subida — confirmación visual para el usuario */}
           {imageUrl && (
             <div className="mb-6 flex items-center gap-3 bg-white/5 rounded-xl p-3 border border-white/10">
-              <img src={imageUrl} alt="Tu tatuaje" className="w-14 h-14 rounded-lg object-cover" />
+              <img src={imageUrl} alt={t('Tu tatuaje')} className="w-14 h-14 rounded-lg object-cover" />
               <div className="text-left">
-                <p className="text-sm font-medium">Foto subida</p>
-                <p className="text-xs text-gray-500">Ahora elige tu diseño 3D</p>
+                <p className="text-sm font-medium">{t('Foto subida')}</p>
+                <p className="text-xs text-gray-500">{t('Ahora elige tu diseño 3D')}</p>
               </div>
             </div>
           )}
@@ -203,7 +204,7 @@ export default function Activate() {
                           mx-auto mb-4 border border-white/20">
             <span className="text-2xl">✓</span>
           </div>
-          <h2 className="text-xl font-semibold mb-2">Tu tatuaje está activado</h2>
+          <h2 className="text-xl font-semibold mb-2">{t('Tu tatuaje está activado')}</h2>
           <p className="text-gray-400 mb-8 max-w-xs mx-auto">
             Cualquier persona puede apuntar su cámara a tu tatuaje y ver tu experiencia 3D.
           </p>
@@ -214,12 +215,12 @@ export default function Activate() {
             className="inline-block bg-white text-black font-semibold py-3 px-6 rounded-full
                        hover:bg-gray-200 transition-colors mb-6"
           >
-            Probar ahora →
+            {t('Probar ahora →')}
           </Link>
 
           {/* Mostrar el link para que el usuario lo guarde / comparta */}
           <div className="bg-white/5 border border-white/10 rounded-xl p-4 max-w-xs mx-auto">
-            <p className="text-gray-500 text-xs mb-2">Tu link de escaneo:</p>
+            <p className="text-gray-500 text-xs mb-2">{t('Tu link de escaneo:')}</p>
             <p className="text-gray-300 text-xs font-mono break-all">
               {ligaDeTatuaje(tattooId)}
             </p>
@@ -227,7 +228,7 @@ export default function Activate() {
               onClick={() => navigator.clipboard?.writeText(ligaDeTatuaje(tattooId))}
               className="mt-3 text-xs text-gray-400 hover:text-white transition-colors underline"
             >
-              Copiar link
+              {t('Copiar link')}
             </button>
           </div>
         </div>
@@ -245,9 +246,9 @@ export default function Activate() {
 /** Indicador visual de progreso — muestra en qué paso está el usuario */
 function StepIndicator({ current }) {
   const steps = [
-    { key: 'upload', label: 'Foto' },
-    { key: 'design', label: 'Diseño' },
-    { key: 'compiling', label: 'Activar' },
+    { key: 'upload', label: t('Foto') },
+    { key: 'design', label: t('Diseño') },
+    { key: 'compiling', label: t('Activar') },
   ]
 
   // Mapear estados intermedios al índice del paso visual correspondiente

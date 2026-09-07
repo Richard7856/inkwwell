@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react'
 import { extractInk } from '../../lib/inkExtractor.js'
+import { t } from '../../lib/i18n.js'
 
 /**
  * Captura o selección de foto del tatuaje.
@@ -121,7 +122,7 @@ export default function PhotoUpload({ onPhotoSelected }) {
       onPhotoSelected(optimized, inkLayer)
     }
     img.onerror = () => {
-      setError('No se pudo leer la imagen. Intenta con otra.')
+      setError(t('No se pudo leer la imagen. Intenta con otra.'))
       URL.revokeObjectURL(img.src)
     }
     img.src = URL.createObjectURL(file)
@@ -136,21 +137,21 @@ export default function PhotoUpload({ onPhotoSelected }) {
   return (
     <div className="text-center">
       <p className="text-gray-400 mb-6">
-        Toma una foto clara de tu tatuaje. Buena iluminación, sin flash, piel sanada.
+        {t('Toma una foto clara de tu tatuaje. Buena iluminación, sin flash, piel sanada.')}
       </p>
 
       {preview ? (
         <div>
           <img
             src={preview}
-            alt="Preview del tatuaje"
+            alt={t('Vista previa del tatuaje')}
             className="mx-auto rounded-xl max-h-64 mb-4 border border-white/10"
           />
           <button
             onClick={handleRetake}
             className="text-gray-400 text-sm underline hover:text-white transition-colors"
           >
-            Tomar otra foto
+            {t('Tomar otra foto')}
           </button>
         </div>
       ) : (
@@ -163,7 +164,7 @@ export default function PhotoUpload({ onPhotoSelected }) {
                        hover:bg-gray-200 transition-colors"
           >
             <CameraIcon />
-            Tomar foto
+            {t('Tomar foto')}
           </button>
 
           {/* Opción secundaria: subir de galería */}
@@ -174,10 +175,10 @@ export default function PhotoUpload({ onPhotoSelected }) {
                        border border-white/10 hover:bg-white/20 transition-colors"
           >
             <GalleryIcon />
-            Subir de galería
+            {t('Subir de galería')}
           </button>
 
-          <p className="text-gray-600 text-xs mt-2">JPG, PNG o WebP · mínimo 800x800px</p>
+          <p className="text-gray-600 text-xs mt-2">{t('JPG, PNG o WebP · mínimo 800x800px')}</p>
         </div>
       )}
 
