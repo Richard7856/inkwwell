@@ -20,21 +20,54 @@ import { useTema } from '../lib/tema.js'
  * desplazarse.
  */
 
+/*
+  Video de demostración.
+
+  Va por variable de entorno y no incrustado en el código para poder publicarlo
+  sin tocar el bundle, y para que la landing salga bien mientras no exista: sin
+  video, la sección simplemente no se dibuja.
+*/
+const VIDEO = import.meta.env.VITE_VIDEO_DEMO || ''
+const POSTER = import.meta.env.VITE_VIDEO_POSTER || ''
+
 const ES = {
   descriptor: 'Historias que siguen vivas',
-  promesa: 'Tus tatuajes también tienen historias que contar',
+  promesa: 'Tu tatuaje ya guarda una historia. Nosotros la ponemos en movimiento',
   ritmo: 'Escanea. Descubre. Revive.',
-  sub: 'No es un filtro ni una prueba de tatuajes. Tu tatuaje real queda vinculado a una experiencia en 3D que cualquiera puede ver apuntando su cámara. Más que tinta: otra realidad.',
-  cta: 'Quiero avisarme cuando salga',
-  demoTitulo: 'Pruébalo ahora, sin tatuaje',
-  demoTexto: 'No hace falta que tengas un tatuaje activado ni que instales nada. Te damos una imagen, le apuntas la cámara y ves exactamente lo que verá cualquiera que apunte al tuyo.',
-  demoCta: 'Probar el demo →',
+
+  queEsTitulo: '¿Qué es InkAR?',
+  queEs: [
+    'Una app que reconoce tu tatuaje con la cámara y le sobrepone contenido en 3D, anclado a tu piel y siguiendo tu movimiento.',
+    'No modifica el tatuaje ni lo tapa. Lo usa como llave: el dibujo que ya llevas es lo que activa el contenido, como un código QR pero sin código a la vista.',
+  ],
+
+  vidaTitulo: 'Por qué decimos “segunda vida”',
+  vida: [
+    'Casi nadie se tatúa por decorarse. Te tatúas al perro que se murió, la letra de tu abuela, la fecha en que volviste a nacer. Ese recuerdo se te queda en la piel — pero se queda quieto. Te dice algo a ti, y nada a quien lo ve.',
+    'InkAR le devuelve el movimiento. El perro que llevas en el brazo vuelve a correr. La dedicatoria vuelve a leerse con quien la escribió al lado. Esa es la segunda vida: no la del tatuaje, la del recuerdo que representa.',
+  ],
+
+  haciaTitulo: 'A dónde vamos',
+  hacia: 'Hoy eliges un modelo 3D de nuestro catálogo. Lo que estamos construyendo es que subas una foto de TU perro y una frase, y que la app genere la animación de ese perro. Tu recuerdo, no uno genérico.',
+
+  comoTitulo: 'Cómo funciona',
+  pasos: [
+    ['Registras tu tatuaje', 'Le tomas una foto desde la app. En segundos queda activado y no hay que repetirlo nunca.'],
+    ['Eliges qué aparece encima', 'Un modelo 3D animado. Puedes cambiarlo después sin volver a registrar el tatuaje.'],
+    ['Cualquiera lo ve', 'Apunta su cámara a tu piel y aparece, siguiendo tu movimiento. Sin instalar nada, desde el navegador.'],
+  ],
+
+  videoTitulo: 'Míralo funcionando',
+  videoTexto: 'Grabado con la app real, sin montaje.',
+
   distintoTitulo: 'Por qué no es un filtro',
   distinto: [
-    ['El activador es tu piel, no tu cara', 'Los filtros siguen tu cara y desaparecen cuando cambias de app. Aquí el activador es el tatuaje: vive contigo, y funciona aunque quien mire sea otra persona con otro teléfono.'],
+    ['El activador es tu piel, no tu cara', 'Un filtro sigue tu cara dentro de una app y desaparece al salir de ella. Aquí el activador es el tatuaje: va contigo a todos lados y funciona aunque quien mire sea otra persona, con otro teléfono, sin haber hablado contigo.'],
     ['Cualquiera lo ve, sin instalar nada', 'Quien apunte su cámara a tu tatuaje abre una liga y ve tu contenido. Sin cuenta, sin descargar, sin pedirte permiso.'],
-    ['Es tuyo y es permanente', 'Registras el tatuaje una vez y queda activado. Puedes cambiar después qué aparece encima, sin volver a registrarlo.'],
+    ['Es tuyo y es permanente', 'Se registra una vez. El tatuaje ya lo traes: lo que agregamos es la capa que vive encima, y esa sí la puedes cambiar cuando quieras.'],
   ],
+
+  cta: 'Avísame cuando abra',
   yaTengo: '¿Ya tienes la app? Activa tu tatuaje',
   soy: '¿Quién eres?',
   persona: 'Tengo tatuajes',
@@ -44,12 +77,6 @@ const ES = {
   gracias: 'Listo, quedas dentro',
   graciasDetalle: 'Te escribimos a {email} en cuanto abramos. No mandamos nada más.',
   yaEstabas: 'Ese correo ya estaba en la lista. No hace falta hacer nada más.',
-  comoTitulo: 'Cómo funciona',
-  pasos: [
-    ['Registras tu tatuaje', 'Una foto, una vez. En segundos queda activado.'],
-    ['Eliges qué aparece', 'Un modelo 3D animado de nuestro catálogo, o el tuyo hecho a la medida.'],
-    ['Cualquiera lo ve', 'Apunta su cámara a tu piel y aparece. Sin instalar nada, desde el navegador.'],
-  ],
   artistasTitulo: 'Para estudios de tatuaje',
   artistasTexto: 'Tus clientes ya pagan por un tatuaje. Ofrecerles que además cobre vida no te cuesta trabajo extra y te distingue de cualquier estudio de tu ciudad. Estamos armando el programa con un grupo pequeño de estudios: apúntate y hablamos contigo directo.',
   legalNota: 'Solo usamos tu correo para avisarte del lanzamiento.',
@@ -57,19 +84,42 @@ const ES = {
 
 const EN = {
   descriptor: 'Stories that stay alive',
-  promesa: 'Your tattoos have stories to tell, too',
+  promesa: 'Your tattoo already holds a story. We put it in motion',
   ritmo: 'Scan. Discover. Relive.',
-  sub: 'Not a filter, not a tattoo try-on. Your real tattoo gets linked to a 3D experience anyone can see by pointing their camera at it. More than ink: another reality.',
-  cta: 'Tell me when it launches',
-  demoTitulo: 'Try it now, no tattoo needed',
-  demoTexto: 'You don’t need an activated tattoo or an install. We give you an image, you point your camera at it, and you see exactly what anyone pointing at yours would see.',
-  demoCta: 'Try the demo →',
+
+  queEsTitulo: 'What is InkAR?',
+  queEs: [
+    'An app that recognizes your tattoo through the camera and layers 3D content over it, anchored to your skin and following your movement.',
+    'It doesn’t alter the tattoo or cover it. It uses it as a key: the drawing you already carry is what triggers the content — like a QR code, without a code in sight.',
+  ],
+
+  vidaTitulo: 'Why we say “second life”',
+  vida: [
+    'Almost nobody gets tattooed for decoration. You get the dog that died, your grandmother’s handwriting, the date you started over. That memory stays on your skin — but it stays still. It says something to you, and nothing to whoever sees it.',
+    'InkAR gives it movement back. The dog on your arm runs again. The dedication reads again with the person who wrote it beside you. That’s the second life: not the tattoo’s, the memory’s.',
+  ],
+
+  haciaTitulo: 'Where this is going',
+  hacia: 'Today you pick a 3D model from our catalog. What we’re building is this: you upload a photo of YOUR dog and a sentence, and the app generates that dog’s animation. Your memory, not a generic one.',
+
+  comoTitulo: 'How it works',
+  pasos: [
+    ['Register your tattoo', 'Photograph it from the app. It’s activated in seconds and you never do it again.'],
+    ['Choose what appears', 'An animated 3D model. You can change it later without registering the tattoo again.'],
+    ['Anyone can see it', 'They point a camera at your skin and it appears, following your movement. No install, straight from the browser.'],
+  ],
+
+  videoTitulo: 'See it working',
+  videoTexto: 'Recorded with the real app, no editing tricks.',
+
   distintoTitulo: 'Why this isn’t a filter',
   distinto: [
-    ['The trigger is your skin, not your face', 'Filters track your face and vanish when you switch apps. Here the trigger is the tattoo: it lives with you, and it works even when the person looking is someone else on another phone.'],
+    ['The trigger is your skin, not your face', 'A filter follows your face inside one app and vanishes when you leave it. Here the trigger is the tattoo: it goes everywhere with you and works even when the person looking is someone else, on another phone, who never spoke to you.'],
     ['Anyone can see it, with nothing installed', 'Whoever points a camera at your tattoo opens a link and sees your content. No account, no download, no asking you for anything.'],
-    ['It’s yours and it’s permanent', 'You register the tattoo once and it stays activated. You can change what appears on top later, without registering it again.'],
+    ['It’s yours and it’s permanent', 'Registered once. You already have the tattoo: what we add is the layer living on top, and that one you can change whenever you want.'],
   ],
+
+  cta: 'Tell me when it opens',
   yaTengo: 'Already have the app? Activate your tattoo',
   soy: 'Who are you?',
   persona: 'I have tattoos',
@@ -79,12 +129,6 @@ const EN = {
   gracias: 'You’re in',
   graciasDetalle: 'We’ll write to {email} the moment we open. Nothing else.',
   yaEstabas: 'That email was already on the list. Nothing else to do.',
-  comoTitulo: 'How it works',
-  pasos: [
-    ['Register your tattoo', 'One photo, once. Activated in seconds.'],
-    ['Choose what appears', 'An animated 3D model from our catalog, or your own made to order.'],
-    ['Anyone can see it', 'They point a camera at your skin and it appears. No install, straight from the browser.'],
-  ],
   artistasTitulo: 'For tattoo studios',
   artistasTexto: 'Your clients already pay for a tattoo. Offering them one that also comes alive costs you no extra work and sets you apart from every studio in your city. We’re building the program with a small group of studios: sign up and we’ll talk directly.',
   legalNota: 'We only use your email to tell you about the launch.',
@@ -141,24 +185,34 @@ export default function Landing() {
         {/* El ritmo de tres palabras es el eje de la voz de marca; se le da aire
             propio en vez de esconderlo dentro de un párrafo. */}
         <p className="marca text-realidad text-center text-sm mt-5">{c.ritmo}</p>
-        <p className="text-neutral-600 text-center mt-5 leading-relaxed">{c.sub}</p>
+        {/* ── Qué es: la pregunta que la versión anterior nunca contestaba ── */}
+        <Seccion titulo={c.queEsTitulo} className="mt-12">
+          {c.queEs.map((t) => <Parrafo key={t}>{t}</Parrafo>)}
+        </Seccion>
 
         {/*
-          El demo va ANTES del formulario.
+          El video va antes del formulario: quien no conoce el producto no
+          entrega su correo por una descripción, lo entrega después de ver que
+          funciona.
 
-          Quien no conoce el producto no entrega su correo por una descripción;
-          lo entrega después de ver que funciona. Pedirlo primero convierte la
-          página en un peaje.
+          Se dibuja solo si hay video configurado. Un reproductor vacío o roto en
+          la primera pantalla hace más daño que no tener video: sugiere que el
+          producto tampoco funciona.
         */}
-        <Link
-          to="/demo"
-          className="block mt-8 bg-white border border-black/10 rounded-2xl p-5 shadow-sm
-                     hover:border-tinta transition-colors"
-        >
-          <p className="font-semibold">{c.demoTitulo}</p>
-          <p className="text-neutral-600 text-sm mt-1 leading-relaxed">{c.demoTexto}</p>
-          <p className="text-realidad text-sm font-medium mt-3">{c.demoCta}</p>
-        </Link>
+        {VIDEO && (
+          <section className="mt-12">
+            <h2 className="text-lg font-semibold mb-3">{c.videoTitulo}</h2>
+            <video
+              src={VIDEO}
+              poster={POSTER || undefined}
+              controls
+              playsInline
+              preload="metadata"
+              className="w-full rounded-2xl border border-black/10 bg-black"
+            />
+            <p className="text-neutral-500 text-xs mt-2">{c.videoTexto}</p>
+          </section>
+        )}
 
         {/* ── Formulario ── */}
         <div className="mt-10">
@@ -222,6 +276,11 @@ export default function Landing() {
           )}
         </div>
 
+        {/* ── La razón de la marca: por qué "segunda vida" ── */}
+        <Seccion titulo={c.vidaTitulo} className="mt-16">
+          {c.vida.map((t) => <Parrafo key={t}>{t}</Parrafo>)}
+        </Seccion>
+
         {/* ── Cómo funciona ── */}
         <section className="mt-16">
           <h2 className="text-lg font-semibold mb-5">{c.comoTitulo}</h2>
@@ -240,6 +299,11 @@ export default function Landing() {
             ))}
           </ol>
         </section>
+
+        {/* ── La ambición: hoy catálogo, mañana tu recuerdo ── */}
+        <Seccion titulo={c.haciaTitulo} className="mt-14">
+          <Parrafo>{c.hacia}</Parrafo>
+        </Seccion>
 
         {/* ── Qué lo hace distinto: el malentendido más común es "es un filtro" ── */}
         <section className="mt-14">
@@ -281,6 +345,19 @@ export default function Landing() {
       </div>
     </div>
   )
+}
+
+function Seccion({ titulo, className = '', children }) {
+  return (
+    <section className={className}>
+      <h2 className="text-lg font-semibold mb-3">{titulo}</h2>
+      {children}
+    </section>
+  )
+}
+
+function Parrafo({ children }) {
+  return <p className="text-neutral-600 text-sm leading-relaxed mt-3">{children}</p>
 }
 
 function Opcion({ activo, onClick, children }) {

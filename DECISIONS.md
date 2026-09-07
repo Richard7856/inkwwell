@@ -326,3 +326,22 @@ Detalles de implementación:
 **Risks/Limitations:**
 - El resto de la app (activación, perfil, borrado de cuenta, privacidad) sigue en oscuro. Es mezcla deliberada por ahora, pero si se decide llevar todo a claro hay que convertir esas pantallas: usan clases de tema oscuro (`text-white`, `bg-white/5`) que no se adaptan solas.
 - El `data-tema` vive en el DOM y no en estado de React. Es correcto para algo que afecta al documento entero, pero significa que un componente no puede reaccionar al tema sin leerlo del DOM.
+
+## [2026-09-07] El demo en vivo sale de la landing; entra video
+**Context:** La landing ofrecía probar el AR con un marcador universal. Pero la app no se ha liberado, el AR no está probado con cámara real, y quien llegue de una campaña sería el primero en toparse con un fallo. Las primeras reseñas de una app pesan de forma desproporcionada.
+
+**Decision:** Se retira el enlace al demo de la landing y en su lugar va un video grabado, generado con Higgsfield. **La ruta `/demo` se conserva viva pero sin promocionar**: el marcador y su `.mind` siguen siendo la respuesta al riesgo "los jueces no tienen tatuajes", solo que se muestra cuando esté probado y no antes.
+
+**El video va por variable de entorno** (`VITE_VIDEO_DEMO`), no incrustado: se publica sin tocar el bundle, y mientras no exista la sección simplemente no se dibuja. Un reproductor vacío o roto en la primera pantalla hace más daño que no tener video — sugiere que el producto tampoco funciona.
+
+## [2026-09-07] Reescritura del texto de la landing
+**Context:** La versión anterior afirmaba "historias que siguen vivas" sin sostenerlo en ningún lado, y nunca contestaba qué hace la app ni por qué debería importarle a alguien. Descrita así, es indistinguible de un filtro.
+
+**Decision:** Se estructura alrededor de las preguntas que un desconocido se hace, en ese orden:
+1. **¿Qué es?** — reconoce el tatuaje con la cámara y le sobrepone 3D; no lo modifica ni lo tapa, lo usa como llave.
+2. **¿Por qué "segunda vida"?** — casi nadie se tatúa por decorarse; te tatúas al perro que murió, la letra de tu abuela. Ese recuerdo se queda en la piel pero se queda quieto. Lo que revive no es el tatuaje: es el recuerdo que representa.
+3. **¿Cómo funciona?** — tres pasos.
+4. **¿A dónde va?** — hoy catálogo, mañana la animación de TU perro desde una foto y una frase. Conecta con la hipótesis del modelo de negocio: la gente paga por animar su recuerdo, no por un 3D genérico.
+5. **¿Por qué no es un filtro?** — el activador es la piel y no la cara, cualquiera lo ve sin instalar, y es permanente.
+
+El video y la explicación van ANTES del formulario. Quien no conoce el producto no entrega su correo por una descripción.
