@@ -26,6 +26,18 @@ Por eso: un contenedor de larga vida (Railway, Render, Fly, un VPS).
 
 4. **Settings → Networking → Generate Domain.** Eso da la URL pública fija.
 
+   ⚠️ **Cuando pida el target port, poner `8080` — no 3001.**
+
+   Railway inyecta `PORT=8080` en el contenedor por su cuenta. El server lo
+   respeta (`process.env.PORT || 3001`), así que escucha en 8080, no en el 3001
+   del Dockerfile. Si en Networking pones 3001, Railway enruta a un puerto donde
+   nadie escucha y responde 502 "Application failed to respond" — aunque en los
+   logs se vea el servidor arrancado perfectamente.
+
+   Para saber en qué puerto quedó escuchando, mirar el Deploy Log:
+   `🖋️  Inkwell AR Worker corriendo en http://localhost:____`
+   Ese número es el que va en el target port.
+
 5. Verificar:
    ```bash
    curl https://TU-URL.up.railway.app/health
