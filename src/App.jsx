@@ -7,6 +7,7 @@ import Demo from './pages/Demo.jsx'
 import Scan from './pages/Scan.jsx'
 import Activate from './pages/Activate.jsx'
 import Profile from './pages/Profile.jsx'
+import Creditos from './pages/Creditos.jsx'
 import ModelPreview from './pages/ModelPreview.jsx'
 import Privacidad from './pages/Privacidad.jsx'
 import EliminarCuenta from './pages/EliminarCuenta.jsx'
@@ -48,6 +49,7 @@ function App() {
       <Route path="/scan" element={<Scan />} />
       <Route path="/activate" element={<Activate />} />
       <Route path="/profile" element={<Profile />} />
+      <Route path="/creditos" element={<Creditos />} />
       {/*
         Rutas exigidas por Google Play. Ambas deben abrir en el navegador SIN
         instalar la app: son las direcciones que se registran en Play Console,

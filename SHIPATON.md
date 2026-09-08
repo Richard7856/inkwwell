@@ -26,6 +26,18 @@ Fuente: https://revenuecat-shipaton-2026.devpost.com/rules (consultado 7 sep 202
 
 ## Estado actual (7 de septiembre, noche)
 
+> **Publicada en Play el 8 de septiembre**, día 2 del sprint. Con eso queda
+> cubierto el requisito más duro del concurso (publicada, no solo enviada,
+> dentro de la ventana) y se anota el criterio de lanzar temprano.
+>
+> **Pero la versión publicada NO puede cobrar.** Verificado abriendo el bundle
+> dentro de `inkar.aab`: la llave de RevenueCat quedó **vacía** al hornearse, y
+> no hay `purchasePackage` ni pantalla de compra. Como Capacitor empaqueta los
+> assets (`webDir: dist`, sin `server.url`), desplegar a Vercel **no** actualiza
+> la app instalada. Para que el concurso registre facturación hace falta un
+> **versionCode 4** con la llave horneada y el flujo de compra dentro, y por lo
+> tanto una **segunda revisión de Play**.
+
 **Verificado funcionando, no supuesto:**
 - Escaneo AR con seguimiento de imagen, varios tatuajes por sesión
 - **Video 2D anclado al tatuaje real, con recorte de fondo** — probado sobre piel
@@ -49,7 +61,7 @@ Meta: **app viva en Play antes del día 14**, aunque sea mínima.
 | Responsable | Tarea | Estado |
 |---|---|---|
 | Richard | Generar y **respaldar** la llave de firma | ✅ |
-| Richard | Crear la app en Play Console y subir el bundle | ✅ **en revisión** |
+| Richard | Crear la app en Play Console y subir el bundle | ✅ **PUBLICADA** (8 sep, versionCode 3) |
 | Richard | Conectar el dominio inkar.app en Vercel | ✅ |
 | Richard | Cuenta de servicio de Google Cloud (**~36h, SIN ARRANCAR**) | 🔴 bloquea el cobro |
 | Richard | Crear productos de compra (créditos) en Play Console | ⬜ |
@@ -110,7 +122,8 @@ devolver el dinero después.
 | Los jueces no tienen tatuajes | **Crítico** — calificarían un video, no la experiencia | Modo "activa cualquier cosa": MindAR rastrea cualquier imagen, no solo piel | Resuelto en diseño |
 | La API de Higgsfield no sirve o es cara | Alto | Alternativa: Veo de Gemini. Menos pulido pero desbloquea | API confirmada, falta probar |
 | El video de IA deriva y no calza sobre el tatuaje | Medio | El video es del **recuerdo** (la mascota real), no del dibujo: aparece sobre la piel como portal, no lo reemplaza | Bajo tras replantear |
-| Rechazo en la revisión de Play | Alto si pasa tarde | Publicar el día 14, no el 28 | Mitigado por calendario |
+| Rechazo en la revisión de Play | Alto si pasa tarde | Publicar el día 14, no el 28 | ✅ aprobada el 8 sep, día 2 |
+| La segunda revisión (versionCode 4, la que trae el cobro) llega tarde | **Crítico** — sin ella no hay facturación y no hay premio | La primera revisión tardó ~1 día: la cuenta de 2018 tiene revisión rápida. Aun así, entregar el 4 en cuanto exista la llave, no acumular cambios | ⬜ |
 | Tatuajes que trackean mal generan reembolsos | Alto para la reputación | El analizador advierte **antes** de elegir diseño; se guarda el veredicto para calibrar | 🟡 hecho en código, pendiente redesplegar el worker |
 | Límite de correos de Supabase corta el registro | Medio | SMTP propio (Resend/SendGrid) antes del lanzamiento | ⬜ |
 | Perder la llave de subida | Alto | Respaldo en dos lugares distintos. Con Play App Signing es recuperable pidiéndoselo a Google, pero tarda días | ⬜ |

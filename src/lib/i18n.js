@@ -163,6 +163,33 @@ const EN = {
     'Frame the whole tattoo, centered, with nothing cropped and no excess bare skin.',
   'Toma la foto más cerca o con mejor cámara — no la recortes de una imagen más grande.':
     'Shoot closer or with a better camera — don’t crop it out of a larger image.',
+
+  // ── Créditos y compra ──
+  'Créditos': 'Credits',
+  'crédito disponible': 'credit available',
+  'créditos disponibles': 'credits available',
+  'Cada crédito genera un video para tu tatuaje.': 'Each credit generates one video for your tattoo.',
+  'Cargando precios...': 'Loading prices…',
+  'Abriendo Google Play...': 'Opening Google Play…',
+  'Acreditando...': 'Adding your credits…',
+  'Listo, tus créditos ya están disponibles.': 'Done — your credits are available.',
+  'Tu pago se registró. Los créditos pueden tardar un momento en aparecer.':
+    'Your payment went through. The credits can take a moment to show up.',
+  'Volver a revisar': 'Check again',
+  'No se pudo cargar la lista de precios.': 'Prices could not be loaded.',
+  'Todavía no hay paquetes a la venta': 'Nothing on sale yet',
+  'Vuelve en un rato.': 'Check back in a bit.',
+  'Las compras se hacen desde la app': 'Purchases happen in the app',
+  'Descarga InkAR en tu teléfono para comprar créditos.':
+    'Get InkAR on your phone to buy credits.',
+  'Tu pago quedó pendiente de aprobación. Los créditos llegarán en cuanto se confirme.':
+    'Your payment is pending approval. Credits will arrive once it clears.',
+  'Las compras no están disponibles en este dispositivo o cuenta.':
+    'Purchases are not available on this device or account.',
+  'Google Play tuvo un problema al procesar el pago. Inténtalo de nuevo.':
+    'Google Play had a problem processing the payment. Please try again.',
+  'Sin conexión. Revisa tu internet e inténtalo de nuevo.':
+    'No connection. Check your internet and try again.',
   'Cambiar foto': 'Change photo',
   'Tu tatuaje está activado': 'Your tattoo is activated',
   'Probar ahora →': 'Try it now →',
@@ -263,6 +290,33 @@ const EN = {
     'Frame the whole tattoo, centered, with nothing cropped and no excess bare skin.',
   'Toma la foto más cerca o con mejor cámara — no la recortes de una imagen más grande.':
     'Shoot closer or with a better camera — don’t crop it out of a larger image.',
+
+  // ── Créditos y compra ──
+  'Créditos': 'Credits',
+  'crédito disponible': 'credit available',
+  'créditos disponibles': 'credits available',
+  'Cada crédito genera un video para tu tatuaje.': 'Each credit generates one video for your tattoo.',
+  'Cargando precios...': 'Loading prices…',
+  'Abriendo Google Play...': 'Opening Google Play…',
+  'Acreditando...': 'Adding your credits…',
+  'Listo, tus créditos ya están disponibles.': 'Done — your credits are available.',
+  'Tu pago se registró. Los créditos pueden tardar un momento en aparecer.':
+    'Your payment went through. The credits can take a moment to show up.',
+  'Volver a revisar': 'Check again',
+  'No se pudo cargar la lista de precios.': 'Prices could not be loaded.',
+  'Todavía no hay paquetes a la venta': 'Nothing on sale yet',
+  'Vuelve en un rato.': 'Check back in a bit.',
+  'Las compras se hacen desde la app': 'Purchases happen in the app',
+  'Descarga InkAR en tu teléfono para comprar créditos.':
+    'Get InkAR on your phone to buy credits.',
+  'Tu pago quedó pendiente de aprobación. Los créditos llegarán en cuanto se confirme.':
+    'Your payment is pending approval. Credits will arrive once it clears.',
+  'Las compras no están disponibles en este dispositivo o cuenta.':
+    'Purchases are not available on this device or account.',
+  'Google Play tuvo un problema al procesar el pago. Inténtalo de nuevo.':
+    'Google Play had a problem processing the payment. Please try again.',
+  'Sin conexión. Revisa tu internet e inténtalo de nuevo.':
+    'No connection. Check your internet and try again.',
   'Está tardando más de lo normal. No cierres la app.':
     'This is taking longer than usual. Don’t close the app.',
 

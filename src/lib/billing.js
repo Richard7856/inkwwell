@@ -58,3 +58,100 @@ export async function initBilling(userId) {
     return false
   }
 }
+
+/*
+  ─────────────────────────────────────────────────────────────────────────────
+  Compra de créditos
+  ─────────────────────────────────────────────────────────────────────────────
+*/
+
+/**
+ * Error de compra ya interpretado.
+ *
+ * POR QUÉ EXISTE: RevenueCat devuelve códigos numéricos en texto ("1", "20")
+ * que no significan nada para quien llama, y la mitad de ellos NO son fallas.
+ * Cancelar una compra es el caso más común de todos y no debe pintarse en rojo.
+ * Traducir aquí evita que cada pantalla reinvente esa distinción.
+ */
+export class ErrorCompra extends Error {
+  /** @param {'cancelado'|'pendiente'|'no-disponible'|'tienda'|'red'|'desconocido'} tipo */
+  constructor(tipo, message) {
+    super(message)
+    this.tipo = tipo
+    // Cancelar no es un fallo: el usuario cambió de opinión, que es su derecho
+    this.esFallo = tipo !== 'cancelado'
+  }
+}
+
+// Códigos de PURCHASES_ERROR_CODE (@revenuecat/purchases-typescript-internal-esm).
+// Se comparan como texto porque el SDK los emite así, no como número.
+const TIPO_POR_CODIGO = {
+  1: 'cancelado',      // PURCHASE_CANCELLED_ERROR
+  2: 'tienda',         // STORE_PROBLEM_ERROR
+  3: 'no-disponible',  // PURCHASE_NOT_ALLOWED_ERROR
+  5: 'no-disponible',  // PRODUCT_NOT_AVAILABLE_FOR_PURCHASE_ERROR
+  10: 'red',           // NETWORK_ERROR
+  20: 'pendiente',     // PAYMENT_PENDING_ERROR
+  23: 'no-disponible', // CONFIGURATION_ERROR
+}
+
+function interpretar(err) {
+  const tipo = TIPO_POR_CODIGO[String(err?.code)] ?? 'desconocido'
+  return new ErrorCompra(tipo, err?.message || 'La compra no se pudo completar')
+}
+
+/**
+ * Paquetes de créditos disponibles para comprar.
+ *
+ * ── Por qué la Offering y no identificadores fijos en el código ──
+ * Los precios y los paquetes se administran desde el panel de RevenueCat. Si
+ * estuvieran escritos aquí, cambiar un precio exigiría compilar, entregar a Play
+ * y esperar otra revisión — imposible para probar precios.
+ *
+ * ── El modo de fallar que hay que reconocer ──
+ * Si los productos existen en Play y están dados de alta en RevenueCat pero NO
+ * se metieron en una Offering, esto devuelve un arreglo VACÍO sin ningún error.
+ * No es una falla de red ni de configuración del SDK: es una lista vacía. La
+ * pantalla debe distinguir "no hay nada que vender" de "algo se rompió".
+ *
+ * @returns {Promise<Array<{id: string, precio: string, titulo: string, paquete: object}>>}
+ */
+export async function obtenerPaquetes() {
+  if (!isBillingAvailable()) return []
+
+  const { current } = await Purchases.getOfferings()
+  const paquetes = current?.availablePackages ?? []
+
+  return paquetes.map((p) => ({
+    id: p.identifier,
+    // priceString ya viene con la moneda local que la tienda le muestra al
+    // usuario. Formatearlo aquí produciría un precio distinto al que va a pagar.
+    precio: p.product.priceString,
+    titulo: p.product.title,
+    paquete: p,
+  }))
+}
+
+/**
+ * Lanza la compra de un paquete.
+ *
+ * OJO: que esto resuelva significa que la TIENDA cobró, no que los créditos ya
+ * estén en el libro mayor. Eso llega por el webhook, después. Ver
+ * `esperarAcreditacion()` en lib/creditos.js.
+ *
+ * @param {object} paquete - El `paquete` de obtenerPaquetes()
+ * @returns {Promise<{productId: string}>}
+ * @throws {ErrorCompra} Siempre de este tipo — nunca el error crudo del SDK
+ */
+export async function comprarPaquete(paquete) {
+  if (!isBillingAvailable()) {
+    throw new ErrorCompra('no-disponible', 'El cobro no está disponible en este dispositivo')
+  }
+
+  try {
+    const { productIdentifier } = await Purchases.purchasePackage({ aPackage: paquete })
+    return { productId: productIdentifier }
+  } catch (err) {
+    throw interpretar(err)
+  }
+}
