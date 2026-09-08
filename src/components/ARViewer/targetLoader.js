@@ -42,6 +42,26 @@ const DEMO_MARCADOR = {
   targets: [{ glbUrl: '/models/Fenix.glb', label: 'Fénix' }],
 }
 
+/*
+  Prueba de contenido 2D sobre un tatuaje real.
+
+  Reusa el mismo .mind del demo multi-tatuaje —los dos tatuajes del founder ya
+  compilados— y le pone el video de Zero sobre el de la HUELLA, que es
+  precisamente el suyo. El segundo target conserva su modelo 3D, así que la
+  misma sesión ejercita los dos caminos del visor: video y GLB, uno al lado del
+  otro, con el mismo tracking.
+
+  Es una prueba, no producto: cuando el catálogo acepte video desde la base,
+  esto se retira.
+*/
+const DEMO_ZERO = {
+  mindUrl: 'https://duzfvyfhsvhavptuxehi.supabase.co/storage/v1/object/public/mind-files/compiled/multi-demo-1788750830.mind',
+  targets: [
+    { videoUrl: '/video/zero-croma.mp4', escala: 1.4, label: 'Zero' },
+    { glbUrl: '/models/Fenix.glb', label: 'Esqueleto' },
+  ],
+}
+
 /**
  * @param {object} params
  * @param {string|null} params.tattooId - UUID de un tatuaje concreto
@@ -51,6 +71,7 @@ const DEMO_MARCADOR = {
 export async function loadTarget({ tattooId = null, demo = null } = {}) {
   if (demo === 'multi') return DEMO_MULTI
   if (demo === 'marcador') return DEMO_MARCADOR
+  if (demo === 'zero') return DEMO_ZERO
 
   if (!tattooId) {
     throw new Error('No se indicó qué tatuaje escanear')
