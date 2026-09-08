@@ -484,3 +484,27 @@ Con el croma en negro, el fondo verde no quedaba fuera del umbral sino **a media
 **No es solo la luz.** El propio historial ya lo tenía medido: la huella da **2308 puntos de detección y 16% de seguimiento**; el esqueleto, 2516 y 20%. El marcador generado para el demo da 33% — el doble que la huella.
 
 O sea, ese tatuaje está en el extremo bajo de lo ACEPTABLE, y con poca luz se cae. **Esto es el argumento concreto para conectar el analizador al flujo de activación**, que sigue pendiente del Bloque 1: si al founder le cuesta con 16%, un cliente con un tatuaje peor pide reembolso. Vale más rechazar una foto antes de cobrar que devolver el dinero después.
+
+## [2026-09-07] El analizador entra al flujo, pero antes del diseño y sin bloquear
+**Context:** El analizador existía desde el día 1 y solo se usaba por CLI. La entrada anterior dejó el argumento concreto para conectarlo: la huella rastrea al 16% y cuesta engancharla, así que un cliente con un tatuaje peor pide reembolso.
+
+**Lo que resultó ser el problema real:** no era medir, era *cuándo*. El flujo iba `foto → subir → elegir diseño → compilar`. Compilar es el único momento en que se puede medir —las métricas salen de los descriptores que produce esa misma compilación—, así que el veredicto llegaba **después** del compromiso del usuario. Con diseños de pago eso es cobrar antes de saber si el tatuaje funciona.
+
+**Decision:** la compilación se mueve al paso de la foto. `foto → compilar y medir → (veredicto) → elegir diseño → guardar`.
+
+**Lo que abarató el cambio:** `analyzeTattooImage()` ya devolvía `{ metrics, mindBuffer }` de una sola compilación. Medir es contar arrays que la compilación ya produjo, no una segunda pasada. Así que `/compile-stream` emite las métricas junto al `done` y **no agrega ni un segundo de espera**: son los mismos ~11s, corridos un paso antes. Encadenar `/analyze` y luego `/compile` habría costado el doble para llegar al mismo binario.
+
+**Advierte, no bloquea** (decisión de Richard). Con 'malo' el botón cómodo es repetir la foto y "Activar de todos modos" queda discreto; con 'aceptable' se invierte. Razón: los umbrales son heurísticas sin calibrar —lo dice el encabezado de `analyzer.js`—, y bloquear con umbrales equivocados deja al usuario sin producto y sin recurso, que es peor que un reembolso. El tatuaje del propio founder cae en 'aceptable' por poco: una pared ahí espantaría a la mayoría de los tatuajes reales.
+
+**Alternativas consideradas:** bloquear en 'malo' (protege del reembolso pero apuesta a que los umbrales ya están bien, sin datos que lo sostengan); medir en silencio sin mostrar nada (no protege de nada, solo prepara el terreno).
+
+**Lo que convierte esto en datos:** migración 007. Se guarda `quality_metrics` completo como jsonb —no columnas sueltas, porque todavía no sabemos qué métrica es predictiva: los puntos de detección ya se descartaron como predictor— y sobre todo `quality_overridden`, que marca los casos donde el analizador dijo "malo" y el humano no estuvo de acuerdo. Si esos tatuajes después funcionan, los umbrales castigan de más; si generan quejas, están bien puestos. Sin esa columna cada activación tira el dato a la basura.
+
+**Un hallazgo secundario, y no menor:** al ver el veredicto en pantalla salieron dos textos que eran invisibles mientras el analizador solo escupía a una terminal. Decía **"el 3D va a vibrar"** —el contenido dejó de ser 3D el mismo día— y usaba **"tracking"/"trackean"** en texto de cara al cliente. Peor: los motivos y consejos los redacta el worker, así que llegaban en español a una app bilingüe, y los jueces del Shipaton leen inglés. **Decision:** el worker manda un `code` estable junto al texto en español, y el cliente rearma la frase en su idioma con las cifras que ya recibe. El texto del worker queda de respaldo para el CLI y para códigos que la app todavía no conozca.
+
+**Riesgos y límites:**
+- Quien abandone en el selector deja una compilación sin usar, y repetir la foto deja la anterior huérfana en Storage. Ambos aceptados a sabiendas: kilobytes contra un reembolso.
+- **El worker debe redesplegarse en Railway o la pantalla nunca aparece.** El cliente trata la ausencia de métricas como "no medido" y deja pasar al usuario en silencio — degrada bien, pero la función queda inerte sin que nada falle a la vista.
+- Los umbrales siguen sin calibrar. Esto no los arregla: monta el instrumento que permitirá arreglarlos.
+
+**Verificado contra el worker corriendo, no supuesto:** el marcador del demo devuelve 3440 puntos y 33% de seguimiento — idéntico a lo que ya estaba medido por CLI, así que el camino nuevo mide lo mismo. Una foto de trazo fino en una esquina devuelve 'malo' con las cuatro razones y los tres consejos correctos. Las dos pantallas revisadas a 375px en español e inglés.

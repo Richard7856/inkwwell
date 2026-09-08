@@ -59,7 +59,7 @@ Meta: **app viva en Play antes del día 14**, aunque sea mínima.
 | Claude | Borrado de cuenta (lo exige Play) | ✅ desplegado y probado |
 | Claude | Política de privacidad publicada | ✅ inkar.app/privacidad |
 | Claude | SDK de RevenueCat en la app | 🟡 instalado y configurado, falta la llave |
-| Claude | Conectar el analizador al flujo de activación | 🔴 **prioridad** — ver abajo |
+| Claude | Conectar el analizador al flujo de activación | ✅ advierte antes de elegir diseño; **falta redesplegar el worker** |
 
 ### Bloque 2 · Motor de video 2D (14–21 sep)
 
@@ -81,6 +81,11 @@ llegue la máquina nueva (~14 sep) y sirven de escaparate del motor de negocio.
 **Audio:** primero el que graba el propio usuario — cero problema de derechos y
 es lo que da sentido a un recuerdo. La música de biblioteca queda para después,
 por el problema de licencias descrito en DECISIONS.md.
+
+**El analizador ya corre en el flujo** (7 sep). Advierte sin bloquear y guarda
+el veredicto en `tattoos`; ver `DECISIONS.md`. **No sirve de nada hasta
+redesplegar el worker en Railway**: sin eso el cliente recibe métricas nulas,
+las trata como "no medido" y deja pasar en silencio.
 
 **Por qué el analizador subió a prioridad:** al probar el video sobre el tatuaje
 real de la huella costó que enganchara. No era solo la luz — ese tatuaje mide
@@ -106,7 +111,7 @@ devolver el dinero después.
 | La API de Higgsfield no sirve o es cara | Alto | Alternativa: Veo de Gemini. Menos pulido pero desbloquea | API confirmada, falta probar |
 | El video de IA deriva y no calza sobre el tatuaje | Medio | El video es del **recuerdo** (la mascota real), no del dibujo: aparece sobre la piel como portal, no lo reemplaza | Bajo tras replantear |
 | Rechazo en la revisión de Play | Alto si pasa tarde | Publicar el día 14, no el 28 | Mitigado por calendario |
-| Tatuajes que trackean mal generan reembolsos | Alto para la reputación | Conectar el analizador y rechazar fotos malas **antes** de cobrar | ⬜ |
+| Tatuajes que trackean mal generan reembolsos | Alto para la reputación | El analizador advierte **antes** de elegir diseño; se guarda el veredicto para calibrar | 🟡 hecho en código, pendiente redesplegar el worker |
 | Límite de correos de Supabase corta el registro | Medio | SMTP propio (Resend/SendGrid) antes del lanzamiento | ⬜ |
 | Perder la llave de subida | Alto | Respaldo en dos lugares distintos. Con Play App Signing es recuperable pidiéndoselo a Google, pero tarda días | ⬜ |
 

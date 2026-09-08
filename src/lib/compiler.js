@@ -29,15 +29,22 @@ class CompileError extends Error {
 }
 
 /**
- * Envía la foto del tatuaje al worker y devuelve el .mind compilado.
+ * Envía la foto del tatuaje al worker y devuelve el .mind compilado junto con
+ * las métricas de calidad de tracking.
  *
  * Intenta primero el endpoint con progreso (SSE) y cae al clásico si no está
  * disponible — un APK viejo apuntando a un worker nuevo, o un proxy que no
  * soporte respuestas incrementales, siguen funcionando sin progreso.
  *
+ * POR QUÉ `metrics` PUEDE VENIR EN null:
+ * el camino de respaldo (/compile) no mide, y un worker desplegado antes de
+ * este cambio tampoco manda el campo. Ausencia de métricas NO es una foto mala:
+ * es que no se pudo medir. Quien consuma esto debe dejar pasar al usuario en
+ * ese caso, nunca advertirle de una calidad que nadie comprobó.
+ *
  * @param {File} imageFile - Foto del tatuaje (ya reducida por PhotoUpload)
  * @param {(pct: number) => void} [onProgress] - Avance real 0-100
- * @returns {Promise<ArrayBuffer>} Binario del .mind
+ * @returns {Promise<{ mindBuffer: ArrayBuffer, metrics: object|null }>}
  */
 export async function compileMindFile(imageFile, onProgress) {
   if (!COMPILER_URL) {
@@ -53,7 +60,7 @@ export async function compileMindFile(imageFile, onProgress) {
     // repetiría un proceso caro para llegar al mismo error
     if (err.isFatal) throw err
     console.warn('[compiler] Streaming no disponible, usando /compile:', err.message)
-    return await compilePlain(imageFile)
+    return { mindBuffer: await compilePlain(imageFile), metrics: null }
   }
 }
 
@@ -118,7 +125,12 @@ async function compileWithProgress(imageFile, onProgress) {
   }
 
   onProgress?.(100)
-  return base64ToArrayBuffer(result.mind)
+  return {
+    mindBuffer: base64ToArrayBuffer(result.mind),
+    // Un worker anterior a la medición no manda el campo — se normaliza a null
+    // para que el llamador distinga "no medido" de "medido y salió mal"
+    metrics: result.metrics ?? null,
+  }
 }
 
 /** Compilación clásica: una sola respuesta binaria, sin progreso */

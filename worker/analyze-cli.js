@@ -61,11 +61,11 @@ function printReport(file, m) {
 
   if (v.reasons.length > 0) {
     console.log(`  ${C.yellow}Problemas:${C.reset}`)
-    v.reasons.forEach((r) => console.log(`    • ${r}`))
+    v.reasons.forEach((r) => console.log(`    • ${r.text}`))
   }
   if (v.tips.length > 0) {
     console.log(`  ${C.cyan}Cómo mejorar:${C.reset}`)
-    v.tips.forEach((t) => console.log(`    → ${t}`))
+    v.tips.forEach((c) => console.log(`    → ${c.text}`))
   }
 }
 

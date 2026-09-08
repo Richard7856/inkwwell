@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import PhotoUpload from '../components/UploadFlow/PhotoUpload.jsx'
 import DesignPicker from '../components/UploadFlow/DesignPicker.jsx'
 import CompileStatus from '../components/UploadFlow/CompileStatus.jsx'
+import QualityReport from '../components/UploadFlow/QualityReport.jsx'
 import { uploadTattooImage, uploadMindFile } from '../lib/storage.js'
 import { createTattoo } from '../lib/supabase.js'
 import { compileMindFile } from '../lib/compiler.js'
@@ -14,22 +15,40 @@ import { t } from '../lib/i18n.js'
 
 /**
  * Flujo de activación — Flujo A.
- * Pasos: capturar foto → upload a Supabase → elegir GLB → compilar .mind → guardar en DB → confirmación.
+ * Pasos: foto → subir → compilar y MEDIR → (veredicto) → elegir diseño → guardar.
  *
- * ¿Por qué guardamos imageFile en estado además de imageUrl?
- * La foto se sube a Supabase al terminar el paso 1, pero el worker de compilación
- * necesita el File original (binario) — no la URL pública. Mantener ambas referencias
- * evita tener que re-descargar la imagen desde Supabase para compilar.
+ * ── Por qué se compila ANTES de elegir el diseño ──
+ * Compilar es el único momento en que se puede medir si el tatuaje va a
+ * rastrear: las métricas salen de los descriptores que produce esa misma
+ * compilación. En el orden anterior —elegir y luego compilar— el veredicto
+ * llegaba después del compromiso del usuario. Cuando el diseño sea de pago eso
+ * significa cobrar antes de saber si el tatuaje funciona, que es la receta del
+ * reembolso.
  *
- * ¿Por qué volver a 'design' en error de compilación y no a 'upload'?
- * La foto ya está subida — no tiene sentido pedirla de nuevo. El usuario puede
- * intentar con otro diseño o reintentar el mismo. Esto también preserva imageUrl.
+ * No agrega espera: son los mismos ~11 segundos, corridos un paso antes. El
+ * .mind se guarda en estado y se sube al final, así que no se compila dos veces.
+ *
+ * El costo aceptado es que quien abandone en el selector deja una compilación
+ * sin usar. Frente a un reembolso, no se compara.
+ *
+ * ── Por qué guardamos imageFile en estado además de imageUrl ──
+ * La foto se sube a Supabase al terminar el paso 1, pero el worker de
+ * compilación necesita el File original (binario) — no la URL pública. Mantener
+ * ambas referencias evita re-descargar la imagen desde Supabase para compilar.
+ *
+ * ── Por qué el error de guardado vuelve a 'design' y no a 'upload' ──
+ * La foto y el .mind ya existen — no tiene sentido rehacer nada de eso. El
+ * usuario reintenta con el mismo diseño o con otro.
  */
 export default function Activate() {
   const { user, isLoggedIn, loading: cargandoSesion } = useAuth()
-  const [step, setStep] = useState('upload') // upload | uploading | design | compiling | done
+  // upload | uploading | compiling | quality | design | saving | done
+  const [step, setStep] = useState('upload')
   const [imageUrl, setImageUrl] = useState(null)
   const [imageFile, setImageFile] = useState(null) // referencia al File original para el worker
+  const [mindBuffer, setMindBuffer] = useState(null) // .mind ya compilado, pendiente de subir
+  const [metrics, setMetrics] = useState(null) // veredicto del analizador; null = no se midió
+  const [overridden, setOverridden] = useState(false) // activó pese a la advertencia
   const [selectedDesign, setSelectedDesign] = useState(null)
   const [tattooId, setTattooId] = useState(null) // UUID del tatuaje en Supabase
   const [error, setError] = useState('')
@@ -52,6 +71,7 @@ export default function Activate() {
       setElapsed(0)
       return
     }
+
     const startedAt = Date.now()
     const id = setInterval(() => {
       setElapsed(Math.floor((Date.now() - startedAt) / 1000))
@@ -70,31 +90,86 @@ export default function Activate() {
     try {
       const { url } = await uploadTattooImage(file)
       setImageUrl(url)
-      setStep('design')
+      await compilarYMedir(file)
     } catch (err) {
       setError(err.message)
       setStep('upload')
     }
   }
 
-  const handleDesignSelected = async (design) => {
-    setSelectedDesign(design)
+  /*
+    Compila el .mind y evalúa el veredicto del analizador.
+
+    Los niveles 'bueno' y 'excelente' saltan directo al selector: interponer una
+    pantalla de felicitación entre la foto y el diseño solo agrega un toque más
+    a un flujo que ya dura medio minuto.
+
+    Sin métricas (worker viejo, o respaldo por /compile) también pasa de largo.
+    No medir no es lo mismo que medir mal: advertir de una calidad que nadie
+    comprobó sería inventar un problema.
+  */
+  const compilarYMedir = async (file) => {
     setStep('compiling')
     setError('')
     setCompileProgress(0)
     setCompileStage('compiling')
 
     try {
-      // Paso 1: enviar la foto al worker — el worker ejecuta MindAR OfflineCompiler
-      // Esto toma 10-30 segundos dependiendo del tamaño de la imagen y el servidor
-      const mindBuffer = await compileMindFile(imageFile, setCompileProgress)
+      const resultado = await compileMindFile(file, setCompileProgress)
+      setMindBuffer(resultado.mindBuffer)
+      setMetrics(resultado.metrics)
+      setOverridden(false)
 
-      // Paso 2: subir el .mind compilado a Supabase Storage (bucket: mind-files)
+      const nivel = resultado.metrics?.verdict?.level
+      setStep(nivel === 'malo' || nivel === 'aceptable' ? 'quality' : 'design')
+    } catch (err) {
+      setError(err.message)
+      // Volver a la foto: si la compilación falló, el problema está en la imagen
+      setStep('upload')
+    }
+  }
+
+  /*
+    Repetir la foto tras el veredicto.
+
+    La foto anterior queda huérfana en Storage. Se acepta a sabiendas: limpiarla
+    exigiría rastrear qué subidas quedaron sin registro, y una foto suelta cuesta
+    kilobytes. Si el volumen lo justifica, se barre después por fecha contra la
+    tabla `tattoos`.
+  */
+  const handleRetake = () => {
+    setMindBuffer(null)
+    setMetrics(null)
+    setOverridden(false)
+    setImageUrl(null)
+    setInkLayer(null)
+    setError('')
+    setStep('upload')
+  }
+
+  /*
+    Continuar pese al veredicto.
+
+    Solo cuenta como "forzado" cuando el nivel era 'malo': ahí el usuario
+    contradijo una advertencia explícita, y ese desacuerdo es el dato que
+    permite calibrar los umbrales. En 'aceptable' continuar ES el camino
+    recomendado, así que marcarlo ensuciaría la señal.
+  */
+  const handleContinueFromQuality = () => {
+    setOverridden(metrics?.verdict?.level === 'malo')
+    setStep('design')
+  }
+
+  const handleDesignSelected = async (design) => {
+    setSelectedDesign(design)
+    setStep('saving')
+    setError('')
+
+    try {
+      // El .mind ya está compilado desde el paso de la foto — aquí solo se persiste
       setCompileStage('uploading')
       const { url: mindUrl } = await uploadMindFile(mindBuffer)
 
-      // Paso 3: crear el registro en la tabla tattoos y obtener el UUID
-      // Este UUID es el "identificador permanente" del tatuaje — vive en la URL de escaneo
       setCompileStage('saving')
       /*
         Se asegura el perfil antes de guardar: las políticas de la base exigen
@@ -108,13 +183,15 @@ export default function Activate() {
         mindUrl,
         glbUrl: design.glbUrl,
         userId: perfil.id,
+        metrics,
+        overridden,
       })
 
       setTattooId(id)
       setStep('done')
     } catch (err) {
       setError(err.message)
-      // Volver a 'design' — la foto ya está subida, no hace falta repetir ese paso
+      // Volver a 'design' — la foto y el .mind ya existen, no hace falta rehacerlos
       setStep('design')
     }
   }
@@ -173,23 +250,33 @@ export default function Activate() {
         </div>
       )}
 
+      {step === 'quality' && (
+        <div>
+          <Miniatura
+            imageUrl={imageUrl}
+            titulo={t('Tu tatuaje, medido')}
+            detalle={t('Así se va a comportar con la cámara')}
+          />
+          <QualityReport
+            metrics={metrics}
+            onRetake={handleRetake}
+            onContinue={handleContinueFromQuality}
+          />
+        </div>
+      )}
+
       {step === 'design' && (
         <div>
-          {/* Thumbnail de la foto subida — confirmación visual para el usuario */}
-          {imageUrl && (
-            <div className="mb-6 flex items-center gap-3 bg-white/5 rounded-xl p-3 border border-white/10">
-              <img src={imageUrl} alt={t('Tu tatuaje')} className="w-14 h-14 rounded-lg object-cover" />
-              <div className="text-left">
-                <p className="text-sm font-medium">{t('Foto subida')}</p>
-                <p className="text-xs text-gray-500">{t('Ahora elige tu diseño 3D')}</p>
-              </div>
-            </div>
-          )}
+          <Miniatura
+            imageUrl={imageUrl}
+            titulo={t('Tatuaje listo')}
+            detalle={t('Ahora elige tu diseño 3D')}
+          />
           <DesignPicker onDesignSelected={handleDesignSelected} />
         </div>
       )}
 
-      {step === 'compiling' && (
+      {(step === 'compiling' || step === 'saving') && (
         <CompileStatus
           stage={compileStage}
           progress={compileProgress}
@@ -248,11 +335,21 @@ function StepIndicator({ current }) {
   const steps = [
     { key: 'upload', label: t('Foto') },
     { key: 'design', label: t('Diseño') },
-    { key: 'compiling', label: t('Activar') },
+    { key: 'saving', label: t('Activar') },
   ]
 
-  // Mapear estados intermedios al índice del paso visual correspondiente
-  const stepMap = { upload: 0, uploading: 0, design: 1, compiling: 2, done: 3 }
+  /*
+    Mapear estados intermedios al índice del paso visual correspondiente.
+
+    'compiling' y 'quality' se muestran como el paso de la FOTO, no como uno
+    nuevo: para el usuario siguen siendo parte de "dame una foto que sirva", y
+    el veredicto puede devolverlo justo ahí. Un cuarto círculo sugeriría un
+    avance que un 'tomar otra foto' deshace.
+  */
+  const stepMap = {
+    upload: 0, uploading: 0, compiling: 0, quality: 0,
+    design: 1, saving: 2, done: 3,
+  }
   const currentIdx = stepMap[current] ?? 0
 
   return (
@@ -279,6 +376,24 @@ function StepIndicator({ current }) {
           )}
         </div>
       ))}
+    </div>
+  )
+}
+
+/**
+ * Miniatura de la foto subida — confirmación visual de sobre qué se está
+ * decidiendo. Aparece igual en el veredicto y en el selector para que el
+ * usuario no pierda de vista cuál foto es, sobre todo si repitió alguna.
+ */
+function Miniatura({ imageUrl, titulo, detalle }) {
+  if (!imageUrl) return null
+  return (
+    <div className="mb-6 flex items-center gap-3 bg-white/5 rounded-xl p-3 border border-white/10">
+      <img src={imageUrl} alt={t('Tu tatuaje')} className="w-14 h-14 rounded-lg object-cover" />
+      <div className="text-left">
+        <p className="text-sm font-medium">{titulo}</p>
+        <p className="text-xs text-gray-500">{detalle}</p>
+      </div>
     </div>
   )
 }

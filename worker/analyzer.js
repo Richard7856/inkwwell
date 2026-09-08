@@ -251,8 +251,20 @@ function analyzeResolution(width, height) {
  * uno con 80 puntos bien repartidos. Promediar escondería el problema real.
  */
 function buildVerdict({ detection, tracking, distribution, resolution }) {
+  /*
+    Cada motivo y cada consejo llevan un `code` estable además del texto.
+
+    POR QUÉ: este veredicto ya no termina solo en una terminal — se le muestra
+    al usuario en la app, que es bilingüe. Traducir cadenas armadas aquí
+    obligaría a que el worker conociera el idioma del cliente. Con el código, el
+    cliente arma la frase en su idioma a partir de las cifras que ya recibe, y
+    el texto en español viaja como respaldo para el CLI y para cualquier código
+    nuevo que la app todavía no sepa traducir.
+  */
   const reasons = []
   const tips = []
+  const razon = (code, text) => reasons.push({ code, text })
+  const consejo = (code, text) => tips.push({ code, text })
 
   const levelFor = (value, t) =>
     value >= t.excelente ? 3 : value >= t.bueno ? 2 : value >= t.aceptable ? 1 : 0
@@ -262,42 +274,51 @@ function buildVerdict({ detection, tracking, distribution, resolution }) {
   const gridLevel = levelFor(distribution.occupiedCells, THRESHOLDS.gridCells)
 
   if (trackingLevel <= 1) {
-    reasons.push(
+    razon(
+      'seguimiento-bajo',
       `Pocos puntos de seguimiento: ${tracking.totalPoints} de ${tracking.maxPossible} posibles ` +
-      `(${Math.round(tracking.fillRatio * 100)}%). El 3D va a vibrar o despegarse al mover la cámara.`
+      `(${Math.round(tracking.fillRatio * 100)}%). El contenido va a vibrar o despegarse al mover la cámara.`
     )
-    tips.push('Tatuajes con sombreado, textura o líneas densas trackean mucho mejor que line-art fino.')
+    consejo(
+      'textura',
+      'Los tatuajes con sombreado, textura o líneas densas se siguen mucho mejor que el trazo fino.'
+    )
   }
 
   if (detectionLevel <= 1) {
-    reasons.push(
+    razon(
+      'deteccion-baja',
       `Pocos puntos de detección (${detection.totalPoints}). Va a costar que la cámara reconozca el tatuaje.`
     )
-    tips.push('Mejora el contraste: luz lateral suave, sin flash directo, sin reflejos en la piel.')
+    consejo('contraste', 'Mejora el contraste: luz lateral suave, sin flash directo, sin reflejos en la piel.')
   }
 
   if (gridLevel <= 1) {
-    reasons.push(
-      `Puntos concentrados en ${distribution.occupiedCells} de 9 zonas. El tracking se pierde si esa zona sale del encuadre.`
+    razon(
+      'zonas-pocas',
+      `Puntos concentrados en ${distribution.occupiedCells} de 9 zonas. El seguimiento se pierde si esa zona sale del encuadre.`
     )
-    tips.push('Encuadra el tatuaje completo y centrado, sin partes cortadas ni piel vacía de más.')
+    consejo('encuadre', 'Encuadra el tatuaje completo y centrado, sin partes cortadas ni piel vacía de más.')
   }
 
   if (distribution.maxCellShare > 0.5) {
-    reasons.push(
+    razon(
+      'zona-unica',
       `El ${Math.round(distribution.maxCellShare * 100)}% de los puntos cae en una sola zona de la imagen.`
     )
   }
 
   if (resolution.isBelowRecommended) {
-    reasons.push(
+    razon(
+      'resolucion-baja',
       `Resolución baja (lado menor ${resolution.minDimension}px, recomendado ${MIN_RECOMMENDED_DIMENSION}px).`
     )
-    tips.push('Toma la foto más cerca o con mejor cámara — no la recortes de una imagen más grande.')
+    consejo('resolucion', 'Toma la foto más cerca o con mejor cámara — no la recortes de una imagen más grande.')
   }
 
   if (detection.usableScaleLevels <= 2) {
-    reasons.push(
+    razon(
+      'escalas-pocas',
       `Solo ${detection.usableScaleLevels} niveles de escala con puntos útiles. Se va a detectar únicamente a una distancia específica.`
     )
   }
@@ -316,7 +337,8 @@ function buildVerdict({ detection, tracking, distribution, resolution }) {
       distribution: ['malo', 'aceptable', 'bueno', 'excelente'][gridLevel],
     },
     reasons,
-    // Deduplicar: varios problemas pueden sugerir el mismo tip
-    tips: [...new Set(tips)],
+    // Deduplicar por código: varios problemas pueden sugerir el mismo consejo,
+    // y los objetos no se deduplican solos como lo hacían las cadenas
+    tips: tips.filter((c, i) => tips.findIndex((o) => o.code === c.code) === i),
   }
 }

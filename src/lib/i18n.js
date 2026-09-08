@@ -139,6 +139,30 @@ const EN = {
   'JPG, PNG o WebP · mínimo 800x800px': 'JPG, PNG or WebP · minimum 800x800px',
   'Elige qué aparecerá sobre tu tatuaje': 'Choose what will appear over your tattoo',
   'Continuar': 'Continue',
+
+  // Motivos y consejos del analizador. El worker manda un código estable y su
+  // texto en español; estas son las mismas frases, rearmadas aquí para poder
+  // traducirlas. Los {marcadores} deben conservarse idénticos.
+  'Pocos puntos de seguimiento: {n} de {max} posibles ({pct}%). El contenido va a vibrar o despegarse al mover la cámara.':
+    'Few tracking points: {n} of {max} possible ({pct}%). The content will jitter or drift as the camera moves.',
+  'Pocos puntos de detección ({n}). Va a costar que la cámara reconozca el tatuaje.':
+    'Few detection points ({n}). The camera will struggle to recognize the tattoo.',
+  'Puntos concentrados en {n} de 9 zonas. El seguimiento se pierde si esa zona sale del encuadre.':
+    'Points concentrated in {n} of 9 zones. Tracking breaks if that zone leaves the frame.',
+  'El {pct}% de los puntos cae en una sola zona de la imagen.':
+    '{pct}% of the points fall in a single zone of the image.',
+  'Resolución baja: el lado menor mide {n}px y se recomiendan al menos 800px.':
+    'Low resolution: the short side is {n}px and at least 800px is recommended.',
+  'Solo {n} niveles de escala con puntos útiles. Se va a detectar únicamente a una distancia específica.':
+    'Only {n} scale levels with usable points. It will only be detected at one specific distance.',
+  'Los tatuajes con sombreado, textura o líneas densas se siguen mucho mejor que el trazo fino.':
+    'Tattoos with shading, texture or dense linework track far better than fine linework.',
+  'Mejora el contraste: luz lateral suave, sin flash directo, sin reflejos en la piel.':
+    'Improve contrast: soft side light, no direct flash, no glare on the skin.',
+  'Encuadra el tatuaje completo y centrado, sin partes cortadas ni piel vacía de más.':
+    'Frame the whole tattoo, centered, with nothing cropped and no excess bare skin.',
+  'Toma la foto más cerca o con mejor cámara — no la recortes de una imagen más grande.':
+    'Shoot closer or with a better camera — don’t crop it out of a larger image.',
   'Cambiar foto': 'Change photo',
   'Tu tatuaje está activado': 'Your tattoo is activated',
   'Probar ahora →': 'Try it now →',
@@ -190,6 +214,55 @@ const EN = {
   'Subiendo el descriptor visual de tu tatuaje.': 'Uploading your tattoo’s visual descriptor.',
   'Activando': 'Activating',
   'Vinculando tu tatuaje con el diseño 3D.': 'Linking your tattoo to the 3D design.',
+
+  // ── Veredicto de calidad de rastreo ──
+  'Tu tatuaje, medido': 'Your tattoo, measured',
+  'Así se va a comportar con la cámara': 'How it will behave with the camera',
+  'Tatuaje listo': 'Tattoo ready',
+  'Esta foto va a rastrear mal': 'This photo will track poorly',
+  'Esta foto va a funcionar, pero justo': 'This photo will work, but barely',
+  'El contenido va a costar que aparezca, y va a vibrar o despegarse al mover la cámara.':
+    'The content will be hard to trigger, and will jitter or drift when you move the camera.',
+  'Va a funcionar con buena luz y la cámara cerca. Otra foto podría mejorarlo.':
+    'It will work in good light with the camera close. Another photo could do better.',
+  'Seguimiento': 'Tracking',
+  'Que el contenido se quede pegado al mover la cámara':
+    'Whether the content stays anchored as the camera moves',
+  'Detección': 'Detection',
+  'Que la cámara reconozca el tatuaje desde varias distancias':
+    'Whether the camera recognizes the tattoo from various distances',
+  '{n} puntos': '{n} points',
+  'Reparto': 'Spread',
+  'Que los puntos no estén todos en una esquina':
+    'Whether the points are spread out instead of bunched in one corner',
+  'Cómo mejorarla': 'How to improve it',
+  'Tomar otra foto': 'Take another photo',
+  'Activar de todos modos': 'Activate anyway',
+  'Continuar': 'Continue',
+
+  // Motivos y consejos del analizador. El worker manda un código estable y su
+  // texto en español; estas son las mismas frases, rearmadas aquí para poder
+  // traducirlas. Los {marcadores} deben conservarse idénticos.
+  'Pocos puntos de seguimiento: {n} de {max} posibles ({pct}%). El contenido va a vibrar o despegarse al mover la cámara.':
+    'Few tracking points: {n} of {max} possible ({pct}%). The content will jitter or drift as the camera moves.',
+  'Pocos puntos de detección ({n}). Va a costar que la cámara reconozca el tatuaje.':
+    'Few detection points ({n}). The camera will struggle to recognize the tattoo.',
+  'Puntos concentrados en {n} de 9 zonas. El seguimiento se pierde si esa zona sale del encuadre.':
+    'Points concentrated in {n} of 9 zones. Tracking breaks if that zone leaves the frame.',
+  'El {pct}% de los puntos cae en una sola zona de la imagen.':
+    '{pct}% of the points fall in a single zone of the image.',
+  'Resolución baja: el lado menor mide {n}px y se recomiendan al menos 800px.':
+    'Low resolution: the short side is {n}px and at least 800px is recommended.',
+  'Solo {n} niveles de escala con puntos útiles. Se va a detectar únicamente a una distancia específica.':
+    'Only {n} scale levels with usable points. It will only be detected at one specific distance.',
+  'Los tatuajes con sombreado, textura o líneas densas se siguen mucho mejor que el trazo fino.':
+    'Tattoos with shading, texture or dense linework track far better than fine linework.',
+  'Mejora el contraste: luz lateral suave, sin flash directo, sin reflejos en la piel.':
+    'Improve contrast: soft side light, no direct flash, no glare on the skin.',
+  'Encuadra el tatuaje completo y centrado, sin partes cortadas ni piel vacía de más.':
+    'Frame the whole tattoo, centered, with nothing cropped and no excess bare skin.',
+  'Toma la foto más cerca o con mejor cámara — no la recortes de una imagen más grande.':
+    'Shoot closer or with a better camera — don’t crop it out of a larger image.',
   'Está tardando más de lo normal. No cierres la app.':
     'This is taking longer than usual. Don’t close the app.',
 
