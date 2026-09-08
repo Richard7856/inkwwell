@@ -24,19 +24,21 @@ Fuente: https://revenuecat-shipaton-2026.devpost.com/rules (consultado 7 sep 202
 | Debe ser accesible desde Estados Unidos, con prueba gratis o código promocional | Los jueces deben poder probarla |
 | El premio mayor pondera lanzamiento temprano, crecimiento post-lanzamiento y monetización | **Facturar por RevenueCat es la métrica** |
 
-## Estado actual (7 de septiembre)
+## Estado actual (7 de septiembre, noche)
 
-**Funciona y está probado en dispositivo:**
-- Escaneo AR con seguimiento de imagen, **varios tatuajes en una sesión**
-- Compilación de targets en Railway (~11s por foto ya reducida)
-- Supabase: base, almacenamiento, políticas por dueño
-- Login con código de 6 dígitos por correo *(pendiente: ajustar plantilla en el panel — ver `AUTH-SETUP.md`)*
-- 4 modelos 3D en catálogo
-- APK por instalación directa + web en Vercel
-- Analizador de calidad de tatuaje **construido pero sin conectar al producto**
+**Verificado funcionando, no supuesto:**
+- Escaneo AR con seguimiento de imagen, varios tatuajes por sesión
+- **Video 2D anclado al tatuaje real, con recorte de fondo** — probado sobre piel
+- Compilación de targets en Railway (~11s)
+- Login por código y **por contraseña**; ambos probados contra producción
+- **Borrado de cuenta** completo, con las cuatro comprobaciones de seguridad
+- **Créditos**: libro mayor, consumo con cerrojo y webhook, los tres probados
+- Landing pública bilingüe en inkar.app, con lista de espera funcionando
+- Identidad de marca completa: logotipo, símbolo, trazos, paleta, tipografía
+- Bundle firmado `app.inkar` **subido a Play y en revisión**
 
-**No existe todavía:** cobro, perfil con liga compartible, motor de video,
-presencia en tienda, onboarding.
+**No existe todavía:** catálogo con video desde la base, perfil con liga
+compartible, generación de video desde la app, cobro real.
 
 ## Plan por bloques
 
@@ -46,18 +48,18 @@ Meta: **app viva en Play antes del día 14**, aunque sea mínima.
 
 | Responsable | Tarea | Estado |
 |---|---|---|
-| Richard | Generar y **respaldar** la llave de firma | ⬜ |
-| Richard | Crear la app en Play Console, subir primer bundle a prueba interna | ⬜ |
-| Richard | Conectar el dominio inkar.app en Vercel (las URLs legales viven ahí) | ⬜ |
-| Richard | Cuenta de servicio de Google Cloud para RevenueCat (**tarda ~36h**) | ⬜ |
+| Richard | Generar y **respaldar** la llave de firma | ✅ |
+| Richard | Crear la app en Play Console y subir el bundle | ✅ **en revisión** |
+| Richard | Conectar el dominio inkar.app en Vercel | ✅ |
+| Richard | Cuenta de servicio de Google Cloud (**~36h, SIN ARRANCAR**) | 🔴 bloquea el cobro |
 | Richard | Crear productos de compra (créditos) en Play Console | ⬜ |
 | Richard | Conectar RevenueCat con esos productos | ⬜ |
 | Claude | Icono y splash propios (hoy son los de Capacitor) | ✅ |
-| Claude | **Modo "activa cualquier cosa"** para jueces sin tatuaje | ⬜ |
-| Claude | Borrado de cuenta (lo exige Play) | 🟡 hecho, falta desplegar |
-| Claude | Política de privacidad publicada | 🟡 hecha, falta desplegar |
+| Claude | **Modo "activa cualquier cosa"** para jueces sin tatuaje | 🟡 marcador y ruta /demo listos, sin promocionar hasta probarlo con cámara |
+| Claude | Borrado de cuenta (lo exige Play) | ✅ desplegado y probado |
+| Claude | Política de privacidad publicada | ✅ inkar.app/privacidad |
 | Claude | SDK de RevenueCat en la app | 🟡 instalado y configurado, falta la llave |
-| Claude | Conectar el analizador al flujo de activación | ⬜ |
+| Claude | Conectar el analizador al flujo de activación | 🔴 **prioridad** — ver abajo |
 
 ### Bloque 2 · Motor de video 2D (14–21 sep)
 
@@ -66,8 +68,8 @@ Meta: **app viva en Play antes del día 14**, aunque sea mínima.
 
 | Tarea | Estado |
 |---|---|
-| Textura de video sobre plano anclado al target (reemplaza al GLB) | ⬜ |
-| Catálogo que acepte assets de video además de GLB | ⬜ |
+| Textura de video sobre plano anclado al target | ✅ probado sobre piel real |
+| Catálogo que acepte assets de video desde la base | ⬜ **lo siguiente** |
 | Generación de video desde foto + historia, vía Higgsfield | ⬜ |
 | Créditos que se consumen por generación | 🟡 moneda lista, falta el gasto |
 | Perfil con liga compartible (cierra el loop de crecimiento) | ⬜ |
@@ -79,6 +81,13 @@ llegue la máquina nueva (~14 sep) y sirven de escaparate del motor de negocio.
 **Audio:** primero el que graba el propio usuario — cero problema de derechos y
 es lo que da sentido a un recuerdo. La música de biblioteca queda para después,
 por el problema de licencias descrito en DECISIONS.md.
+
+**Por qué el analizador subió a prioridad:** al probar el video sobre el tatuaje
+real de la huella costó que enganchara. No era solo la luz — ese tatuaje mide
+**16% de seguimiento**, contra 33% del marcador generado. Está en el extremo bajo
+de lo aceptable. Si al founder le cuesta con 16%, un cliente con un tatuaje peor
+pide reembolso: rechazar una foto mala antes de cobrar sale mucho más barato que
+devolver el dinero después.
 
 ### Bloque 3 · Tracción (22–30 sep)
 
