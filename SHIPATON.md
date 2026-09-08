@@ -59,15 +59,26 @@ Meta: **app viva en Play antes del día 14**, aunque sea mínima.
 | Claude | SDK de RevenueCat en la app | 🟡 instalado y configurado, falta la llave |
 | Claude | Conectar el analizador al flujo de activación | ⬜ |
 
-### Bloque 2 · Motor de video (14–21 sep)
+### Bloque 2 · Motor de video 2D (14–21 sep)
+
+**Giro del 7 de septiembre: el contenido pasa de 3D a video 2D.** Ver
+`DECISIONS.md`. El 3D no se abandona — se mueve de producto a promesa.
 
 | Tarea | Estado |
 |---|---|
-| Integrar la API de Higgsfield (generación imagen → video) | ⬜ |
-| Créditos que se consumen por generación | ⬜ |
-| Video anclado al target en AR (textura de video sobre plano) | ⬜ |
+| Textura de video sobre plano anclado al target (reemplaza al GLB) | ⬜ |
+| Catálogo que acepte assets de video además de GLB | ⬜ |
+| Generación de video desde foto + historia, vía Higgsfield | ⬜ |
+| Créditos que se consumen por generación | 🟡 moneda lista, falta el gasto |
 | Perfil con liga compartible (cierra el loop de crecimiento) | ⬜ |
 | Actualización publicada en Play | ⬜ |
+
+**Dos modelos 3D como "próximamente"**, no como producto. Se producen cuando
+llegue la máquina nueva (~14 sep) y sirven de escaparate del motor de negocio.
+
+**Audio:** primero el que graba el propio usuario — cero problema de derechos y
+es lo que da sentido a un recuerdo. La música de biblioteca queda para después,
+por el problema de licencias descrito en DECISIONS.md.
 
 ### Bloque 3 · Tracción (22–30 sep)
 

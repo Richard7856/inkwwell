@@ -398,3 +398,36 @@ La conclusión operativa: **es mejor no tener video que tener uno que promete de
 **Lo aprendido para el próximo intento:** si se vuelve a generar un puente, tiene que imitar la estética real del motor (3D estilizado, no fotorrealismo), o no vale la pena.
 
 **Nota técnica:** un primer intento fue rechazado por el filtro de contenido (`nsfw`) por el énfasis en piel desnuda. No cobró créditos. Se reformuló situando la escena en un estudio y con manga arremangada.
+
+## [2026-09-07] Giro: el contenido pasa de 3D a video 2D
+**Context:** El catálogo eran modelos GLB con animación esquelética. Se probó el camino del 3D personalizado generando el modelo del perro del founder desde un video suyo, para ver si era viable a escala.
+
+**Lo que costó UN solo modelo:**
+- Un video que casualmente existía, de hace años
+- Análisis de nitidez de 167 cuadros para elegir 3 vistas complementarias
+- 30 créditos de generación
+- **4.5 MB**, cuando el límite del propio proyecto es 3 MB
+- **Cero animación** — y animar un cuadrúpedo es justo la parte difícil: la biblioteca de rigging es humanoide y deforma a los no bípedos
+
+El modelo salió reconocible, así que el problema no es la calidad: es que ese costo se repite **por cada cliente**. Es exactamente el cuello de botella humano de días que el modelo de negocio ya describía, ahora medido.
+
+**Decision:** El contenido que se muestra sobre el tatuaje pasa a ser **video 2D animado**. El 3D se mueve de producto a **promesa** — dos modelos de escaparate para el motor de negocio, producidos cuando llegue la máquina nueva.
+
+**Por qué el 2D escala y el 3D no:**
+- **El tatuador ya es ilustrador.** Animar su propio diseño está dentro de lo que sabe hacer; un modelo 3D riggeado no. El canal se convierte en la fábrica.
+- El costo marginal por cliente son créditos de generación, que **escalan con el ingreso** en vez de con la infraestructura.
+- Archivos mucho más chicos que un GLB texturizado.
+- Otro estudio (Flores Negras) ya lo hace con ilustraciones 2D animadas: el mercado acepta el formato.
+
+Técnicamente cambia menos de lo que parece, y ya estaba previsto: `SHIPATON.md` listaba "video anclado al target (textura de video sobre plano)" en el Bloque 2. MindAR, el tracking, el perfil y los créditos no se tocan.
+
+## [2026-09-07] Audio y música: por qué no son el mismo problema
+**Context:** Se planteó agregar audio de recuerdo y música al contenido.
+
+**La música NO se puede generar con las herramientas disponibles.** La herramienta de audio lo declara: *"solo genera voz: no puede generar música ni efectos de sonido para uso general"*. Los modelos de música existentes están reservados a otra tubería y no deben usarse sueltos.
+
+**La trampa de licencias con música de biblioteca:** casi todas las licencias comerciales cubren usar la música *en el contenido propio*. Aquí los usuarios **adjuntarían música a su propio contenido, que además se comparte públicamente** — eso es sublicenciar, y la mayoría de las bibliotecas lo prohíben expresamente. Usar Epidemic Sound o Artlist en su nivel estándar no cubre este caso; hace falta un nivel de licencia para plataformas con contenido de usuario.
+
+**Decision:** El primer audio es **el que graba el propio usuario**. Cero exposición legal, y para un producto de recuerdos la voz de alguien vale más que una pista de biblioteca. La música curada queda para después, y cuando toque hay que contratar el nivel de licencia correcto — no el estándar.
+
+**Sobre clonar voces:** la herramienta lo permite, y para "la voz de tu abuela" es emocionalmente potentísimo. Pero clonar la voz de una persona real exige su consentimiento, y con personas fallecidas el terreno legal varía por jurisdicción. Si se abre esa puerta, debe ser con consentimiento explícito y documentado, no como una función más del catálogo.
