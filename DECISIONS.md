@@ -453,3 +453,18 @@ Técnicamente cambia menos de lo que parece, y ya estaba previsto: `SHIPATON.md`
 - **Sin probar con cámara real.** Lo verificado es el sombreador, el recorte, el desderrame y el ciclo de reproducción, con un video de prueba generado a propósito. Falta apuntar un teléfono a un tatuaje.
 - El contenido debe producirse sobre verde puro. Si un dibujo tiene verde propio, se recortará: para esos casos hay que cambiar el color de croma por pieza, que el material ya admite como uniforme.
 - El audio queda pendiente: el video va silenciado porque los navegadores móviles no autoreproducen con sonido. Activarlo exige un gesto del usuario.
+
+## [2026-09-07] El recorte de croma falló por un error de secuencia, no de color
+**Context:** La capa de video mostraba el fondo verde a media opacidad y todo el video oscurecido. Parecían dos fallas distintas —"el recorte no funciona" y "los colores salen mal"— y llevaron a buscar en gestión de color: espacios sRGB contra lineal, la pieza `colorspace_fragment` (que además no existe en Three 0.151, ahí se llama `encodings_fragment`), y la codificación de salida del sombreador.
+
+**Ninguna de esas era la causa.** El color de fondo se detectaba en el evento `loadedmetadata`, cuando el video ya conoce sus medidas pero **todavía no tiene ningún cuadro decodificado**. Dibujarlo en un lienzo en ese momento devuelve negro.
+
+Medido en la propia página: `[0,0,0]` en `loadedmetadata` contra `[100,180,78]` con un cuadro real.
+
+Con el croma en negro, el fondo verde no quedaba fuera del umbral sino **a media distancia**: alfa ≈ 0.4. Por eso no desaparecía del todo ni se quedaba intacto, y por eso el conjunto se veía apagado. **Un solo error producía los dos síntomas.**
+
+**Decision:** la detección se hace en `loadeddata`, que sí garantiza un cuadro. Se documenta en el propio archivo porque el modo de fallar es engañoso y llevaría al mismo callejón.
+
+**Lo que sí quedó claro del camino:** los generadores de video **no respetan el color de fondo que se les pide**. Se pidió `#00FF00` y salió `[105,195,80]`, pero con una desviación de 1.5 — plano como una pared. Por eso la capa mide el color real en vez de asumirlo: asumir verde puro no habría recortado nada.
+
+**Verificado:** el fondo desaparece por completo, los colores del sujeto salen correctos y el borde queda limpio, con una pieza generada de verdad y no con un video sintético.

@@ -23,13 +23,74 @@ import * as THREE from 'three'
  */
 
 /*
-  Verde de croma por defecto.
+  Verde de croma de respaldo.
 
   Se elige el verde y no el negro o el blanco porque es el color más lejano a
   los tonos de piel y de tinta: un fondo negro se comería las sombras del
   dibujo, y uno blanco sus brillos.
+
+  Solo se usa si no se puede muestrear el video. Lo normal es detectar el color
+  real — ver `detectarCroma`.
 */
 const CROMA_POR_DEFECTO = new THREE.Color(0x00ff00)
+
+/**
+ * Detecta el color de fondo muestreando las esquinas del primer cuadro.
+ *
+ * ── Por qué no basta con asumir verde puro ──
+ * Los generadores de video NO respetan el color exacto que se les pide. Medido
+ * sobre una pieza real generada pidiendo #00FF00: el fondo salió [105,195,80],
+ * bien lejos del verde puro — pero con una desviación de 1.5, o sea plano como
+ * una pared. Asumir el color pedido dejaría el fondo entero sin recortar.
+ *
+ * Se muestrean las cuatro esquinas porque el sujeto va centrado; si alguna
+ * discrepa mucho de las otras es que el fondo no es uniforme, y ahí más vale
+ * avisar que recortar mal en silencio.
+ *
+ * @returns {{color: THREE.Color, uniforme: boolean} | null}
+ */
+function detectarCroma(video) {
+  const lienzo = document.createElement('canvas')
+  const N = 24
+  lienzo.width = video.videoWidth
+  lienzo.height = video.videoHeight
+  const ctx = lienzo.getContext('2d', { willReadFrequently: true })
+  if (!ctx || !lienzo.width) return null
+
+  try {
+    ctx.drawImage(video, 0, 0)
+    const esquinas = [
+      [0, 0], [lienzo.width - N, 0],
+      [0, lienzo.height - N], [lienzo.width - N, lienzo.height - N],
+    ].map(([x, y]) => {
+      const d = ctx.getImageData(x, y, N, N).data
+      let r = 0, g = 0, b = 0
+      for (let i = 0; i < d.length; i += 4) { r += d[i]; g += d[i+1]; b += d[i+2] }
+      const n = d.length / 4
+      return [r / n / 255, g / n / 255, b / n / 255]
+    })
+
+    const media = esquinas.reduce((a, c) => [a[0]+c[0], a[1]+c[1], a[2]+c[2]], [0,0,0])
+      .map((v) => v / esquinas.length)
+    // Si una esquina se aleja mucho de la media, el fondo no es plano
+    const dispersion = Math.max(...esquinas.map((c) =>
+      Math.hypot(c[0]-media[0], c[1]-media[1], c[2]-media[2])))
+
+    // Sin conversión de espacio: los valores del lienzo y los de la textura
+    // viven en el mismo espacio, que es justo lo que permite compararlos.
+    return {
+      color: new THREE.Color(media[0], media[1], media[2]),
+      uniforme: dispersion < 0.08,
+    }
+  } catch {
+    /*
+      getImageData lanza si el video contaminó el lienzo por CORS. Ocurre cuando
+      el archivo se sirve sin cabeceras de origen cruzado. Se cae al color de
+      respaldo en vez de romper la carga.
+    */
+    return null
+  }
+}
 
 /*
   Tolerancia del recorte.
@@ -94,6 +155,7 @@ const FRAGMENT = `
     if (croma.b > 0.5 && rgb.b > (rgb.r + rgb.g) * 0.5) rgb.b = mix(rgb.b, (rgb.r + rgb.g) * 0.5, 0.9);
 
     gl_FragColor = vec4(rgb, alfa * opacidad);
+
   }
 `
 
@@ -129,16 +191,48 @@ export function cargarVideo(config, anchorGroup) {
     const alFallar = () => reject(new Error(`No se pudo cargar el video: ${videoUrl}`))
     video.addEventListener('error', alFallar, { once: true })
 
-    video.addEventListener('loadedmetadata', () => {
+    /*
+      Se espera a 'loadeddata' y NO a 'loadedmetadata'.
+
+      En loadedmetadata ya se conocen las medidas del video, pero todavía NO hay
+      ningún cuadro decodificado: dibujarlo en un lienzo devuelve negro. Medido:
+      [0,0,0] en loadedmetadata contra [100,180,78] con un cuadro real.
+
+      El efecto de detectar negro es engañoso, porque no falla de golpe — el
+      fondo verde queda a media opacidad en vez de desaparecer, y se lee como
+      "el recorte no jala y además se ve oscuro", que parecen dos problemas
+      distintos y llevan a buscar en el lugar equivocado.
+    */
+    video.addEventListener('loadeddata', () => {
       const proporcion = video.videoWidth / video.videoHeight || 1
       const textura = new THREE.VideoTexture(video)
-      textura.colorSpace = THREE.SRGBColorSpace
+      /*
+        La textura se deja SIN declarar espacio de color, a propósito.
+
+        Este proyecto corre Three 0.151 con ColorManagement desactivado y
+        outputEncoding lineal: el renderizador no convierte nada. Marcar la
+        textura como sRGB hace que la GPU la linealice al leerla, y entonces
+        pasan dos cosas a la vez — el muestreo queda oscuro, y deja de coincidir
+        con el color de fondo medido en sRGB, así que el recorte no recorta.
+        Ambos síntomas se vieron juntos y despistan, porque parecen dos fallas.
+
+        Sin declararlo, todo vive en el espacio nativo del video: se compara
+        contra el color medido y se escribe tal cual.
+      */
+
+      const detectado = croma ? detectarCroma(video) : null
+      if (detectado && !detectado.uniforme) {
+        console.warn(
+          '[videoLayer] El fondo del video no es uniforme; el recorte va a dejar manchas:',
+          videoUrl
+        )
+      }
 
       const material = croma
         ? new THREE.ShaderMaterial({
             uniforms: {
               mapa: { value: textura },
-              croma: { value: CROMA_POR_DEFECTO.clone() },
+              croma: { value: detectado?.color ?? CROMA_POR_DEFECTO.clone() },
               umbral: { value: UMBRAL },
               suavizado: { value: SUAVIZADO },
               opacidad: { value: 1 },
