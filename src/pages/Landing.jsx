@@ -58,8 +58,8 @@ const ES = {
     ['Cualquiera lo ve', 'Apunta su cámara a tu piel y aparece, siguiendo tu movimiento. Sin instalar nada, desde el navegador.'],
   ],
 
-  videoTitulo: 'Míralo funcionando',
-  videoTexto: 'Grabado con la app real, sin montaje.',
+  videoTitulo: 'La idea, en movimiento',
+  videoTexto: 'Representación del concepto, generada con IA. No es una grabación de la app.',
 
   distintoTitulo: 'Por qué no es un filtro',
   distinto: [
@@ -124,8 +124,8 @@ const EN = {
     ['Anyone can see it', 'They point a camera at your skin and it appears, following your movement. No install, straight from the browser.'],
   ],
 
-  videoTitulo: 'See it working',
-  videoTexto: 'Recorded with the real app, no editing tricks.',
+  videoTitulo: 'The idea, in motion',
+  videoTexto: 'Concept illustration, AI-generated. Not a recording of the app.',
 
   distintoTitulo: 'Why this isn’t a filter',
   distinto: [
