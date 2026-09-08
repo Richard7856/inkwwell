@@ -391,6 +391,10 @@ Antes del rótulo honesto, la landing decía "Grabado con la app real, sin monta
 
 **Detalles:** recomprimido de 2014KB a 462KB (77% menos) porque el archivo también acaba dentro del APK aunque la app nunca muestre la landing. Lleva póster, porque sin él el reproductor muestra un rectángulo negro que se lee como elemento roto. La ruta se puede sobrescribir con `VITE_VIDEO_DEMO` para apuntar a la grabación real cuando exista, sin tocar código.
 
-**Risks/Limitations:**
-- El video es **aspiracional**: se ve mejor que lo que la app hace hoy. El rótulo lo aclara, pero conviene reemplazarlo por grabación real cuanto antes — un juez o un tatuador distingue de inmediato entre "esto funciona" y "esto es una ilustración".
-- Un primer intento fue rechazado por el filtro de contenido (`nsfw`) por el énfasis en piel desnuda. No cobró créditos. Se reformuló situando la escena en un estudio y con manga arremangada.
+**Retirado el mismo día.** El resultado quedó fotorrealista —dragón con luz volumétrica, estética de VFX de cine— y eso **no se parece a lo que renderiza el motor**: modelos con esqueleto en Three.js sobre la piel, con estética de asset de videojuego. El rótulo aclaraba que era una ilustración, pero aun así fija una expectativa que el producto no puede cumplir, y quien llegue después a la app la va a comparar contra ese dragón.
+
+La conclusión operativa: **es mejor no tener video que tener uno que promete de más**. La sección vuelve a no dibujarse mientras `VITE_VIDEO_DEMO` esté vacía, y el archivo se sacó de `public/` para no viajar dentro del APK sin usarse. Queda en `brand/video/` como referencia.
+
+**Lo aprendido para el próximo intento:** si se vuelve a generar un puente, tiene que imitar la estética real del motor (3D estilizado, no fotorrealismo), o no vale la pena.
+
+**Nota técnica:** un primer intento fue rechazado por el filtro de contenido (`nsfw`) por el énfasis en piel desnuda. No cobró créditos. Se reformuló situando la escena en un estudio y con manga arremangada.

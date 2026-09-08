@@ -23,15 +23,24 @@ import { useTema } from '../lib/tema.js'
 /*
   Video de la sección "la idea, en movimiento".
 
-  Por defecto usa el archivo del repositorio; la variable de entorno permite
-  apuntar a otro sin tocar código, que es como entrará la grabación real cuando
-  exista (alojada aparte, para no meterle peso al bundle ni al APK).
+  Sin video configurado, la sección NO se dibuja. Es deliberado: es mejor no
+  tener video que tener uno que promete de más.
+
+  Se llegó a publicar un concepto generado con IA y se retiró: un dragón
+  fotorrealista con luz volumétrica no se parece a lo que renderiza este motor
+  —modelos con esqueleto en Three.js, estética de asset de videojuego— y
+  enseñarlo pone al producto en deuda desde el primer día, aunque el rótulo
+  aclare que es una ilustración. El archivo quedó en brand/video/ por si sirve
+  de referencia.
+
+  Aquí entrará la grabación real: se apunta `VITE_VIDEO_DEMO` a su URL, de
+  preferencia alojada fuera del repositorio para no sumarle peso al APK.
 
   El póster no es decorativo: sin él el reproductor muestra un rectángulo negro
   hasta que alguien lo toca, y en una landing eso se lee como un elemento roto.
 */
-const VIDEO = import.meta.env.VITE_VIDEO_DEMO || '/video/concepto.mp4'
-const POSTER = import.meta.env.VITE_VIDEO_POSTER || '/video/concepto-poster.jpg'
+const VIDEO = import.meta.env.VITE_VIDEO_DEMO || ''
+const POSTER = import.meta.env.VITE_VIDEO_POSTER || ''
 
 const ES = {
   descriptor: 'Historias que siguen vivas',
