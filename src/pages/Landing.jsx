@@ -21,14 +21,17 @@ import { useTema } from '../lib/tema.js'
  */
 
 /*
-  Video de demostración.
+  Video de la sección "la idea, en movimiento".
 
-  Va por variable de entorno y no incrustado en el código para poder publicarlo
-  sin tocar el bundle, y para que la landing salga bien mientras no exista: sin
-  video, la sección simplemente no se dibuja.
+  Por defecto usa el archivo del repositorio; la variable de entorno permite
+  apuntar a otro sin tocar código, que es como entrará la grabación real cuando
+  exista (alojada aparte, para no meterle peso al bundle ni al APK).
+
+  El póster no es decorativo: sin él el reproductor muestra un rectángulo negro
+  hasta que alguien lo toca, y en una landing eso se lee como un elemento roto.
 */
-const VIDEO = import.meta.env.VITE_VIDEO_DEMO || ''
-const POSTER = import.meta.env.VITE_VIDEO_POSTER || ''
+const VIDEO = import.meta.env.VITE_VIDEO_DEMO || '/video/concepto.mp4'
+const POSTER = import.meta.env.VITE_VIDEO_POSTER || '/video/concepto-poster.jpg'
 
 const ES = {
   descriptor: 'Historias que siguen vivas',

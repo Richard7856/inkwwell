@@ -376,3 +376,21 @@ Resultado: 390KB los tres, contra 1.2MB en RGBA. Y como el color sale del CSS, e
 
 **Risks/Limitations:**
 - Los beneficios son **promesas de negocio**, no texto de relleno: créditos de lanzamiento sin costo, material impreso para estudios, y aparecer en un directorio por ciudad. Ese directorio **no existe todavía**. Si alguno no se va a cumplir, hay que quitarlo de la landing antes de mandar tráfico.
+
+## [2026-09-07] Video de la landing: concepto generado, como puente
+**Context:** La landing necesitaba un video que mostrara la idea. Había dos candidatos.
+
+**El video real de 2022 se descartó**, y no solo por la antigüedad:
+- Lleva **la interfaz de otra plataforma superpuesta** ("Encuentra la imagen", "Sigue moviendo el teléfono de un lado al otro"). Publicarlo sería enseñar la interfaz de otra herramienta como si fuera InkAR.
+- El contenido es un gato **plano en 2D**, no 3D. No solo no representa a dónde va el producto: **subestima lo que la app ya hace hoy**, que corre modelos con esqueleto y animaciones reales.
+- 288×640, compresión de WhatsApp. Borroso en cualquier pantalla actual.
+
+**Decision:** Se publica un video generado con IA (Higgsfield, seedance_2_0, 720×1280, 5s) como **puente**, con rótulo explícito: "Representación del concepto, generada con IA. No es una grabación de la app". El título dejó de ser "Míralo funcionando" — prometía algo que el video no entrega.
+
+Antes del rótulo honesto, la landing decía "Grabado con la app real, sin montaje". Con un video generado, esa frase habría sido **falsa en una página pública**.
+
+**Detalles:** recomprimido de 2014KB a 462KB (77% menos) porque el archivo también acaba dentro del APK aunque la app nunca muestre la landing. Lleva póster, porque sin él el reproductor muestra un rectángulo negro que se lee como elemento roto. La ruta se puede sobrescribir con `VITE_VIDEO_DEMO` para apuntar a la grabación real cuando exista, sin tocar código.
+
+**Risks/Limitations:**
+- El video es **aspiracional**: se ve mejor que lo que la app hace hoy. El rótulo lo aclara, pero conviene reemplazarlo por grabación real cuanto antes — un juez o un tatuador distingue de inmediato entre "esto funciona" y "esto es una ilustración".
+- Un primer intento fue rechazado por el filtro de contenido (`nsfw`) por el énfasis en piel desnuda. No cobró créditos. Se reformuló situando la escena en un estudio y con manga arremangada.
