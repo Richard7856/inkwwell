@@ -431,3 +431,25 @@ Técnicamente cambia menos de lo que parece, y ya estaba previsto: `SHIPATON.md`
 **Decision:** El primer audio es **el que graba el propio usuario**. Cero exposición legal, y para un producto de recuerdos la voz de alguien vale más que una pista de biblioteca. La música curada queda para después, y cuando toque hay que contratar el nivel de licencia correcto — no el estándar.
 
 **Sobre clonar voces:** la herramienta lo permite, y para "la voz de tu abuela" es emocionalmente potentísimo. Pero clonar la voz de una persona real exige su consentimiento, y con personas fallecidas el terreno legal varía por jurisdicción. Si se abre esa puerta, debe ser con consentimiento explícito y documentado, no como una función más del catálogo.
+
+## [2026-09-07] Capa de video 2D sobre el target
+**Context:** Con el giro a contenido 2D, el visor tenía que aprender a mostrar video anclado al tatuaje, no solo modelos GLB.
+
+**Decision:** `videoLayer.js` monta un plano con textura de video sobre el ancla de MindAR. El GLB se conserva: `useThreeScene` despacha según el target traiga `videoUrl` o `glbUrl`.
+
+**El problema real era la transparencia.** El contenido tiene que aparecer sobre la piel, no dentro de un rectángulo opaco — un recuadro encima del tatuaje arruina el efecto entero. Y el video con canal alfa **no es portable**: WebM/VP9 lleva alfa pero Safari no lo reproduce; HEVC con alfa solo corre en Safari. Publicar ambos significa producir y alojar cada pieza dos veces.
+
+**Solución: recorte de croma en el sombreador.** Un solo archivo, todos los navegadores. Se compara en crominancia y no en brillo — incluir la luminancia recortaría zonas iluminadas del dibujo que tuvieran algo de verde.
+
+**El detalle que sí se veía mal:** recortar el alfa no basta. Los píxeles del borde sobreviven al recorte pero siguen teñidos de verde, porque la compresión mezcla dibujo y fondo en el contorno. **Verificado visualmente: había un halo verde alrededor de cada figura.** Se agregó desderrame —limitar el canal del croma a lo que justifican los otros dos— y el borde quedó limpio.
+
+**Verde y no negro ni blanco** como color de fondo: es el más lejano a los tonos de piel y de tinta. Un fondo negro se comería las sombras del dibujo; uno blanco, sus brillos.
+
+**El video se reproduce solo mientras su target está a la vista**, y se reinicia al aparecer. Si corriera desde la carga, quien por fin apunta al tatuaje encontraría la animación a la mitad — y mientras tanto se gastaría batería decodificando cuadros que nadie ve.
+
+**Cómo se prueba sin cámara:** `/preview?video=<url>` monta la MISMA capa sobre un grupo suelto. Reusarla y no escribir una versión de prueba es el punto: lo que se revisa ahí es exactamente el sombreador que corre sobre la piel.
+
+**Risks/Limitations:**
+- **Sin probar con cámara real.** Lo verificado es el sombreador, el recorte, el desderrame y el ciclo de reproducción, con un video de prueba generado a propósito. Falta apuntar un teléfono a un tatuaje.
+- El contenido debe producirse sobre verde puro. Si un dibujo tiene verde propio, se recortará: para esos casos hay que cambiar el color de croma por pieza, que el material ya admite como uniforme.
+- El audio queda pendiente: el video va silenciado porque los navegadores móviles no autoreproducen con sonido. Activarlo exige un gesto del usuario.

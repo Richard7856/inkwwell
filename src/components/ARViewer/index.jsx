@@ -84,12 +84,16 @@ export default function ARViewer({ tattooId = null, demo = null }) {
           anchor.onTargetFound = () => {
             setStatus('tracking')
             setActiveTarget(i)
+            // El video de este target arranca desde el principio; los modelos
+            // 3D lo ignoran porque su animación ya corre en bucle
+            threeScene.setTargetVisible(i, true)
             const names = threeScene.getAnimationNames(i)
             setAnimations(names)
             setActiveAnim(names[0] ?? '')
           }
           anchor.onTargetLost = () => {
             setStatus('scanning')
+            threeScene.setTargetVisible(i, false)
             setActiveTarget((actual) => (actual === i ? null : actual))
           }
         })

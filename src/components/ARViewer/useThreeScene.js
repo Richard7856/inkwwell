@@ -2,6 +2,7 @@ import { useRef, useCallback } from 'react'
 import * as THREE from 'three'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js'
+import { cargarVideo, alternarVideo, liberarVideo } from './videoLayer.js'
 
 /*
   DRACOLoader compartido — necesario para decodificar GLBs comprimidos con Draco.
@@ -98,8 +99,21 @@ export function useThreeScene() {
       allSettled y no all: si un modelo falla, los demás deben seguir funcionando
       en lugar de dejar la experiencia entera rota.
     */
+    /*
+      Cada target lleva video o modelo 3D, no ambos.
+
+      El video es el contenido por defecto del producto (ver DECISIONS.md); el
+      GLB se conserva para el catálogo existente y para el 3D personalizado, que
+      pasó a ser el motor de negocio. Se decide por qué campo trae el target en
+      vez de por una bandera aparte: así un target mal configurado falla al
+      cargar en lugar de mostrar algo distinto de lo que dice su registro.
+    */
     const resultados = await Promise.allSettled(
-      targets.map((t, i) => loadOneModel(t.glbUrl, anchorGroups[i]))
+      targets.map((t, i) =>
+        t.videoUrl
+          ? cargarVideo(t, anchorGroups[i])
+          : loadOneModel(t.glbUrl, anchorGroups[i])
+      )
     )
 
     targetsRef.current = resultados.map((r, i) => {
@@ -115,6 +129,7 @@ export function useThreeScene() {
       const delta = clockRef.current.getDelta()
       // Un solo delta para todos: si cada mixer pidiera el suyo, el primero
       // consumiría el tiempo transcurrido y los demás avanzarían en cámara lenta
+      // Solo los GLB tienen mixer; la textura de video se actualiza sola
       for (const t of targetsRef.current) t?.mixer?.update(delta)
       renderer.render(scene, camera)
     }
@@ -125,6 +140,19 @@ export function useThreeScene() {
       loaded: !!t,
       animationNames: t?.animationNames ?? [],
     }))
+  }, [])
+
+  /**
+   * Avisa que un target entró o salió de cámara.
+   *
+   * Los videos se reproducen solo mientras su tatuaje está a la vista: si
+   * corrieran desde la carga, quien por fin apunta encontraría la animación a
+   * la mitad, y mientras tanto se gasta batería decodificando cuadros que nadie
+   * ve. Los modelos 3D no necesitan esto — su animación en bucle no tiene
+   * principio que respetar.
+   */
+  const setTargetVisible = useCallback((targetIndex, visible) => {
+    alternarVideo(targetsRef.current[targetIndex], visible)
   }, [])
 
   /** Cambia la animación de un target concreto, con transición suave */
@@ -156,6 +184,7 @@ export function useThreeScene() {
 
     for (const t of targetsRef.current) {
       if (!t) continue
+      if (t.tipo === 'video') { liberarVideo(t); continue }
       t.mixer?.stopAllAction()
       t.model?.traverse((obj) => {
         if (!obj.isMesh) return
@@ -179,7 +208,7 @@ export function useThreeScene() {
     lightsRef.current = []
   }, [])
 
-  return { loadModels, playAnimation, getAnimationNames, cleanup }
+  return { loadModels, setTargetVisible, playAnimation, getAnimationNames, cleanup }
 }
 
 /** Carga un GLB, lo ajusta y lo cuelga del ancla que le corresponde. */

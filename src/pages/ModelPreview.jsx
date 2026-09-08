@@ -4,6 +4,7 @@ import * as THREE from 'three'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
+import { cargarVideo, alternarVideo, liberarVideo } from '../components/ARViewer/videoLayer.js'
 
 /**
  * Visor de modelos 3D sin AR — herramienta de desarrollo.
@@ -17,6 +18,12 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
  * para que lo que se ve aquí sea representativo de lo que se verá sobre el tatuaje.
  *
  * Uso: /preview?model=/models/shiba_negro.glb
+ *      /preview?video=/video/prueba-croma.mp4
+ *
+ * El modo video sirve para revisar una pieza 2D —y sobre todo su recorte de
+ * croma— sin necesitar cámara, tatuaje ni target compilado. Es donde se
+ * comprueba que el fondo desaparece limpio antes de subir contenido al
+ * catálogo.
  */
 
 const MODELS = [
@@ -31,6 +38,7 @@ dracoLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5
 
 export default function ModelPreview() {
   const [searchParams, setSearchParams] = useSearchParams()
+  const videoUrl = searchParams.get('video')
   const modelUrl = searchParams.get('model') ?? MODELS[0].url
 
   const containerRef = useRef(null)
@@ -85,6 +93,47 @@ export default function ModelPreview() {
     setAnimations([])
     actionsRef.current = {}
     currentRef.current = null
+
+    /*
+      Modo video: se monta la MISMA capa que usa el visor AR, sobre un grupo
+      suelto en vez de un ancla de MindAR.
+
+      Reusarla y no escribir una versión de prueba es el punto: lo que se
+      revisa aquí es exactamente el sombreador y el material que van a correr
+      sobre la piel. Una copia paralela se desincronizaría y validaría algo que
+      no es lo que se publica.
+    */
+    let capaVideo = null
+    if (videoUrl) {
+      const grupo = new THREE.Group()
+      scene.add(grupo)
+      // El plano mide 1 unidad; se aleja la cámara para verlo completo
+      camera.position.set(0, 0, 1.6)
+      cargarVideo({ videoUrl, croma: true, escala: 1 }, grupo)
+        .then((capa) => {
+          if (disposed) { liberarVideo(capa); return }
+          capaVideo = capa
+          alternarVideo(capa, true)
+          setStatus('ready')
+        })
+        .catch((err) => { if (!disposed) { setStatus('error'); setError(err.message) } })
+
+      const animarVideo = () => {
+        frameId = requestAnimationFrame(animarVideo)
+        controls.update()
+        renderer.render(scene, camera)
+      }
+      animarVideo()
+
+      return () => {
+        disposed = true
+        if (frameId) cancelAnimationFrame(frameId)
+        if (capaVideo) liberarVideo(capaVideo)
+        controls.dispose()
+        renderer.dispose()
+        renderer.domElement.remove()
+      }
+    }
 
     loader.load(
       modelUrl,
@@ -166,7 +215,7 @@ export default function ModelPreview() {
       }
       mixerRef.current = null
     }
-  }, [modelUrl])
+  }, [modelUrl, videoUrl])
 
   const playAnimation = (name) => {
     const next = actionsRef.current[name]
