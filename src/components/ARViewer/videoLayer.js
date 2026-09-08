@@ -150,9 +150,32 @@ const FRAGMENT = `
       recorta. Es la técnica estándar y cuesta dos operaciones por píxel.
     */
     vec3 rgb = color.rgb;
-    float referencia = (rgb.r + rgb.b) * 0.5;
-    if (croma.g > 0.5 && rgb.g > referencia) rgb.g = mix(rgb.g, referencia, 0.9);
-    if (croma.b > 0.5 && rgb.b > (rgb.r + rgb.g) * 0.5) rgb.b = mix(rgb.b, (rgb.r + rgb.g) * 0.5, 0.9);
+
+    /*
+      El desderrame se aplica SOLO en el borde, con fuerza proporcional a
+      (1 - alfa).
+
+      Aplicarlo a todo el sujeto tiñe zonas legítimas: en un crema o un blanco
+      cálido el canal verde apenas supera al promedio de los otros dos, así que
+      la corrección se lo baja y la zona queda grisácea. Se vio en la primera
+      prueba sobre piel — el pecho del perro salió manchado, aunque el video de
+      origen estaba limpio.
+
+      La contaminación real vive donde el fondo se mezcla con el dibujo, es
+      decir donde el alfa es parcial. En el interior opaco, alfa vale 1 y el
+      factor cae a 0: el color no se toca.
+    */
+    float derrame = 1.0 - alfa;
+    if (derrame > 0.001) {
+      if (croma.g > 0.5) {
+        float ref = (rgb.r + rgb.b) * 0.5;
+        if (rgb.g > ref) rgb.g = mix(rgb.g, ref, derrame);
+      }
+      if (croma.b > 0.5) {
+        float ref = (rgb.r + rgb.g) * 0.5;
+        if (rgb.b > ref) rgb.b = mix(rgb.b, ref, derrame);
+      }
+    }
 
     gl_FragColor = vec4(rgb, alfa * opacidad);
 

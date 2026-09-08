@@ -468,3 +468,19 @@ Con el croma en negro, el fondo verde no quedaba fuera del umbral sino **a media
 **Lo que sí quedó claro del camino:** los generadores de video **no respetan el color de fondo que se les pide**. Se pidió `#00FF00` y salió `[105,195,80]`, pero con una desviación de 1.5 — plano como una pared. Por eso la capa mide el color real en vez de asumirlo: asumir verde puro no habría recortado nada.
 
 **Verificado:** el fondo desaparece por completo, los colores del sujeto salen correctos y el borde queda limpio, con una pieza generada de verdad y no con un video sintético.
+
+## [2026-09-07] El desderrame manchaba al sujeto: solo va en el borde
+**Context:** Primera prueba del video 2D sobre piel real, con el tatuaje de la huella del founder. El recorte funcionó —sin recuadro verde, borde limpio, el contenido anclado y siguiendo el brazo— pero el pecho crema del perro salió con manchas grises.
+
+**Se descartó la compresión primero, midiendo:** el cuadro original y el recomprimido para web difieren en 0.5 de media, y la desviación de la zona del pecho es idéntica (76.7 contra 76.9). El video de origen estaba limpio.
+
+**La causa era el desderrame**, que se aplicaba a TODOS los píxeles. En un crema o un blanco cálido el canal verde apenas supera el promedio de los otros dos, así que la corrección se lo bajaba y la zona quedaba grisácea.
+
+**Decision:** el desderrame se pondera por `1 - alfa`. La contaminación real solo existe donde el fondo se mezcla con el dibujo, es decir donde el alfa es parcial; en el interior opaco el factor cae a cero y el color no se toca.
+
+## [2026-09-07] Validado sobre piel: el tatuaje de la huella rastrea al límite
+**Context:** Al probar sobre el tatuaje real cuesta que enganche.
+
+**No es solo la luz.** El propio historial ya lo tenía medido: la huella da **2308 puntos de detección y 16% de seguimiento**; el esqueleto, 2516 y 20%. El marcador generado para el demo da 33% — el doble que la huella.
+
+O sea, ese tatuaje está en el extremo bajo de lo ACEPTABLE, y con poca luz se cae. **Esto es el argumento concreto para conectar el analizador al flujo de activación**, que sigue pendiente del Bloque 1: si al founder le cuesta con 16%, un cliente con un tatuaje peor pide reembolso. Vale más rechazar una foto antes de cobrar que devolver el dinero después.
