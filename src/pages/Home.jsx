@@ -1,66 +1,58 @@
+/* global __BUILD_ID__ */ // lo inyecta vite.config.js en tiempo de build
 import { Link } from 'react-router-dom'
 import { t, getIdioma, setIdioma } from '../lib/i18n.js'
+import Logo from '../components/ui/Logo.jsx'
+import Tinta from '../components/ui/Tinta.jsx'
+import Boton from '../components/ui/Boton.jsx'
 
 /**
- * Landing page — primer contacto del usuario.
+ * Inicio de la app — primer contacto dentro del APK.
  *
- * ¿Por qué "Activar" es el CTA primario?
- * El flujo de escaneo requiere un ?tattoo=uuid específico — no tiene sentido
- * abrir /scan sin ese parámetro (no hay target que detectar).
- * Los usuarios que quieren escanear llegan vía link compartido, no desde Home.
- * Los usuarios que llegan a Home sin link quieren activar su propio tatuaje.
+ * ── Por qué "Activar" es el CTA primario ──
+ * Quien llega aquí sin una liga quiere activar su propio tatuaje. Quien tiene
+ * una liga la abre directo y nunca pasa por esta pantalla.
+ *
+ * ── Por qué "Pruébalo sin tatuaje" está aquí y no solo en la landing ──
+ * Los jueces del concurso instalan la app y no tienen tatuajes. Si la única
+ * entrada al demo vive en la web, dentro de la app no encuentran qué escanear
+ * y califican lo que se imaginan. Esta es la pantalla que ven al abrir.
+ *
+ * ── Por qué el logotipo y no el nombre en texto ──
+ * La app publicada mostraba "InkAR" en un h1 genérico. El logotipo es la única
+ * pieza de marca que el usuario reconoce de la tienda y del estudio; sin él,
+ * la app podría ser cualquiera.
  */
 export default function Home() {
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen px-6 text-center">
-      <h1 className="text-4xl font-bold tracking-tight mb-2">
-        InkAR
-      </h1>
-      <p className="text-gray-400 text-lg mb-10 max-w-xs">
-        {t('Tu tatuaje cobra vida en realidad aumentada')}
-      </p>
+    <div className="relative min-h-screen overflow-hidden flex flex-col items-center justify-center px-6 text-center">
+      {/* El mismo trazo de la landing, en tinta blanca sobre el fondo oscuro */}
+      <Tinta
+        src="/tinta/01-diagonal.png"
+        color="bg-white"
+        className="-top-24 -right-48 w-[560px] h-[380px] opacity-[0.07] rotate-[8deg]"
+      />
 
-      <div className="flex flex-col gap-4 w-full max-w-xs">
-        {/* CTA primario — activa tu propio tatuaje */}
-        <Link
-          to="/activate"
-          className="bg-white text-black font-semibold py-3 px-6 rounded-full text-center
-                     hover:bg-gray-200 transition-colors"
-        >
-          {t('Activar mi tatuaje')}
-        </Link>
+      <div className="relative flex flex-col items-center w-full max-w-xs">
+        <Logo alto={44} className="mb-5" />
+        <p className="text-gray-400 text-lg mb-10 leading-snug">
+          {t('Tu tatuaje cobra vida en realidad aumentada')}
+        </p>
 
-        <Link
-          to="/creditos"
-          className="text-gray-400 text-sm underline hover:text-white transition-colors"
-        >
-          {t('Mis créditos')}
-        </Link>
+        <div className="flex flex-col gap-3 w-full">
+          <Boton to="/activate">{t('Activar mi tatuaje')}</Boton>
+          <Boton to="/demo" variante="secundario">{t('Pruébalo sin tatuaje')}</Boton>
+          <Boton to="/creditos" variante="enlace" className="mt-1">{t('Mis créditos')}</Boton>
+        </div>
 
-        {/* CTA secundario — para quien ya tiene un link */}
-        <p className="text-gray-500 text-sm">
+        <p className="text-gray-500 text-sm mt-8">
           {t('¿Te compartieron un link de tatuaje?')}{' '}
           <span className="text-gray-300">{t('Ábrelo directo desde tu celular.')}</span>
         </p>
       </div>
 
       <p className="text-gray-600 text-xs mt-12 max-w-xs leading-relaxed">
-        {t('Activa tu tatuaje una vez. Cualquier persona que apunte su cámara verá tu mundo 3D.')}
+        {t('Activa tu tatuaje una vez. Cualquier persona que apunte su cámara verá tu recuerdo cobrar vida.')}
       </p>
-
-      {/*
-        TEMPORAL: acceso a la validación de multi-tatuaje.
-
-        Carga un .mind con los dos tatuajes de prueba ya fusionados, para
-        comprobar que MindAR los distingue antes de construir perfiles y links.
-        Se retira cuando exista el perfil de usuario real.
-      */}
-      <Link
-        to="/scan?demo=multi"
-        className="mt-8 text-xs text-gray-500 underline hover:text-gray-300 transition-colors"
-      >
-        {t('Probar multi-tatuaje (demo)')}
-      </Link>
 
       {/* Identificador de build — permite confirmar de un vistazo qué versión
           corre el dispositivo. El APK se instala a mano y es fácil quedarse con
@@ -69,7 +61,7 @@ export default function Home() {
 
       {/* Play exige que ambos caminos sean alcanzables DENTRO de la app, no solo
           por su dirección web. Aquí abajo porque son trámite, no producto. */}
-      <div className="flex gap-4 mt-6 text-[11px] text-gray-600">
+      <div className="flex gap-4 mt-4 text-[11px] text-gray-600">
         <Link to="/privacidad" className="underline hover:text-gray-400 transition-colors">
           {t('Privacidad')}
         </Link>

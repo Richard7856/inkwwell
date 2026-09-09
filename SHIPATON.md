@@ -54,8 +54,13 @@ primer crédito a mitad de precio, códigos promocionales (`SHIPATON` para
 jueces), alta de estudios en la landing con su código, atribución permanente
 del usuario a su estudio. Migración 008 aplicada, webhook v3 desplegado.
 
+**Marca aplicada a la app el 9 sep:** primitivos en `src/components/ui/`
+(`Boton`, `Tarjeta`, `Spinner`, `Encabezado`, `Tinta`, `Logo`), logotipo en
+el inicio, acento `realidad` en el botón primario, entrada a "Pruébalo sin
+tatuaje" dentro de la app para los jueces.
+
 **No existe todavía:** catálogo con video desde la base, perfil con liga
-compartible, marca aplicada a las pantallas de la app, versionCode 4 en Play.
+compartible, versionCode 4 en Play.
 
 ## Plan por bloques
 

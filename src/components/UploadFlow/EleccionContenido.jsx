@@ -1,5 +1,6 @@
-import { Link } from 'react-router-dom'
 import { t } from '../../lib/i18n.js'
+import Boton from '../ui/Boton.jsx'
+import Tarjeta from '../ui/Tarjeta.jsx'
 
 /**
  * Qué va a aparecer sobre el tatuaje: el recuerdo animado o el catálogo.
@@ -24,8 +25,8 @@ export default function EleccionContenido({ saldo, onRecuerdo, onCatalogo }) {
     <div className="grid gap-4">
       <p className="text-gray-400">{t('¿Qué quieres que aparezca sobre tu tatuaje?')}</p>
 
-      <div className="rounded-2xl p-5 border border-white/25 bg-white/10">
-        <p className="text-[10px] uppercase tracking-wider text-gray-300 mb-1">
+      <Tarjeta destacada>
+        <p className="text-[10px] uppercase tracking-wider text-realidad mb-1">
           {t('1 crédito')}
         </p>
         <h3 className="font-semibold text-lg">{t('Anima tu recuerdo')}</h3>
@@ -34,22 +35,9 @@ export default function EleccionContenido({ saldo, onRecuerdo, onCatalogo }) {
         </p>
 
         {sinCreditos ? (
-          <Link
-            to="/creditos"
-            className="block w-full bg-white text-black font-semibold py-3 rounded-full text-center
-                       hover:bg-gray-200 transition-colors"
-          >
-            {t('Necesitas 1 crédito →')}
-          </Link>
+          <Boton to="/creditos">{t('Necesitas 1 crédito →')}</Boton>
         ) : (
-          <button
-            onClick={onRecuerdo}
-            disabled={saldo === null}
-            className="w-full bg-white text-black font-semibold py-3 rounded-full
-                       hover:bg-gray-200 transition-colors active:scale-95 disabled:opacity-40"
-          >
-            {t('Empezar')}
-          </button>
+          <Boton onClick={onRecuerdo} disabled={saldo === null}>{t('Empezar')}</Boton>
         )}
 
         {saldo !== null && (
@@ -59,18 +47,14 @@ export default function EleccionContenido({ saldo, onRecuerdo, onCatalogo }) {
               : t('Tienes {n} créditos', { n: saldo })}
           </p>
         )}
-      </div>
+      </Tarjeta>
 
-      <button
-        onClick={onCatalogo}
-        className="rounded-2xl p-5 border border-white/10 bg-white/5 text-left
-                   hover:bg-white/10 transition-colors active:scale-[0.98]"
-      >
+      <Tarjeta as="button" onClick={onCatalogo}>
         <h3 className="font-semibold">{t('Elegir del catálogo')}</h3>
         <p className="text-sm text-gray-500 mt-1">
           {t('Modelos 3D listos. Gratis, para probar cómo se ve.')}
         </p>
-      </button>
+      </Tarjeta>
     </div>
   )
 }

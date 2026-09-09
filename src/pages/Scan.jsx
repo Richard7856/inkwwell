@@ -1,4 +1,6 @@
-import { Link, useSearchParams } from 'react-router-dom'
+import { useSearchParams } from 'react-router-dom'
+import Logo from '../components/ui/Logo.jsx'
+import Boton from '../components/ui/Boton.jsx'
 import ARViewer from '../components/ARViewer/index.jsx'
 import { t } from '../lib/i18n.js'
 
@@ -46,21 +48,13 @@ export default function Scan() {
 function NoTattooScreen() {
   return (
     <div className="flex flex-col items-center justify-center min-h-screen px-6 text-center">
-      <div className="text-5xl mb-6">🔍</div>
+      <Logo alto={36} className="mb-8 opacity-90" />
       <h1 className="text-xl font-semibold mb-3">{t('Sin tatuaje seleccionado')}</h1>
       <p className="text-gray-400 text-sm mb-8 max-w-xs leading-relaxed">
         {t('Para escanear un tatuaje, necesitas el link que te compartió el dueño. Si quieres activar el tuyo, empieza aquí:')}
       </p>
-      <Link
-        to="/activate"
-        className="bg-white text-black font-semibold py-3 px-6 rounded-full
-                   hover:bg-gray-200 transition-colors"
-      >
-        {t('Activar mi tatuaje')}
-      </Link>
-      <Link to="/" className="text-gray-600 text-sm mt-4 hover:text-gray-400 transition-colors">
-        {t('Volver al inicio')}
-      </Link>
+      <Boton to="/activate" className="max-w-xs">{t('Activar mi tatuaje')}</Boton>
+      <Boton to="/app" variante="enlace" className="mt-4">{t('Volver al inicio')}</Boton>
     </div>
   )
 }

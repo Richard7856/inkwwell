@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
 import { extractInk } from '../../lib/inkExtractor.js'
 import { t } from '../../lib/i18n.js'
+import Boton from '../ui/Boton.jsx'
 
 /**
  * Captura o selección de foto del tatuaje.
@@ -147,36 +148,21 @@ export default function PhotoUpload({ onPhotoSelected }) {
             alt={t('Vista previa del tatuaje')}
             className="mx-auto rounded-xl max-h-64 mb-4 border border-white/10"
           />
-          <button
-            onClick={handleRetake}
-            className="text-gray-400 text-sm underline hover:text-white transition-colors"
-          >
-            {t('Tomar otra foto')}
-          </button>
+          <Boton variante="enlace" onClick={handleRetake}>{t('Tomar otra foto')}</Boton>
         </div>
       ) : (
         <div className="flex flex-col gap-3 max-w-sm mx-auto">
           {/* Opción principal: tomar foto con cámara */}
-          <button
-            onClick={() => cameraInputRef.current?.click()}
-            className="w-full py-4 rounded-2xl bg-white text-black font-semibold
-                       flex items-center justify-center gap-3
-                       hover:bg-gray-200 transition-colors"
-          >
+          <Boton onClick={() => cameraInputRef.current?.click()} className="flex items-center justify-center gap-3">
             <CameraIcon />
             {t('Tomar foto')}
-          </button>
+          </Boton>
 
           {/* Opción secundaria: subir de galería */}
-          <button
-            onClick={() => galleryInputRef.current?.click()}
-            className="w-full py-4 rounded-2xl bg-white/10 text-white font-medium
-                       flex items-center justify-center gap-3
-                       border border-white/10 hover:bg-white/20 transition-colors"
-          >
+          <Boton variante="secundario" onClick={() => galleryInputRef.current?.click()} className="flex items-center justify-center gap-3">
             <GalleryIcon />
             {t('Subir de galería')}
-          </button>
+          </Boton>
 
           <p className="text-gray-600 text-xs mt-2">{t('JPG, PNG o WebP · mínimo 800x800px')}</p>
         </div>

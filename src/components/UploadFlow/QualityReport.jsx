@@ -30,6 +30,7 @@
  * @param {() => void} onContinue - Seguir al selector de diseño
  */
 import { t } from '../../lib/i18n.js'
+import Boton from '../ui/Boton.jsx'
 
 export default function QualityReport({ metrics, onRetake, onContinue }) {
   const { verdict, tracking, detection, distribution } = metrics
@@ -254,24 +255,9 @@ function MiniGrid({ celdas }) {
 }
 
 function BotonPrincipal({ onClick, children }) {
-  return (
-    <button
-      onClick={onClick}
-      className="w-full bg-white text-black font-semibold py-3 rounded-full
-                 hover:bg-gray-200 transition-colors active:scale-95"
-    >
-      {children}
-    </button>
-  )
+  return <Boton onClick={onClick}>{children}</Boton>
 }
 
 function BotonSecundario({ onClick, children }) {
-  return (
-    <button
-      onClick={onClick}
-      className="w-full text-gray-400 text-sm py-2 hover:text-white transition-colors underline"
-    >
-      {children}
-    </button>
-  )
+  return <Boton variante="enlace" onClick={onClick} className="w-full text-center">{children}</Boton>
 }

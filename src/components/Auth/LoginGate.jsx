@@ -4,6 +4,7 @@ import {
   signInWithPassword, signUpWithPassword, MIN_PASSWORD,
 } from '../../lib/auth.js'
 import { t } from '../../lib/i18n.js'
+import BotonUI from '../ui/Boton.jsx'
 
 /**
  * Pide identificarse antes de activar un tatuaje.
@@ -186,15 +187,7 @@ function CampoCorreo({ value, onChange }) {
   )
 }
 
+/** Envoltorio local: los cuatro formularios envían con el mismo botón */
 function Boton({ disabled, children }) {
-  return (
-    <button
-      type="submit"
-      disabled={disabled}
-      className="w-full py-4 rounded-2xl bg-white text-black font-semibold
-                 disabled:opacity-40 transition-opacity"
-    >
-      {children}
-    </button>
-  )
+  return <BotonUI type="submit" disabled={disabled}>{children}</BotonUI>
 }

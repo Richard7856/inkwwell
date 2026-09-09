@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef } from 'react'
-import { Link } from 'react-router-dom'
 import PhotoUpload from '../components/UploadFlow/PhotoUpload.jsx'
 import DesignPicker from '../components/UploadFlow/DesignPicker.jsx'
 import CompileStatus from '../components/UploadFlow/CompileStatus.jsx'
@@ -17,6 +16,10 @@ import { ensureProfile } from '../lib/profile.js'
 import { aplicarCodigoPendiente, recordarCodigoPendiente, leerCodigoPendiente } from '../lib/estudios.js'
 import { ligaDeTatuaje } from '../lib/urls.js'
 import LoginGate from '../components/Auth/LoginGate.jsx'
+import Encabezado from '../components/ui/Encabezado.jsx'
+import Spinner from '../components/ui/Spinner.jsx'
+import Tarjeta from '../components/ui/Tarjeta.jsx'
+import Boton from '../components/ui/Boton.jsx'
 import { t } from '../lib/i18n.js'
 
 /**
@@ -296,7 +299,7 @@ export default function Activate() {
   if (cargandoSesion) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="w-8 h-8 border-4 border-white/20 border-t-white rounded-full animate-spin" />
+        <Spinner />
       </div>
     )
   }
@@ -304,12 +307,7 @@ export default function Activate() {
   if (!isLoggedIn) {
     return (
       <div className="min-h-screen px-6 py-8 pb-safe">
-        <div className="flex items-center gap-3 mb-6">
-          <Link to="/" className="text-gray-500 hover:text-white transition-colors">
-            <BackArrow />
-          </Link>
-          <h1 className="text-2xl font-bold">{t('Activa tu tatuaje')}</h1>
-        </div>
+        <Encabezado titulo={t('Activa tu tatuaje')} />
         <LoginGate />
         <CampoEstudio />
       </div>
@@ -318,13 +316,7 @@ export default function Activate() {
 
   return (
     <div className="min-h-screen px-6 py-8 pb-safe">
-      {/* Header con botón de regreso */}
-      <div className="flex items-center gap-3 mb-6">
-        <Link to="/" className="text-gray-500 hover:text-white transition-colors">
-          <BackArrow />
-        </Link>
-        <h1 className="text-2xl font-bold">{t('Activa tu tatuaje')}</h1>
-      </div>
+      <Encabezado titulo={t('Activa tu tatuaje')} />
 
       {/* Indicador de pasos */}
       <StepIndicator current={step} />
@@ -341,8 +333,7 @@ export default function Activate() {
 
       {step === 'uploading' && (
         <div className="text-center mt-12">
-          <div className="w-10 h-10 border-4 border-white/20 border-t-white rounded-full
-                          animate-spin mx-auto mb-4" />
+          <Spinner tam="lg" className="mx-auto mb-4" />
           <p className="text-gray-400">{t('Subiendo foto...')}</p>
         </div>
       )}
@@ -425,8 +416,8 @@ export default function Activate() {
 
       {step === 'done' && (
         <div className="text-center mt-12">
-          <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center
-                          mx-auto mb-4 border border-white/20">
+          <div className="w-16 h-16 bg-realidad/15 rounded-full flex items-center justify-center
+                          mx-auto mb-4 border border-realidad/50 text-realidad">
             <span className="text-2xl">✓</span>
           </div>
           <h2 className="text-xl font-semibold mb-2">{t('Tu tatuaje está activado')}</h2>
@@ -435,16 +426,12 @@ export default function Activate() {
           </p>
 
           {/* Link específico con el UUID del tatuaje — targetLoader lo resuelve en Supabase */}
-          <Link
-            to={`/scan?tattoo=${tattooId}`}
-            className="inline-block bg-white text-black font-semibold py-3 px-6 rounded-full
-                       hover:bg-gray-200 transition-colors mb-6"
-          >
+          <Boton to={`/scan?tattoo=${tattooId}`} className="max-w-xs mx-auto mb-6">
             {t('Probar ahora →')}
-          </Link>
+          </Boton>
 
           {/* Mostrar el link para que el usuario lo guarde / comparta */}
-          <div className="bg-white/5 border border-white/10 rounded-xl p-4 max-w-xs mx-auto">
+          <Tarjeta compacta className="max-w-xs mx-auto">
             <p className="text-gray-500 text-xs mb-2">{t('Tu link de escaneo:')}</p>
             <p className="text-gray-300 text-xs font-mono break-all">
               {ligaDeTatuaje(tattooId)}
@@ -455,7 +442,7 @@ export default function Activate() {
             >
               {t('Copiar link')}
             </button>
-          </div>
+          </Tarjeta>
         </div>
       )}
 
@@ -527,13 +514,13 @@ function StepIndicator({ current }) {
 function Miniatura({ imageUrl, titulo, detalle }) {
   if (!imageUrl) return null
   return (
-    <div className="mb-6 flex items-center gap-3 bg-white/5 rounded-xl p-3 border border-white/10">
+    <Tarjeta compacta className="mb-6 flex items-center gap-3">
       <img src={imageUrl} alt={t('Tu tatuaje')} className="w-14 h-14 rounded-lg object-cover" />
       <div className="text-left">
         <p className="text-sm font-medium">{titulo}</p>
         <p className="text-xs text-gray-500">{detalle}</p>
       </div>
-    </div>
+    </Tarjeta>
   )
 }
 
@@ -575,14 +562,5 @@ function CampoEstudio() {
       />
       <p className="text-xs text-gray-600 mt-2">{t('Así tu artista recibe crédito por tu tatuaje.')}</p>
     </div>
-  )
-}
-
-function BackArrow() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <line x1="19" y1="12" x2="5" y2="12" />
-      <polyline points="12 19 5 12 12 5" />
-    </svg>
   )
 }

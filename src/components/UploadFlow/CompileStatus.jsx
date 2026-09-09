@@ -19,6 +19,7 @@
  * @param {string|null} inkLayer - dataURL PNG de la tinta extraída
  */
 import { t } from '../../lib/i18n.js'
+import Spinner from '../ui/Spinner.jsx'
 export default function CompileStatus({
   stage = 'compiling',
   progress = 0,
@@ -82,8 +83,7 @@ export default function CompileStatus({
           />
         </div>
       ) : (
-        <div className="w-12 h-12 border-4 border-white/20 border-t-white rounded-full
-                        animate-spin mx-auto mb-6" />
+        <Spinner tam="lg" className="mx-auto mb-6" />
       )}
 
       <h2 className="text-xl font-semibold mb-2">{title}</h2>
@@ -93,7 +93,7 @@ export default function CompileStatus({
         <div className="max-w-xs mx-auto">
           <div className="h-2 bg-white/10 rounded-full overflow-hidden">
             <div
-              className="h-full bg-white rounded-full transition-all duration-300 ease-out"
+              className="h-full bg-realidad rounded-full transition-all duration-300 ease-out"
               style={{ width: `${pct}%` }}
             />
           </div>

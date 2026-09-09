@@ -1,7 +1,10 @@
 import { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth.js'
 import LoginGate from '../components/Auth/LoginGate.jsx'
+import Encabezado from '../components/ui/Encabezado.jsx'
+import Spinner from '../components/ui/Spinner.jsx'
+import Tarjeta from '../components/ui/Tarjeta.jsx'
+import Boton from '../components/ui/Boton.jsx'
 import { isBillingAvailable, obtenerPaquetes, comprarPaquete, ErrorCompra } from '../lib/billing.js'
 import { obtenerSaldo, esperarAcreditacion, haComprado } from '../lib/creditos.js'
 import { canjearCodigo } from '../lib/promo.js'
@@ -158,19 +161,14 @@ export default function Creditos() {
   if (cargandoSesion) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="w-8 h-8 border-4 border-white/20 border-t-white rounded-full animate-spin" />
+        <Spinner />
       </div>
     )
   }
 
   return (
     <div className="min-h-screen px-6 py-8 pb-safe">
-      <div className="flex items-center gap-3 mb-6">
-        <Link to="/app" className="text-gray-500 hover:text-white transition-colors">
-          <BackArrow />
-        </Link>
-        <h1 className="text-2xl font-bold">{t('Créditos')}</h1>
-      </div>
+      <Encabezado titulo={t('Créditos')} />
 
       {!isLoggedIn ? (
         <LoginGate />
@@ -181,13 +179,9 @@ export default function Creditos() {
           {aviso && <Aviso {...aviso} />}
 
           {fase === 'tardando' && (
-            <button
-              onClick={revisarSaldo}
-              className="w-full mt-3 bg-white/10 border border-white/20 rounded-xl py-3
-                         text-sm hover:bg-white/15 transition-colors"
-            >
+            <Boton variante="secundario" onClick={revisarSaldo} className="mt-3">
               {t('Volver a revisar')}
-            </button>
+            </Boton>
           )}
 
           <form onSubmit={canjear} className="mt-8">
@@ -273,14 +267,14 @@ function mensajeDeError(err) {
 
 function Saldo({ valor }) {
   return (
-    <div className="bg-white/5 border border-white/10 rounded-2xl p-5 flex items-baseline gap-3">
+    <Tarjeta destacada className="flex items-baseline gap-3">
       <span className="text-4xl font-bold tabular-nums">
         {valor === null ? '—' : valor}
       </span>
       <span className="text-gray-400">
         {valor === 1 ? t('crédito disponible') : t('créditos disponibles')}
       </span>
-    </div>
+    </Tarjeta>
   )
 }
 
@@ -301,12 +295,12 @@ function BotonPaquete({ item, destacado = false, ocupado, fase, onClick }) {
                   active:scale-95 disabled:opacity-50 disabled:active:scale-100
                   flex items-center justify-between gap-4
                   ${destacado
-                    ? 'bg-white/10 border-white/40 hover:bg-white/15'
+                    ? 'bg-realidad/10 border-realidad/60 hover:bg-realidad/15'
                     : 'bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/20'}`}
     >
       <div className="min-w-0">
         {destacado && (
-          <p className="text-[10px] uppercase tracking-wider text-gray-300 mb-1">
+          <p className="text-[10px] uppercase tracking-wider text-realidad mb-1">
             {t('Solo tu primera vez')}
           </p>
         )}
@@ -325,8 +319,7 @@ function BotonPaquete({ item, destacado = false, ocupado, fase, onClick }) {
 function Cargando() {
   return (
     <div className="text-center py-8">
-      <div className="w-8 h-8 border-4 border-white/20 border-t-white rounded-full
-                      animate-spin mx-auto mb-3" />
+      <Spinner className="mx-auto mb-3" />
       <p className="text-gray-500 text-sm">{t('Cargando precios...')}</p>
     </div>
   )
@@ -339,22 +332,22 @@ function Cargando() {
 */
 function SinPaquetes() {
   return (
-    <div className="bg-white/5 border border-white/10 rounded-2xl p-5 text-center">
+    <Tarjeta className="text-center">
       <p className="text-gray-300 font-medium">{t('Todavía no hay paquetes a la venta')}</p>
       <p className="text-gray-500 text-sm mt-1">{t('Vuelve en un rato.')}</p>
-    </div>
+    </Tarjeta>
   )
 }
 
 /** En el navegador no hay cobro, y quien abre una liga compartida no viene a comprar */
 function SinCobro() {
   return (
-    <div className="bg-white/5 border border-white/10 rounded-2xl p-5 text-center">
+    <Tarjeta className="text-center">
       <p className="text-gray-300 font-medium">{t('Las compras se hacen desde la app')}</p>
       <p className="text-gray-500 text-sm mt-1">
         {t('Descarga InkAR en tu teléfono para comprar créditos.')}
       </p>
-    </div>
+    </Tarjeta>
   )
 }
 
@@ -369,15 +362,5 @@ function Aviso({ tono, texto }) {
     <div className={`mt-4 border rounded-xl p-4 text-sm ${TONOS[tono] ?? TONOS.info}`}>
       {texto}
     </div>
-  )
-}
-
-function BackArrow() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-         strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <line x1="19" y1="12" x2="5" y2="12" />
-      <polyline points="12 19 5 12 12 5" />
-    </svg>
   )
 }

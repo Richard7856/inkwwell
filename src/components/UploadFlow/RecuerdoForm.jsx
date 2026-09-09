@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react'
 import { t } from '../../lib/i18n.js'
+import Boton from '../ui/Boton.jsx'
 
 const MAX_HISTORIA = 600
 
@@ -97,14 +98,9 @@ export default function RecuerdoForm({ onEnviar, enviando = false }) {
         </p>
       </div>
 
-      <button
-        type="submit"
-        disabled={!listo}
-        className="w-full bg-white text-black font-semibold py-3 rounded-full
-                   hover:bg-gray-200 transition-colors active:scale-95 disabled:opacity-40"
-      >
+      <Boton type="submit" disabled={!listo}>
         {enviando ? t('Enviando...') : t('Generar mi video · 1 crédito')}
-      </button>
+      </Boton>
     </form>
   )
 }

@@ -1,4 +1,6 @@
 import { t } from '../../lib/i18n.js'
+import Boton from '../ui/Boton.jsx'
+import Spinner from '../ui/Spinner.jsx'
 
 /**
  * Espera de la generación del video.
@@ -47,8 +49,7 @@ export default function GeneracionStatus({ estado, error = null, elapsedSeconds 
   return (
     <div className="text-center mt-8">
       {!fallo && (
-        <div className="w-12 h-12 border-4 border-white/20 border-t-white rounded-full
-                        animate-spin mx-auto mb-5" />
+        <Spinner tam="lg" className="mx-auto mb-5" />
       )}
       <h2 className="text-xl font-semibold mb-2">{titulo}</h2>
       <p className="text-gray-400 max-w-xs mx-auto">{detalle}</p>
@@ -64,13 +65,9 @@ export default function GeneracionStatus({ estado, error = null, elapsedSeconds 
       )}
 
       {fallo && onReintentar && (
-        <button
-          onClick={onReintentar}
-          className="mt-6 bg-white text-black font-semibold py-3 px-6 rounded-full
-                     hover:bg-gray-200 transition-colors"
-        >
+        <Boton onClick={onReintentar} className="mt-6 max-w-xs mx-auto">
           {t('Intentar de nuevo')}
-        </button>
+        </Boton>
       )}
     </div>
   )

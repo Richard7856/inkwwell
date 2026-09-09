@@ -4,6 +4,7 @@ import { getIdioma, setIdioma, t } from '../lib/i18n.js'
 import { inscribirEnLista } from '../lib/waitlist.js'
 import { registrarEstudio, sugerirCodigo } from '../lib/estudios.js'
 import { ligaPublica } from '../lib/urls.js'
+import Tinta from '../components/ui/Tinta.jsx'
 import { useTema } from '../lib/tema.js'
 
 /**
@@ -529,33 +530,6 @@ function FormularioEstudio({ c }) {
   )
 }
 
-/**
- * Trazo de tinta decorativo.
- *
- * Se dibuja como MÁSCARA CSS y no como <img>: los archivos guardan solo el
- * canal alfa —la tinta es negra en todos lados, el color no aporta nada— así
- * que pesan una cuarta parte, y el color sale de `background-color`. El mismo
- * archivo sirve sobre fondo claro y sobre oscuro sin duplicar assets.
- *
- * Van a baja opacidad porque viven DETRÁS del texto: a plena intensidad
- * compiten con lo que hay que leer, y la página deja de leerse.
- */
-function Tinta({ src, className = '' }) {
-  return (
-    <div
-      aria-hidden="true"
-      className={`pointer-events-none select-none absolute bg-tinta ${className}`}
-      style={{
-        maskImage: `url(${src})`,
-        WebkitMaskImage: `url(${src})`,
-        maskSize: 'contain',
-        WebkitMaskSize: 'contain',
-        maskRepeat: 'no-repeat',
-        WebkitMaskRepeat: 'no-repeat',
-      }}
-    />
-  )
-}
 
 function Seccion({ titulo, className = '', children }) {
   return (
