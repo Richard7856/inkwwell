@@ -508,3 +508,21 @@ O sea, ese tatuaje está en el extremo bajo de lo ACEPTABLE, y con poca luz se c
 - Los umbrales siguen sin calibrar. Esto no los arregla: monta el instrumento que permitirá arreglarlos.
 
 **Verificado contra el worker corriendo, no supuesto:** el marcador del demo devuelve 3440 puntos y 33% de seguimiento — idéntico a lo que ya estaba medido por CLI, así que el camino nuevo mide lo mismo. Una foto de trazo fino en una esquina devuelve 'malo' con las cuatro razones y los tres consejos correctos. Las dos pantallas revisadas a 375px en español e inglés.
+
+## [2026-09-08] Precio, canal de estudios y primer crédito a mitad de precio
+**Context:** La app se publicó en Play el día 2 del sprint, pero la versión publicada no puede cobrar (llave de RevenueCat vacía, sin flujo de compra). Al construir el cobro había que decidir precio y el esquema del canal de estudios, con una junta con estudios a dos días.
+
+**Decisiones, discutidas como socios y no por consenso fácil:**
+- **Un solo precio en todos lados: $25 USD por crédito, 1 crédito = 1 video.** Se descartó tener precio distinto en el estudio y en la app —Richard detectó el conflicto de canal: el cliente descubre el barato, compra ahí, y el estudio queda vendiendo algo que nosotros mismos abaratamos.
+- **Primer crédito a $12.50, una sola vez por usuario (`creditos_primero`).** Idea de Richard, mejor que el crédito gratis universal que se había propuesto: con crédito gratis, cada usuario nuevo genera $0 y el estudio que lo trajo ve $0 de comisión en su primera interacción. Con el 50%, hay ingreso y comisión desde el primer toque — y para un concurso medido en facturación, esa diferencia es la métrica.
+- **La prueba gratis que exigen las reglas va por código promocional** (`SHIPATON`, 1 crédito, 200 usos), no por crédito universal. Desacopla "los jueces pueden probar" de "todo el mundo empieza gratis".
+- **Sin descuento por código de estudio.** Se discutió un 50%: los números no cerraban (comisión 20-30% más descuento 50% dejaba $8 de $25), descontaba a quien ya venía vendido en persona, y el código se propagaría hasta volver $12.50 el precio real. El código es "acredita a tu tatuador", no un cupón.
+- **Comisión 20% de lo cobrado, 30% para los primeros 20 estudios. Pago mensual, día 20, mes anterior, neto de reembolsos.** Richard proponía pagar a 3-7 días; Google paga al desarrollador el día 15 del mes siguiente, así que eso habría sido financiar al canal de nuestro bolsillo. Lo predecible genera más confianza que lo rápido.
+- **Atribución permanente**: el estudio que trajo al cliente lo conserva; otro código no lo sobreescribe. Evita robar atribuciones.
+- **Liquidaciones a mano el primer mes.** Se discutió construir el tablero de pagos ya; se difirió porque con volumen de dos dígitos una hoja de cálculo lo resuelve, y la maquinaria (libro de comisiones, reversión por reembolso, fiscal) no es una tarde. Lo que sí es perecedero es el dato de atribución, y eso sí se captura desde ahora.
+
+**Alternativas descartadas:** crédito gratis universal; doble precio app/estudio; 50% de descuento por referido; retención de 3-7 días; guardar videos reembolsados para marketing o reventa (el valor del video es que es de esa persona — para cualquier otra vale cero, y es dato personal).
+
+**Riesgos:** los tramos 1 / 3 / 5 y los $25 son hipótesis sin una sola transacción detrás; falta el costo real por video (Richard paga el plan de Higgsfield el 9 sep para medirlo). El $12.50 puede anclar bajo la percepción de valor; se mitiga mostrándolo como excepción con el precio real al lado. `registrar_estudio` es llamable sin sesión, igual que la lista de espera: expuesto a altas basura, aceptado por ahora.
+
+**Implementación:** migración 008 (`estudios`, `codigos_promo`, `canjes_promo`, `users.estudio_id`, funciones `registrar_estudio`, `atribuir_estudio`, `canjear_codigo`, `ha_comprado`), `lib/estudios.js`, `lib/promo.js`, captura de `?estudio=` en cualquier ruta, campo "¿Quién te tatuó?" antes del login, canje y primer crédito en `/creditos`, alta de estudios en la landing. Productos en Play: `creditos_primero`, `creditos_1`, `creditos_3`, `creditos_5`.

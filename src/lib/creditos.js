@@ -74,3 +74,26 @@ export async function esperarAcreditacion(saldoPrevio, opciones = {}) {
 
   return { acreditado: false, saldo }
 }
+
+/**
+ * ¿Este usuario ya compró alguna vez?
+ *
+ * Decide si se le ofrece el primer crédito a mitad de precio. La regla vive en
+ * la base (`ha_comprado`, migración 008) para que no dependa de lo que el
+ * cliente crea recordar: un regalo por código promocional NO cuenta como
+ * compra, así que quien probó gratis conserva su primer crédito barato.
+ *
+ * @returns {Promise<boolean>}
+ */
+export async function haComprado() {
+  if (!supabase) return false
+  const { data, error } = await supabase.rpc('ha_comprado')
+  if (error) {
+    // Ante la duda se asume que SÍ compró: ofrecer el precio de entrada a
+    // quien no le toca cuesta dinero; negárselo a quien sí le toca se corrige
+    // con un reintento
+    console.error('[creditos] ha_comprado falló:', error)
+    return true
+  }
+  return !!data
+}

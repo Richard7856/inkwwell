@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { getIdioma, setIdioma, t } from '../lib/i18n.js'
 import { inscribirEnLista } from '../lib/waitlist.js'
+import { registrarEstudio, sugerirCodigo } from '../lib/estudios.js'
+import { ligaPublica } from '../lib/urls.js'
 import { useTema } from '../lib/tema.js'
 
 /**
@@ -105,6 +107,17 @@ const ES = {
   yaEstabas: 'Ese correo ya estaba en la lista. No hace falta hacer nada más.',
   artistasTitulo: 'Para estudios de tatuaje',
   artistasTexto: 'Tus clientes ya pagan por un tatuaje. Ofrecerles que además cobre vida no te cuesta trabajo extra y te distingue de cualquier estudio de tu ciudad. Estamos armando el programa con un grupo pequeño de estudios: apúntate y hablamos contigo directo.',
+  estudioNombre: 'Nombre del estudio',
+  estudioCorreo: 'Correo de contacto',
+  estudioCodigo: 'Tu código',
+  estudioCodigoAyuda: 'Es el que le dirás a tus clientes. Corto y fácil de dictar.',
+  estudioCiudad: 'Ciudad',
+  estudioBoton: 'Registrar mi estudio',
+  estudioEnviando: 'Registrando...',
+  estudioListoTitulo: 'Tu estudio está registrado',
+  estudioListoTexto: 'Este es tu código. Dáselo a cada cliente que tatúes: cuando lo pongan en la app, sus compras quedan acreditadas a ti.',
+  estudioFundador: 'Entraste como estudio fundador: 30% de comisión en vez de 20%.',
+  estudioLiga: 'O comparte esta liga, que ya trae tu código:',
   legalNota: 'Solo usamos tu correo para avisarte del lanzamiento.',
 }
 
@@ -171,6 +184,17 @@ const EN = {
   yaEstabas: 'That email was already on the list. Nothing else to do.',
   artistasTitulo: 'For tattoo studios',
   artistasTexto: 'Your clients already pay for a tattoo. Offering them one that also comes alive costs you no extra work and sets you apart from every studio in your city. We’re building the program with a small group of studios: sign up and we’ll talk directly.',
+  estudioNombre: 'Studio name',
+  estudioCorreo: 'Contact email',
+  estudioCodigo: 'Your code',
+  estudioCodigoAyuda: 'The one you’ll tell your clients. Short and easy to say out loud.',
+  estudioCiudad: 'City',
+  estudioBoton: 'Register my studio',
+  estudioEnviando: 'Registering…',
+  estudioListoTitulo: 'Your studio is registered',
+  estudioListoTexto: 'This is your code. Give it to every client you tattoo: when they enter it in the app, their purchases are credited to you.',
+  estudioFundador: 'You’re in as a founding studio: 30% commission instead of 20%.',
+  estudioLiga: 'Or share this link, which already carries your code:',
   legalNota: 'We only use your email to tell you about the launch.',
 }
 
@@ -381,6 +405,7 @@ export default function Landing() {
         <section className="mt-14 bg-white border border-black/10 rounded-2xl p-6 shadow-sm relative">
           <h2 className="text-lg font-semibold mb-3">{c.artistasTitulo}</h2>
           <p className="text-neutral-600 text-sm leading-relaxed">{c.artistasTexto}</p>
+          <FormularioEstudio c={c} />
         </section>
 
         {/* ── Pie ── */}
@@ -405,6 +430,102 @@ export default function Landing() {
         </div>
       </div>
     </div>
+  )
+}
+
+/**
+ * Alta de estudio, con el código que el estudio elige.
+ *
+ * El código se sugiere a partir del nombre mientras el estudio no lo toque:
+ * "Tinta Negra" → TINTANEGRA. Un código con su nombre se dicta de viva voz
+ * mucho mejor que uno aleatorio, y de eso depende que se use.
+ *
+ * Al terminar se muestra el código en grande y una liga que ya lo trae: son
+ * las dos formas en que el estudio lo va a pasar — de palabra en el estudio,
+ * o por mensaje.
+ */
+function FormularioEstudio({ c }) {
+  const [nombre, setNombre] = useState('')
+  const [contacto, setContacto] = useState('')
+  const [codigo, setCodigo] = useState('')
+  const [codigoEditado, setCodigoEditado] = useState(false)
+  const [ciudad, setCiudad] = useState('')
+  const [estado, setEstado] = useState('inicial')   // inicial | enviando | listo
+  const [resultado, setResultado] = useState(null)
+  const [error, setError] = useState('')
+
+  const cambiarNombre = (v) => {
+    setNombre(v)
+    if (!codigoEditado) setCodigo(sugerirCodigo(v))
+  }
+  const cambiarCodigo = (v) => {
+    setCodigoEditado(true)
+    setCodigo(v.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 12))
+  }
+
+  const enviar = async (e) => {
+    e.preventDefault()
+    setError('')
+    setEstado('enviando')
+    try {
+      setResultado(await registrarEstudio({ nombre, contacto, codigo, ciudad }))
+      setEstado('listo')
+    } catch (err) {
+      setError(err.message)
+      setEstado('inicial')
+    }
+  }
+
+  const campo = `w-full py-3 px-4 rounded-2xl bg-white border border-black/15
+                 text-black placeholder-neutral-400 focus:outline-none focus:border-realidad`
+
+  if (estado === 'listo') {
+    const liga = ligaPublica(`/?estudio=${resultado.codigo}`)
+    return (
+      <div className="mt-5 bg-realidad/[0.07] border border-realidad/40 rounded-2xl p-5">
+        <p className="font-semibold">{c.estudioListoTitulo}</p>
+        <p className="text-neutral-600 text-sm leading-relaxed mt-1">{c.estudioListoTexto}</p>
+        <p className="font-mono text-3xl tracking-[0.2em] text-center my-5 select-all">
+          {resultado.codigo}
+        </p>
+        {resultado.fundador && (
+          <p className="text-sm text-realidad font-medium">{c.estudioFundador}</p>
+        )}
+        <p className="text-neutral-500 text-xs mt-4">{c.estudioLiga}</p>
+        <p className="font-mono text-xs break-all mt-1 select-all">{liga}</p>
+      </div>
+    )
+  }
+
+  return (
+    <form onSubmit={enviar} className="flex flex-col gap-3 mt-5">
+      <input type="text" required value={nombre}
+             onChange={(e) => cambiarNombre(e.target.value)}
+             placeholder={c.estudioNombre} className={campo} />
+      <input type="email" inputMode="email" autoComplete="email" required value={contacto}
+             onChange={(e) => setContacto(e.target.value)}
+             placeholder={c.estudioCorreo} className={campo} />
+      <div>
+        <input type="text" required value={codigo}
+               onChange={(e) => cambiarCodigo(e.target.value)}
+               placeholder={c.estudioCodigo}
+               autoCapitalize="characters" autoCorrect="off" spellCheck={false}
+               className={`${campo} font-mono tracking-widest`} />
+        <p className="text-neutral-500 text-xs mt-1.5 px-1">{c.estudioCodigoAyuda}</p>
+      </div>
+      <input type="text" value={ciudad}
+             onChange={(e) => setCiudad(e.target.value)}
+             placeholder={c.estudioCiudad} className={campo} />
+      <button
+        type="submit"
+        disabled={estado === 'enviando' || !nombre || !contacto || codigo.length < 4}
+        className="w-full py-4 rounded-2xl bg-tinta text-white font-semibold
+                   disabled:opacity-30 transition-opacity hover:opacity-85"
+      >
+        {estado === 'enviando' ? c.estudioEnviando : c.estudioBoton}
+      </button>
+      {error && <p className="text-red-500 text-sm text-center">{error}</p>}
+    </form>
   )
 }
 

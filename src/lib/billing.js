@@ -124,6 +124,9 @@ export async function obtenerPaquetes() {
 
   return paquetes.map((p) => ({
     id: p.identifier,
+    // El id del PRODUCTO en la tienda (creditos_1…), distinto del id del
+    // package en RevenueCat. Es el que la app usa para decidir qué mostrar.
+    productoId: p.product.identifier,
     // priceString ya viene con la moneda local que la tienda le muestra al
     // usuario. Formatearlo aquí produciría un precio distinto al que va a pagar.
     precio: p.product.priceString,

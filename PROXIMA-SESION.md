@@ -15,6 +15,23 @@
    falta la fusión de `.mind` en el worker, escribir `users.mind_url`, asignar
    `target_index` y la ruta `/u/:slug`.
 
+## Lo primero: probar en el teléfono lo que se construyó a ciegas
+
+Todo lo del 8 sep se verificó en navegador y en la base, pero **nada del cobro
+se ha ejecutado con una sesión real en Android**. En cuanto existan los
+productos en Play y la Offering en RevenueCat:
+
+1. Compilar versionCode 4 (`.env` ya tiene la llave; verificar con grep antes
+   de subir), instalar, entrar.
+2. `/creditos`: canjear `SHIPATON` → el saldo sube a 1. Debe aparecer el
+   paquete "Solo tu primera vez" a 12.50.
+3. Comprar `creditos_primero` con una tarjeta de prueba de Play → el saldo sube
+   y el paquete de entrada desaparece.
+4. Activar un tatuaje con un código de estudio puesto → `users.estudio_id`
+   queda escrito.
+
+Si algo de eso falla, es el primer bug del cobro y va antes que cualquier otra cosa.
+
 ## Bloqueado por Richard
 
 - **Redesplegar el worker en Railway.** El analizador ya está conectado al flujo
@@ -34,6 +51,12 @@
 
 - Analizador conectado al flujo: compila y mide antes de elegir diseño, advierte
   sin bloquear, y guarda el veredicto en `tattoos` (migración 007, ya aplicada).
+- Esquema de precio y canal decidido y escrito en DECISIONS.md (8 sep). No
+  reabrir sin datos: la primera transacción real es el dato que falta.
+- Estudios, atribución y códigos promo: migración 008, `lib/estudios.js`,
+  `lib/promo.js`, formulario en la landing, `?estudio=` en cualquier ruta.
+- Código `SHIPATON` (1 crédito, 200 usos) ya existe en `codigos_promo`. Va en
+  el envío de Devpost.
 
 - Borrado de cuenta, política de privacidad, ambas desplegadas y probadas.
 - Créditos: libro mayor, consumo con cerrojo, webhook. Las tres propiedades de
@@ -56,6 +79,11 @@
 - El dev server corre en **HTTPS** con certificado autofirmado: un navegador
   automatizado lo rechaza. Para revisiones visuales, `npm run build` y servir
   `dist` por HTTP (la configuración `dist-http` de `.claude/launch.json`).
+- **No se puede simular sesión desde `execute_sql`** contra funciones
+  `security definer`: `set_config('request.jwt.claim.sub', …)` se ve a nivel
+  del bloque pero NO dentro de la función — falla incluso `consumir_creditos`,
+  que está probada en producción. Las funciones con `auth.uid()` se prueban
+  con sesión real, no por SQL.
 - Los textos que redacta el **worker** no pasan por el diccionario del cliente.
   Todo texto de cara al usuario que nazca ahí necesita un `code` estable, o
   llega en español a un usuario en inglés.

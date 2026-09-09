@@ -9,6 +9,7 @@ import { createTattoo } from '../lib/supabase.js'
 import { compileMindFile } from '../lib/compiler.js'
 import { useAuth } from '../hooks/useAuth.js'
 import { ensureProfile } from '../lib/profile.js'
+import { aplicarCodigoPendiente, recordarCodigoPendiente, leerCodigoPendiente } from '../lib/estudios.js'
 import { ligaDeTatuaje } from '../lib/urls.js'
 import LoginGate from '../components/Auth/LoginGate.jsx'
 import { t } from '../lib/i18n.js'
@@ -58,6 +59,26 @@ export default function Activate() {
   const [elapsed, setElapsed] = useState(0)
   // Capa de tinta extraída de la foto — solo para mostrar durante la compilación
   const [inkLayer, setInkLayer] = useState(null)
+  // Nombre del estudio al que se acreditó, para confirmarlo en pantalla
+  const [estudioAcreditado, setEstudioAcreditado] = useState(null)
+
+  /*
+    Al entrar se asegura el perfil y se aplica el código de estudio pendiente.
+
+    Va aquí y no dentro de handleDesignSelected porque la atribución debe
+    quedar desde que el usuario entra, no cuando termine de activar: si abandona
+    a medio flujo, el estudio que lo trajo ya está registrado. Y `atribuir_estudio`
+    actualiza la fila de `users`, que solo existe después de ensureProfile.
+  */
+  useEffect(() => {
+    if (!isLoggedIn || !user) return
+    let vigente = true
+    ensureProfile(user)
+      .then(() => aplicarCodigoPendiente())
+      .then((nombre) => { if (vigente && nombre) setEstudioAcreditado(nombre) })
+      .catch((err) => console.error('[activate] perfil/estudio:', err))
+    return () => { vigente = false }
+  }, [isLoggedIn, user?.id])
 
   /*
     Cronómetro de la etapa de compilación.
@@ -221,6 +242,7 @@ export default function Activate() {
           <h1 className="text-2xl font-bold">{t('Activa tu tatuaje')}</h1>
         </div>
         <LoginGate />
+        <CampoEstudio />
       </div>
     )
   }
@@ -237,6 +259,12 @@ export default function Activate() {
 
       {/* Indicador de pasos */}
       <StepIndicator current={step} />
+
+      {estudioAcreditado && (
+        <p className="text-xs text-gray-500 text-center -mt-4 mb-6">
+          {t('Acreditaste a {estudio}', { estudio: estudioAcreditado })}
+        </p>
+      )}
 
       {step === 'upload' && (
         <PhotoUpload onPhotoSelected={handlePhotoSelected} />
@@ -394,6 +422,47 @@ function Miniatura({ imageUrl, titulo, detalle }) {
         <p className="text-sm font-medium">{titulo}</p>
         <p className="text-xs text-gray-500">{detalle}</p>
       </div>
+    </div>
+  )
+}
+
+/**
+ * "¿Quién te tatuó?" — el código del estudio, opcional, antes de identificarse.
+ *
+ * Se guarda localmente y se aplica en cuanto haya sesión, porque aquí todavía
+ * no la hay. Es opcional a propósito: un dedazo no puede bloquear el registro,
+ * y quien llegó sin estudio no debe sentir que le falta algo.
+ *
+ * Se pide como acreditar al artista, no como cupón: en el tatuaje la gente
+ * etiqueta a quien la tatuó sin que nadie se lo pida. Es identidad, no rebaja.
+ */
+function CampoEstudio() {
+  const [codigo, setCodigo] = useState(() => leerCodigoPendiente() ?? '')
+
+  const cambiar = (v) => {
+    const limpio = v.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 12)
+    setCodigo(limpio)
+    if (limpio) recordarCodigoPendiente(limpio)
+  }
+
+  return (
+    <div className="max-w-sm mx-auto mt-8 text-center">
+      <label className="block text-xs uppercase tracking-wide text-gray-500 mb-2">
+        {t('¿Quién te tatuó?')}
+      </label>
+      <input
+        type="text"
+        value={codigo}
+        onChange={(e) => cambiar(e.target.value)}
+        placeholder={t('Código del estudio (opcional)')}
+        autoCapitalize="characters"
+        autoCorrect="off"
+        spellCheck={false}
+        className="w-full py-3 px-4 rounded-2xl bg-white/5 border border-white/10 text-center
+                   font-mono tracking-widest text-white placeholder-gray-600
+                   focus:outline-none focus:border-white/40"
+      />
+      <p className="text-xs text-gray-600 mt-2">{t('Así tu artista recibe crédito por tu tatuaje.')}</p>
     </div>
   )
 }

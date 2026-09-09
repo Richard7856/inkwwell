@@ -30,6 +30,13 @@ export default function Home() {
           {t('Activar mi tatuaje')}
         </Link>
 
+        <Link
+          to="/creditos"
+          className="text-gray-400 text-sm underline hover:text-white transition-colors"
+        >
+          {t('Mis créditos')}
+        </Link>
+
         {/* CTA secundario — para quien ya tiene un link */}
         <p className="text-gray-500 text-sm">
           {t('¿Te compartieron un link de tatuaje?')}{' '}

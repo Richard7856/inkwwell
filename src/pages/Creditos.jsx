@@ -3,8 +3,12 @@ import { Link } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth.js'
 import LoginGate from '../components/Auth/LoginGate.jsx'
 import { isBillingAvailable, obtenerPaquetes, comprarPaquete, ErrorCompra } from '../lib/billing.js'
-import { obtenerSaldo, esperarAcreditacion } from '../lib/creditos.js'
+import { obtenerSaldo, esperarAcreditacion, haComprado } from '../lib/creditos.js'
+import { canjearCodigo } from '../lib/promo.js'
 import { t } from '../lib/i18n.js'
+
+// SKU del primer crédito a mitad de precio. Solo se ofrece a quien nunca compró.
+const SKU_PRIMERO = 'creditos_primero'
 
 /**
  * Compra de créditos.
@@ -32,6 +36,11 @@ export default function Creditos() {
   const [comprando, setComprando] = useState(null) // id del paquete en curso
   const [fase, setFase] = useState('listo') // listo | pagando | acreditando | tardando
   const [aviso, setAviso] = useState(null) // { tono: 'error'|'ok'|'info', texto }
+  // null = sin resolver todavía. Mientras no se sepa, el SKU de entrada no se
+  // muestra: ofrecerlo a quien no le toca cuesta dinero; el retraso no.
+  const [primeraCompra, setPrimeraCompra] = useState(null)
+  const [codigoPromo, setCodigoPromo] = useState('')
+  const [canjeando, setCanjeando] = useState(false)
 
   useEffect(() => {
     if (!isLoggedIn) return
@@ -43,6 +52,13 @@ export default function Creditos() {
         if (vigente) setSaldo(s)
       } catch (err) {
         if (vigente) setAviso({ tono: 'error', texto: err.message })
+      }
+
+      try {
+        const compro = await haComprado()
+        if (vigente) setPrimeraCompra(!compro)
+      } catch (err) {
+        console.error('[creditos] haComprado falló:', err)
       }
 
       try {
@@ -93,6 +109,9 @@ export default function Creditos() {
     setSaldo(nuevo)
     setComprando(null)
 
+    // Compró: el precio de entrada deja de aplicar aunque el webhook tarde
+    setPrimeraCompra(false)
+
     if (acreditado) {
       setFase('listo')
       setAviso({ tono: 'ok', texto: t('Listo, tus créditos ya están disponibles.') })
@@ -102,6 +121,28 @@ export default function Creditos() {
         tono: 'info',
         texto: t('Tu pago se registró. Los créditos pueden tardar un momento en aparecer.'),
       })
+    }
+  }
+
+  const canjear = async (e) => {
+    e.preventDefault()
+    if (!codigoPromo.trim()) return
+    setAviso(null)
+    setCanjeando(true)
+    try {
+      const n = await canjearCodigo(codigoPromo)
+      setSaldo(await obtenerSaldo())
+      setCodigoPromo('')
+      setAviso({
+        tono: 'ok',
+        texto: n === 1
+          ? t('Canjeado: 1 crédito agregado.')
+          : t('Canjeado: {n} créditos agregados.', { n }),
+      })
+    } catch (err) {
+      setAviso({ tono: 'error', texto: err.message })
+    } finally {
+      setCanjeando(false)
     }
   }
 
@@ -149,6 +190,34 @@ export default function Creditos() {
             </button>
           )}
 
+          <form onSubmit={canjear} className="mt-8">
+            <label className="block text-xs uppercase tracking-wide text-gray-500 mb-2">
+              {t('¿Tienes un código?')}
+            </label>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={codigoPromo}
+                onChange={(e) => setCodigoPromo(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 16))}
+                placeholder={t('Código promocional')}
+                autoCapitalize="characters"
+                autoCorrect="off"
+                spellCheck={false}
+                className="flex-1 min-w-0 py-3 px-4 rounded-xl bg-white/5 border border-white/10
+                           font-mono tracking-widest text-white placeholder-gray-600
+                           focus:outline-none focus:border-white/40"
+              />
+              <button
+                type="submit"
+                disabled={canjeando || !codigoPromo}
+                className="px-4 rounded-xl bg-white/10 border border-white/20 text-sm
+                           hover:bg-white/15 disabled:opacity-40 transition-colors"
+              >
+                {canjeando ? t('Canjeando...') : t('Canjear')}
+              </button>
+            </div>
+          </form>
+
           <div className="mt-8">
             {!isBillingAvailable() ? (
               <SinCobro />
@@ -161,15 +230,20 @@ export default function Creditos() {
                 <p className="text-gray-400 text-sm mb-1">
                   {t('Cada crédito genera un video para tu tatuaje.')}
                 </p>
-                {paquetes.map((p) => (
-                  <BotonPaquete
-                    key={p.id}
-                    item={p}
-                    ocupado={comprando !== null}
-                    fase={comprando === p.id ? fase : null}
-                    onClick={() => comprar(p)}
-                  />
-                ))}
+                {paquetes
+                  // El precio de entrada solo existe para la primera compra.
+                  // Mientras no se sepa (null), no se muestra.
+                  .filter((p) => p.productoId !== SKU_PRIMERO || primeraCompra === true)
+                  .map((p) => (
+                    <BotonPaquete
+                      key={p.id}
+                      item={p}
+                      destacado={p.productoId === SKU_PRIMERO}
+                      ocupado={comprando !== null}
+                      fase={comprando === p.id ? fase : null}
+                      onClick={() => comprar(p)}
+                    />
+                  ))}
               </div>
             )}
           </div>
@@ -210,19 +284,32 @@ function Saldo({ valor }) {
   )
 }
 
-function BotonPaquete({ item, ocupado, fase, onClick }) {
+/*
+  El paquete destacado es el primer crédito a mitad de precio. Se marca como
+  excepción y no como precio: si el usuario cree que $12.50 es lo normal, el
+  $25 de la siguiente compra se siente como un aumento. Por eso el rótulo dice
+  "primera vez" y la lista de al lado muestra el precio real.
+*/
+function BotonPaquete({ item, destacado = false, ocupado, fase, onClick }) {
   const activo = fase !== null
 
   return (
     <button
       onClick={onClick}
       disabled={ocupado}
-      className="bg-white/5 rounded-2xl p-5 border border-white/10 text-left
-                 hover:bg-white/10 hover:border-white/20 transition-all
-                 active:scale-95 disabled:opacity-50 disabled:active:scale-100
-                 flex items-center justify-between gap-4"
+      className={`rounded-2xl p-5 border text-left transition-all
+                  active:scale-95 disabled:opacity-50 disabled:active:scale-100
+                  flex items-center justify-between gap-4
+                  ${destacado
+                    ? 'bg-white/10 border-white/40 hover:bg-white/15'
+                    : 'bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/20'}`}
     >
       <div className="min-w-0">
+        {destacado && (
+          <p className="text-[10px] uppercase tracking-wider text-gray-300 mb-1">
+            {t('Solo tu primera vez')}
+          </p>
+        )}
         <h3 className="font-semibold">{item.titulo}</h3>
         {activo && (
           <p className="text-xs text-gray-400 mt-1">

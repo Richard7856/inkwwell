@@ -190,6 +190,20 @@ const EN = {
     'Google Play had a problem processing the payment. Please try again.',
   'Sin conexión. Revisa tu internet e inténtalo de nuevo.':
     'No connection. Check your internet and try again.',
+
+  // ── Estudios y códigos ──
+  '¿Quién te tatuó?': 'Who tattooed you?',
+  'Código del estudio (opcional)': 'Studio code (optional)',
+  'Así tu artista recibe crédito por tu tatuaje.': 'This is how your artist gets credit for your tattoo.',
+  'Acreditaste a {estudio}': 'Credited to {estudio}',
+  '¿Tienes un código?': 'Have a code?',
+  'Código promocional': 'Promo code',
+  'Canjear': 'Redeem',
+  'Canjeando...': 'Redeeming…',
+  'Canjeado: 1 crédito agregado.': 'Redeemed: 1 credit added.',
+  'Canjeado: {n} créditos agregados.': 'Redeemed: {n} credits added.',
+  'Solo tu primera vez': 'First time only',
+  'Mis créditos': 'My credits',
   'Cambiar foto': 'Change photo',
   'Tu tatuaje está activado': 'Your tattoo is activated',
   'Probar ahora →': 'Try it now →',
@@ -317,6 +331,20 @@ const EN = {
     'Google Play had a problem processing the payment. Please try again.',
   'Sin conexión. Revisa tu internet e inténtalo de nuevo.':
     'No connection. Check your internet and try again.',
+
+  // ── Estudios y códigos ──
+  '¿Quién te tatuó?': 'Who tattooed you?',
+  'Código del estudio (opcional)': 'Studio code (optional)',
+  'Así tu artista recibe crédito por tu tatuaje.': 'This is how your artist gets credit for your tattoo.',
+  'Acreditaste a {estudio}': 'Credited to {estudio}',
+  '¿Tienes un código?': 'Have a code?',
+  'Código promocional': 'Promo code',
+  'Canjear': 'Redeem',
+  'Canjeando...': 'Redeeming…',
+  'Canjeado: 1 crédito agregado.': 'Redeemed: 1 credit added.',
+  'Canjeado: {n} créditos agregados.': 'Redeemed: {n} credits added.',
+  'Solo tu primera vez': 'First time only',
+  'Mis créditos': 'My credits',
   'Está tardando más de lo normal. No cierres la app.':
     'This is taking longer than usual. Don’t close the app.',
 

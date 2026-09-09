@@ -13,6 +13,7 @@ import Privacidad from './pages/Privacidad.jsx'
 import EliminarCuenta from './pages/EliminarCuenta.jsx'
 import { useAuth } from './hooks/useAuth.js'
 import { initBilling } from './lib/billing.js'
+import { recordarCodigoPendiente } from './lib/estudios.js'
 
 function App() {
   const { user } = useAuth()
@@ -27,6 +28,16 @@ function App() {
   useEffect(() => {
     if (user?.id) initBilling(user.id)
   }, [user?.id])
+
+  /*
+    Un estudio puede compartir inkar.app/?estudio=SUCODIGO. Se captura aquí,
+    en cualquier ruta, y se aplica cuando el usuario se identifique. Se lee
+    window.location y no useLocation para no depender del contexto del router.
+  */
+  useEffect(() => {
+    const codigo = new URLSearchParams(window.location.search).get('estudio')
+    if (codigo) recordarCodigoPendiente(codigo)
+  }, [])
 
   return (
     <Routes>

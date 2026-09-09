@@ -49,8 +49,13 @@ Fuente: https://revenuecat-shipaton-2026.devpost.com/rules (consultado 7 sep 202
 - Identidad de marca completa: logotipo, símbolo, trazos, paleta, tipografía
 - Bundle firmado `app.inkar` **subido a Play y en revisión**
 
+**Construido el 8 sep, sin probar en teléfono:** flujo de compra (`/creditos`),
+primer crédito a mitad de precio, códigos promocionales (`SHIPATON` para
+jueces), alta de estudios en la landing con su código, atribución permanente
+del usuario a su estudio. Migración 008 aplicada, webhook v3 desplegado.
+
 **No existe todavía:** catálogo con video desde la base, perfil con liga
-compartible, generación de video desde la app, cobro real.
+compartible, generación de video desde la app, versionCode 4 en Play.
 
 ## Plan por bloques
 
@@ -64,13 +69,13 @@ Meta: **app viva en Play antes del día 14**, aunque sea mínima.
 | Richard | Crear la app en Play Console y subir el bundle | ✅ **PUBLICADA** (8 sep, versionCode 3) |
 | Richard | Conectar el dominio inkar.app en Vercel | ✅ |
 | Richard | Cuenta de servicio de Google Cloud (**~36h, SIN ARRANCAR**) | 🔴 bloquea el cobro |
-| Richard | Crear productos de compra (créditos) en Play Console | ⬜ |
+| Richard | Crear productos de compra en Play Console: `creditos_primero` 12.50, `creditos_1` 25, `creditos_3`, `creditos_5` (USD) | ⬜ **bloquea la v4** |
 | Richard | Conectar RevenueCat con esos productos | ⬜ |
 | Claude | Icono y splash propios (hoy son los de Capacitor) | ✅ |
 | Claude | **Modo "activa cualquier cosa"** para jueces sin tatuaje | 🟡 marcador y ruta /demo listos, sin promocionar hasta probarlo con cámara |
 | Claude | Borrado de cuenta (lo exige Play) | ✅ desplegado y probado |
 | Claude | Política de privacidad publicada | ✅ inkar.app/privacidad |
-| Claude | SDK de RevenueCat en la app | 🟡 instalado y configurado, falta la llave |
+| Claude | SDK de RevenueCat en la app, llave horneada, flujo de compra | ✅ falta probar en teléfono |
 | Claude | Conectar el analizador al flujo de activación | ✅ advierte antes de elegir diseño; **falta redesplegar el worker** |
 
 ### Bloque 2 · Motor de video 2D (14–21 sep)
@@ -150,6 +155,9 @@ descargar, el loop de crecimiento muere en el primer paso.
 
 - ¿Animar el dibujo del tatuaje además del recuerdo? Ambas caben; se prueba
   cuando el motor de video esté conectado.
-- Precio de los créditos y cuántos entran en la prueba gratis.
+- ~~Precio de los créditos y cuántos entran en la prueba gratis.~~ Decidido el
+  8 sep: $25 USD por crédito, primer crédito $12.50 una sola vez, prueba gratis
+  solo por código promocional. Ver DECISIONS.md.
+- Precio exacto de los paquetes de 3 y 5 (propuesta: 65 y 99 USD).
 - Si el catálogo gratis de 3 modelos se arma con los existentes o se producen
   nuevos.

@@ -29,7 +29,9 @@ const CREDITOS_POR_PRODUCTO: Record<string, number> = (() => {
   } catch (e) {
     console.error('[webhook] CREDITOS_POR_PRODUCTO no es JSON válido:', e)
   }
-  return { creditos_1: 1, creditos_5: 5, creditos_15: 15 }
+  // creditos_primero es el primer crédito a mitad de precio: mismo crédito,
+  // distinto SKU porque Play no tiene precio introductorio para productos únicos
+  return { creditos_primero: 1, creditos_1: 1, creditos_3: 3, creditos_5: 5 }
 })()
 
 /** Eventos que acreditan. Los consumibles llegan como NON_RENEWING_PURCHASE. */
