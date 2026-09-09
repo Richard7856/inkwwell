@@ -29,6 +29,9 @@ productos en Play y la Offering en RevenueCat:
    y el paquete de entrada desaparece.
 4. Activar un tatuaje con un código de estudio puesto → `users.estudio_id`
    queda escrito.
+   (El canje, `ha_comprado` y la atribución ya se probaron con sesión real por
+   PostgREST el 9 sep; en el teléfono lo que falta de verdad es la COMPRA por
+   Play y la generación.)
 5. **Generar un video**: en la activación elegir "Anima tu recuerdo", subir la
    foto de Zero y una historia. Debe aparecer la espera, y en 1-3 min el video
    sobre el tatuaje al escanear. Si falla, el crédito debe volver solo (ver
@@ -95,11 +98,12 @@ Si algo de eso falla, es el primer bug del cobro y va antes que cualquier otra c
 - El dev server corre en **HTTPS** con certificado autofirmado: un navegador
   automatizado lo rechaza. Para revisiones visuales, `npm run build` y servir
   `dist` por HTTP (la configuración `dist-http` de `.claude/launch.json`).
-- **No se puede simular sesión desde `execute_sql`** contra funciones
-  `security definer`: `set_config('request.jwt.claim.sub', …)` se ve a nivel
-  del bloque pero NO dentro de la función — falla incluso `consumir_creditos`,
-  que está probada en producción. Las funciones con `auth.uid()` se prueban
-  con sesión real, no por SQL.
+- **Las funciones con `auth.uid()` se prueban con un JWT real por PostgREST**,
+  no simulando sesión por SQL (eso no atraviesa `security definer`). La cuenta
+  del revisor de Play (`prueba@inkar.app`, en `brand/textos-ficha.md`) abre
+  sesión por `POST /auth/v1/token?grant_type=password` y con ese token
+  `POST /rest/v1/rpc/<función>` ejercita todo sin teléfono. Así se verificaron
+  canje, `ha_comprado` y atribución el 9 sep.
 - Los textos que redacta el **worker** no pasan por el diccionario del cliente.
   Todo texto de cara al usuario que nazca ahí necesita un `code` estable, o
   llega en español a un usuario en inglés.
