@@ -8,6 +8,16 @@
 import { supabase } from '../../lib/supabase.js'
 
 /*
+  Ancho del plano de video en unidades del target.
+
+  1.4 se calibró sobre piel real con el tatuaje de la huella (demo=zero): el
+  video queda ligeramente más ancho que el tatuaje, como si asomara desde
+  debajo, sin taparlo del todo. Menos se ve pegado; más deja de sentirse
+  anclado. Cuando haya varios tatuajes medidos, esto pasa a ser por tatuaje.
+*/
+const ESCALA_VIDEO = 1.4
+
+/*
   Demo multi-tatuaje.
 
   TEMPORAL: sirve para validar que MindAR distingue entre dos tatuajes reales
@@ -83,7 +93,7 @@ export async function loadTarget({ tattooId = null, demo = null } = {}) {
 
   const { data, error } = await supabase
     .from('tattoos')
-    .select('mind_url, glb_url')
+    .select('mind_url, glb_url, video_url')
     .eq('id', tattooId)
     .eq('is_active', true)
     .single()
@@ -92,10 +102,25 @@ export async function loadTarget({ tattooId = null, demo = null } = {}) {
     throw new Error(`Tatuaje "${tattooId}" no encontrado: ${error?.message ?? 'sin datos'}`)
   }
 
+  /*
+    Un tatuaje lleva video O modelo 3D, nunca ambos. El video manda: es el
+    producto; el GLB es el catálogo heredado y el 3D personalizado del motor de
+    negocio. Sin ninguno de los dos, el video todavía se está generando (o
+    falló) — se dice así en vez de pintar un target vacío que parecería un
+    error de tracking.
+  */
+  if (!data.video_url && !data.glb_url) {
+    throw new Error('Este tatuaje todavía no tiene contenido. Si acabas de pedir tu video, dale un momento.')
+  }
+
   // Un tatuaje suelto es el caso de un solo target — misma estructura, un
   // elemento. Así el visor no necesita dos caminos distintos.
   return {
     mindUrl: data.mind_url,
-    targets: [{ glbUrl: data.glb_url }],
+    targets: [
+      data.video_url
+        ? { videoUrl: data.video_url, escala: ESCALA_VIDEO }
+        : { glbUrl: data.glb_url },
+    ],
   }
 }

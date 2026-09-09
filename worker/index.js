@@ -12,6 +12,7 @@
  *   POST /compile        → recibe 'image' file, devuelve .mind binario
  *   POST /compile-stream → compila + mide calidad, con progreso por SSE (el que usa la app)
  *   POST /analyze        → solo métricas de calidad, para el banco de pruebas por CLI
+ *   POST /generar        → foto + historia → video en el tatuaje (Higgsfield), JSON + JWT
  */
 
 import express from 'express'
@@ -19,12 +20,16 @@ import multer from 'multer'
 import cors from 'cors'
 import { compileTattooImage } from './compiler.js'
 import { analyzeTattooImage } from './analyzer.js'
+import { iniciarGeneracion, reanudarPendientes } from './generacion.js'
 
 const app = express()
 
 // CORS abierto — el frontend viene de un origen diferente (Vite :5173 o Vercel)
 // En producción Railway se puede restringir al dominio de InkAR
 app.use(cors())
+// Solo /generar recibe JSON; las demás rutas siguen en multipart. 64 KB sobra:
+// una URL, un uuid y hasta 600 caracteres de historia.
+app.use(express.json({ limit: '64kb' }))
 
 // multer con memory storage — la imagen nunca toca disco, vive en RAM durante compilación
 // Límite 10MB: fotos de tatuaje no deberían pesar más, y compilar imágenes grandes es más lento
@@ -216,6 +221,34 @@ app.post('/compile-stream', upload.single('image'), async (req, res) => {
   }
 })
 
+/*
+  POST /generar — el producto: foto + historia → video anclado al tatuaje.
+
+  Responde 202 con el id de la generación en cuanto Higgsfield acepta la
+  petición; el resto (minutos) sigue en segundo plano y el cliente lee el
+  avance en la tabla `generaciones`. Ver generacion.js para el porqué de cada
+  paso y del orden.
+
+  Cuerpo JSON: { tattooId, fotoUrl, historia }
+  Cabecera:    Authorization: Bearer <jwt de Supabase>
+  Errores:     { error, codigo } con codigo ∈ sin_sesion | sin_creditos |
+               tatuaje_invalido | foto_invalida | historia_invalida |
+               no_configurado | proveedor | desconocido
+*/
+app.post('/generar', async (req, res) => {
+  try {
+    const resultado = await iniciarGeneracion({
+      authorization: req.headers.authorization,
+      ...(req.body ?? {}),
+    })
+    res.status(202).json(resultado)
+  } catch (err) {
+    const status = Number.isInteger(err.status) ? err.status : 500
+    if (status >= 500) console.error('[generar] Error:', err.message)
+    res.status(status).json({ error: err.message, codigo: err.codigo ?? 'desconocido' })
+  }
+})
+
 // Manejador de errores de multer (archivo muy grande, formato inválido)
 app.use((err, req, res, _next) => {
   if (err.code === 'LIMIT_FILE_SIZE') {
@@ -229,5 +262,8 @@ app.listen(PORT, () => {
   console.log(`\n🖋️  InkAR Worker corriendo en http://localhost:${PORT}`)
   console.log(`   Health check: http://localhost:${PORT}/health`)
   console.log(`   Compile:      POST http://localhost:${PORT}/compile`)
-  console.log(`   Analyze:      POST http://localhost:${PORT}/analyze\n`)
+  console.log(`   Analyze:      POST http://localhost:${PORT}/analyze`)
+  console.log(`   Generar:      POST http://localhost:${PORT}/generar\n`)
+  // Retoma lo que un reinicio haya dejado a medias. No bloquea el arranque.
+  reanudarPendientes()
 })

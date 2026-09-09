@@ -9,7 +9,7 @@
   del sitio y falla al interpretarlo. El síntoma no menciona la URL por ningún
   lado. Pasó en producción.
 */
-const COMPILER_URL = (() => {
+export const COMPILER_URL = (() => {
   const crudo = (import.meta.env.VITE_COMPILER_URL || '').trim().replace(/\/+$/, '')
   if (!crudo) return ''
   return /^https?:\/\//i.test(crudo) ? crudo : `https://${crudo}`
@@ -18,7 +18,7 @@ const COMPILER_URL = (() => {
 // ngrok (plan gratuito) intercepta con una página de advertencia que rompe el
 // request. Con Railway es innecesario, pero se conserva por si se vuelve a
 // exponer el worker por un túnel en desarrollo.
-const COMMON_HEADERS = { 'ngrok-skip-browser-warning': 'true' }
+export const COMMON_HEADERS = { 'ngrok-skip-browser-warning': 'true' }
 
 /** Error de compilación real (la imagen falló), no de transporte */
 class CompileError extends Error {

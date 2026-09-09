@@ -204,6 +204,53 @@ const EN = {
   'Canjeado: {n} créditos agregados.': 'Redeemed: {n} credits added.',
   'Solo tu primera vez': 'First time only',
   'Mis créditos': 'My credits',
+
+  // ── Generación de video ──
+  '¿Qué quieres que aparezca sobre tu tatuaje?': 'What should appear over your tattoo?',
+  '1 crédito': '1 credit',
+  'Anima tu recuerdo': 'Bring your memory to life',
+  'Una foto y unas palabras. Tu mascota, esa persona, ese momento — cobra vida sobre tu tatuaje.':
+    'One photo and a few words. Your pet, that person, that moment — comes alive over your tattoo.',
+  'Necesitas 1 crédito →': 'You need 1 credit →',
+  'Empezar': 'Start',
+  'Tienes 1 crédito': 'You have 1 credit',
+  'Tienes {n} créditos': 'You have {n} credits',
+  'Elegir del catálogo': 'Pick from the catalog',
+  'Modelos 3D listos. Gratis, para probar cómo se ve.': 'Ready-made 3D models. Free, to see how it looks.',
+  'La foto del recuerdo': 'The photo of the memory',
+  'Cambiar': 'Change',
+  'Tomar foto': 'Take a photo',
+  'Elegir de la galería': 'Choose from gallery',
+  'Una foto clara, de frente, donde se vea bien. No hace falta que sea del tatuaje.':
+    'A clear, front-facing photo. It doesn’t have to be of the tattoo.',
+  'Qué quieres que pase': 'What should happen',
+  'Siempre que compraba pan le llevaba una concha y se sentaba a comer con nosotros.':
+    'Every time I bought bread I brought him a sweet roll and he sat down to eat with us.',
+  'Enviando...': 'Sending…',
+  'Generar mi video · 1 crédito': 'Generate my video · 1 credit',
+  'Enviando tu recuerdo': 'Sending your memory',
+  'Subiendo la foto y tu historia.': 'Uploading the photo and your story.',
+  'En la fila': 'In the queue',
+  'Tu video está por empezar a generarse.': 'Your video is about to start generating.',
+  'Generando tu video': 'Generating your video',
+  'Suele tardar de 1 a 3 minutos. No cierres la app.': 'Usually takes 1 to 3 minutes. Keep the app open.',
+  'Está tardando más de lo normal': 'This is taking longer than usual',
+  'No es un error. El video va a llegar solo; puedes cerrar y volver en un rato.':
+    'Not an error. The video will arrive on its own; you can close and come back later.',
+  'No se pudo generar el video': 'The video could not be generated',
+  'Te devolvimos el crédito. Puedes intentarlo de nuevo.': 'We refunded your credit. You can try again.',
+  'El proveedor no aceptó esa foto o esa historia': 'The provider didn’t accept that photo or story',
+  'Te devolvimos el crédito. Prueba con otra foto o cambia las palabras.':
+    'We refunded your credit. Try another photo or change the wording.',
+  'Intentar de nuevo': 'Try again',
+  'Contenido': 'Content',
+  'Volver': 'Back',
+  'Ahora elige qué aparece encima': 'Now choose what appears on top',
+  'Cuéntanos el recuerdo': 'Tell us the memory',
+  'No tienes créditos suficientes. Compra uno y vuelve a intentar.':
+    'You don’t have enough credits. Get one and try again.',
+  'Cualquier persona puede apuntar su cámara a tu tatuaje y ver tu recuerdo cobrar vida.':
+    'Anyone can point their camera at your tattoo and watch your memory come alive.',
   'Cambiar foto': 'Change photo',
   'Tu tatuaje está activado': 'Your tattoo is activated',
   'Probar ahora →': 'Try it now →',
@@ -345,6 +392,53 @@ const EN = {
   'Canjeado: {n} créditos agregados.': 'Redeemed: {n} credits added.',
   'Solo tu primera vez': 'First time only',
   'Mis créditos': 'My credits',
+
+  // ── Generación de video ──
+  '¿Qué quieres que aparezca sobre tu tatuaje?': 'What should appear over your tattoo?',
+  '1 crédito': '1 credit',
+  'Anima tu recuerdo': 'Bring your memory to life',
+  'Una foto y unas palabras. Tu mascota, esa persona, ese momento — cobra vida sobre tu tatuaje.':
+    'One photo and a few words. Your pet, that person, that moment — comes alive over your tattoo.',
+  'Necesitas 1 crédito →': 'You need 1 credit →',
+  'Empezar': 'Start',
+  'Tienes 1 crédito': 'You have 1 credit',
+  'Tienes {n} créditos': 'You have {n} credits',
+  'Elegir del catálogo': 'Pick from the catalog',
+  'Modelos 3D listos. Gratis, para probar cómo se ve.': 'Ready-made 3D models. Free, to see how it looks.',
+  'La foto del recuerdo': 'The photo of the memory',
+  'Cambiar': 'Change',
+  'Tomar foto': 'Take a photo',
+  'Elegir de la galería': 'Choose from gallery',
+  'Una foto clara, de frente, donde se vea bien. No hace falta que sea del tatuaje.':
+    'A clear, front-facing photo. It doesn’t have to be of the tattoo.',
+  'Qué quieres que pase': 'What should happen',
+  'Siempre que compraba pan le llevaba una concha y se sentaba a comer con nosotros.':
+    'Every time I bought bread I brought him a sweet roll and he sat down to eat with us.',
+  'Enviando...': 'Sending…',
+  'Generar mi video · 1 crédito': 'Generate my video · 1 credit',
+  'Enviando tu recuerdo': 'Sending your memory',
+  'Subiendo la foto y tu historia.': 'Uploading the photo and your story.',
+  'En la fila': 'In the queue',
+  'Tu video está por empezar a generarse.': 'Your video is about to start generating.',
+  'Generando tu video': 'Generating your video',
+  'Suele tardar de 1 a 3 minutos. No cierres la app.': 'Usually takes 1 to 3 minutes. Keep the app open.',
+  'Está tardando más de lo normal': 'This is taking longer than usual',
+  'No es un error. El video va a llegar solo; puedes cerrar y volver en un rato.':
+    'Not an error. The video will arrive on its own; you can close and come back later.',
+  'No se pudo generar el video': 'The video could not be generated',
+  'Te devolvimos el crédito. Puedes intentarlo de nuevo.': 'We refunded your credit. You can try again.',
+  'El proveedor no aceptó esa foto o esa historia': 'The provider didn’t accept that photo or story',
+  'Te devolvimos el crédito. Prueba con otra foto o cambia las palabras.':
+    'We refunded your credit. Try another photo or change the wording.',
+  'Intentar de nuevo': 'Try again',
+  'Contenido': 'Content',
+  'Volver': 'Back',
+  'Ahora elige qué aparece encima': 'Now choose what appears on top',
+  'Cuéntanos el recuerdo': 'Tell us the memory',
+  'No tienes créditos suficientes. Compra uno y vuelve a intentar.':
+    'You don’t have enough credits. Get one and try again.',
+  'Cualquier persona puede apuntar su cámara a tu tatuaje y ver tu recuerdo cobrar vida.':
+    'Anyone can point their camera at your tattoo and watch your memory come alive.',
   'Está tardando más de lo normal. No cierres la app.':
     'This is taking longer than usual. Don’t close the app.',
 

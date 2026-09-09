@@ -17,7 +17,9 @@ export const supabase = (supabaseUrl && supabaseAnonKey)
  * @param {object} datos
  * @param {string} datos.imageUrl
  * @param {string} datos.mindUrl
- * @param {string} datos.glbUrl
+ * @param {string|null} [datos.glbUrl] - Modelo 3D. Excluyente con videoUrl.
+ * @param {string|null} [datos.videoUrl] - Video 2D. Puede quedar nulo al crear
+ *   el tatuaje y llenarse después, cuando termine la generación.
  * @param {string|null} [datos.userId] - Dueño del tatuaje. Las políticas de la
  *   base exigen que coincida con la sesión activa; enviarlo distinto es
  *   rechazado por el servidor, no solo por el cliente.
@@ -32,7 +34,8 @@ export const supabase = (supabaseUrl && supabaseAnonKey)
 export async function createTattoo({
   imageUrl,
   mindUrl,
-  glbUrl,
+  glbUrl = null,
+  videoUrl = null,
   userId = null,
   targetIndex = 0,
   metrics = null,
@@ -48,6 +51,7 @@ export async function createTattoo({
       image_url: imageUrl,
       mind_url: mindUrl,
       glb_url: glbUrl,
+      video_url: videoUrl,
       is_active: true,
       user_id: userId,
       target_index: targetIndex,

@@ -29,10 +29,23 @@ productos en Play y la Offering en RevenueCat:
    y el paquete de entrada desaparece.
 4. Activar un tatuaje con un código de estudio puesto → `users.estudio_id`
    queda escrito.
+5. **Generar un video**: en la activación elegir "Anima tu recuerdo", subir la
+   foto de Zero y una historia. Debe aparecer la espera, y en 1-3 min el video
+   sobre el tatuaje al escanear. Si falla, el crédito debe volver solo (ver
+   `credit_ledger`, motivo `reembolso`).
 
 Si algo de eso falla, es el primer bug del cobro y va antes que cualquier otra cosa.
 
 ## Bloqueado por Richard
+
+- **Variables del worker en Railway** (Variables): `SUPABASE_URL`,
+  `SUPABASE_SERVICE_ROLE_KEY` (la de servicio, NO la anónima),
+  `HIGGSFIELD_KEY_ID`, `HIGGSFIELD_KEY_SECRET`. Sin ellas `/generar` responde
+  503 `no_configurado` y todo lo demás del worker sigue igual. Detalle en
+  `worker/DEPLOY.md`.
+- **El costo real por video en la API pública.** Los $0.60 cotizados eran del
+  catálogo del panel (MiniMax), que la API no expone. Se sabe al hacer la
+  primera generación real; el endpoint se cambia por `HIGGSFIELD_ENDPOINT`.
 
 - **Redesplegar el worker en Railway.** El analizador ya está conectado al flujo
   de activación, pero las métricas las produce el worker: hasta que el

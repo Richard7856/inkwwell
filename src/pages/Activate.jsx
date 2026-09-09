@@ -1,12 +1,17 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import PhotoUpload from '../components/UploadFlow/PhotoUpload.jsx'
 import DesignPicker from '../components/UploadFlow/DesignPicker.jsx'
 import CompileStatus from '../components/UploadFlow/CompileStatus.jsx'
 import QualityReport from '../components/UploadFlow/QualityReport.jsx'
-import { uploadTattooImage, uploadMindFile } from '../lib/storage.js'
+import EleccionContenido from '../components/UploadFlow/EleccionContenido.jsx'
+import RecuerdoForm from '../components/UploadFlow/RecuerdoForm.jsx'
+import GeneracionStatus from '../components/UploadFlow/GeneracionStatus.jsx'
+import { uploadTattooImage, uploadMindFile, uploadRecuerdo } from '../lib/storage.js'
 import { createTattoo } from '../lib/supabase.js'
 import { compileMindFile } from '../lib/compiler.js'
+import { obtenerSaldo } from '../lib/creditos.js'
+import { solicitarGeneracion, esperarGeneracion, ErrorGeneracion } from '../lib/generacion.js'
 import { useAuth } from '../hooks/useAuth.js'
 import { ensureProfile } from '../lib/profile.js'
 import { aplicarCodigoPendiente, recordarCodigoPendiente, leerCodigoPendiente } from '../lib/estudios.js'
@@ -16,7 +21,14 @@ import { t } from '../lib/i18n.js'
 
 /**
  * Flujo de activación — Flujo A.
- * Pasos: foto → subir → compilar y MEDIR → (veredicto) → elegir diseño → guardar.
+ * Pasos: foto → subir → compilar y MEDIR → (veredicto) → elegir contenido →
+ *        recuerdo (foto + historia → video) | catálogo (GLB) → guardar.
+ *
+ * ── Por qué el tatuaje se guarda ANTES de generar el video ──
+ * El worker escribe el video sobre un tatuaje que ya existe; y si la
+ * generación falla, el tatuaje queda activado igual (sin contenido) y el
+ * usuario puede reintentar sin volver a compilar. Guardar después obligaría a
+ * rehacer la compilación por cada intento.
  *
  * ── Por qué se compila ANTES de elegir el diseño ──
  * Compilar es el único momento en que se puede medir si el tatuaje va a
@@ -43,7 +55,7 @@ import { t } from '../lib/i18n.js'
  */
 export default function Activate() {
   const { user, isLoggedIn, loading: cargandoSesion } = useAuth()
-  // upload | uploading | compiling | quality | design | saving | done
+  // upload | uploading | compiling | quality | eleccion | design | recuerdo | generando | saving | done
   const [step, setStep] = useState('upload')
   const [imageUrl, setImageUrl] = useState(null)
   const [imageFile, setImageFile] = useState(null) // referencia al File original para el worker
@@ -52,6 +64,12 @@ export default function Activate() {
   const [overridden, setOverridden] = useState(false) // activó pese a la advertencia
   const [selectedDesign, setSelectedDesign] = useState(null)
   const [tattooId, setTattooId] = useState(null) // UUID del tatuaje en Supabase
+  // El mismo id, en un ref: se necesita dentro de una función async justo
+  // después de crearlo, y el estado de React no se actualiza hasta el siguiente render
+  const tattooIdRef = useRef(null)
+  const [saldo, setSaldo] = useState(null) // créditos disponibles; null = sin leer
+  const [genEstado, setGenEstado] = useState('subiendo')
+  const [genError, setGenError] = useState(null)
   const [error, setError] = useState('')
   // Progreso real de compilación (0-100) reportado por el worker vía SSE
   const [compileProgress, setCompileProgress] = useState(0)
@@ -88,7 +106,7 @@ export default function Activate() {
     segunda. Ver solo el porcentaje daría la impresión de que se atoró.
   */
   useEffect(() => {
-    if (step !== 'compiling') {
+    if (step !== 'compiling' && step !== 'generando') {
       setElapsed(0)
       return
     }
@@ -98,6 +116,17 @@ export default function Activate() {
       setElapsed(Math.floor((Date.now() - startedAt) / 1000))
     }, 1000)
     return () => clearInterval(id)
+  }, [step])
+
+  // El saldo se lee al llegar a la elección, que es donde se decide gastarlo.
+  // Leerlo antes lo dejaría viejo si el usuario compró a media activación.
+  useEffect(() => {
+    if (step !== 'eleccion') return
+    let vigente = true
+    obtenerSaldo()
+      .then((s) => { if (vigente) setSaldo(s) })
+      .catch((err) => { console.error('[activate] saldo:', err); if (vigente) setSaldo(null) })
+    return () => { vigente = false }
   }, [step])
 
   const handlePhotoSelected = async (file, extractedInk = null) => {
@@ -142,7 +171,7 @@ export default function Activate() {
       setOverridden(false)
 
       const nivel = resultado.metrics?.verdict?.level
-      setStep(nivel === 'malo' || nivel === 'aceptable' ? 'quality' : 'design')
+      setStep(nivel === 'malo' || nivel === 'aceptable' ? 'quality' : 'eleccion')
     } catch (err) {
       setError(err.message)
       // Volver a la foto: si la compilación falló, el problema está en la imagen
@@ -178,7 +207,73 @@ export default function Activate() {
   */
   const handleContinueFromQuality = () => {
     setOverridden(metrics?.verdict?.level === 'malo')
-    setStep('design')
+    setStep('eleccion')
+  }
+
+  /*
+    Sube el .mind y crea el tatuaje una sola vez. Lo usan los dos caminos
+    (catálogo y recuerdo): con el catálogo lleva el GLB; con el recuerdo se crea
+    sin contenido y el worker le pone el video al terminar.
+
+    Devuelve el id en vez de confiar en el estado: quien llama lo necesita en
+    la misma función, antes del siguiente render.
+  */
+  const asegurarTatuaje = async ({ glbUrl = null } = {}) => {
+    if (tattooIdRef.current) return tattooIdRef.current
+
+    setCompileStage('uploading')
+    const { url: mindUrl } = await uploadMindFile(mindBuffer)
+
+    setCompileStage('saving')
+    const perfil = await ensureProfile(user)
+    const id = await createTattoo({
+      imageUrl, mindUrl, glbUrl, userId: perfil.id, metrics, overridden,
+    })
+    tattooIdRef.current = id
+    setTattooId(id)
+    return id
+  }
+
+  /*
+    Camino del recuerdo: foto + historia → video.
+
+    Los errores del worker se separan en dos clases. `sin_creditos` no es un
+    fallo: el usuario vuelve a la elección, donde ya está el enlace a comprar.
+    Todo lo demás vuelve al formulario con el mensaje, sin perder lo escrito.
+  */
+  const handleRecuerdo = async ({ file, historia }) => {
+    setError('')
+    setGenError(null)
+    setStep('generando')
+    setGenEstado('subiendo')
+
+    let generacionId
+    try {
+      const id = await asegurarTatuaje()
+      const { url: fotoUrl } = await uploadRecuerdo(file)
+      ;({ generacionId } = await solicitarGeneracion({ tattooId: id, fotoUrl, historia }))
+    } catch (err) {
+      if (err instanceof ErrorGeneracion && err.codigo === 'sin_creditos') {
+        setError(t('No tienes créditos suficientes. Compra uno y vuelve a intentar.'))
+        setStep('eleccion')
+      } else {
+        setError(err.message)
+        setStep('recuerdo')
+      }
+      return
+    }
+
+    setGenEstado('pendiente')
+    const r = await esperarGeneracion(generacionId, { onEstado: setGenEstado })
+
+    if (r.estado === 'lista') {
+      setStep('done')
+    } else if (r.agotado) {
+      setGenEstado('agotado')
+    } else {
+      setGenEstado(r.estado) // fallida | rechazada
+      setGenError(r.error)
+    }
   }
 
   const handleDesignSelected = async (design) => {
@@ -188,27 +283,7 @@ export default function Activate() {
 
     try {
       // El .mind ya está compilado desde el paso de la foto — aquí solo se persiste
-      setCompileStage('uploading')
-      const { url: mindUrl } = await uploadMindFile(mindBuffer)
-
-      setCompileStage('saving')
-      /*
-        Se asegura el perfil antes de guardar: las políticas de la base exigen
-        que user_id coincida con la sesión, y el perfil es lo que sostiene el
-        link compartible del usuario.
-      */
-      const perfil = await ensureProfile(user)
-
-      const id = await createTattoo({
-        imageUrl,
-        mindUrl,
-        glbUrl: design.glbUrl,
-        userId: perfil.id,
-        metrics,
-        overridden,
-      })
-
-      setTattooId(id)
+      await asegurarTatuaje({ glbUrl: design.glbUrl })
       setStep('done')
     } catch (err) {
       setError(err.message)
@@ -293,6 +368,47 @@ export default function Activate() {
         </div>
       )}
 
+      {step === 'eleccion' && (
+        <div>
+          <Miniatura
+            imageUrl={imageUrl}
+            titulo={t('Tatuaje listo')}
+            detalle={t('Ahora elige qué aparece encima')}
+          />
+          <EleccionContenido
+            saldo={saldo}
+            onRecuerdo={() => { setError(''); setStep('recuerdo') }}
+            onCatalogo={() => { setError(''); setStep('design') }}
+          />
+        </div>
+      )}
+
+      {step === 'recuerdo' && (
+        <div>
+          <Miniatura
+            imageUrl={imageUrl}
+            titulo={t('Cuéntanos el recuerdo')}
+            detalle={t('1 crédito')}
+          />
+          <RecuerdoForm onEnviar={handleRecuerdo} />
+          <button
+            onClick={() => setStep('eleccion')}
+            className="w-full text-gray-500 text-sm py-3 mt-2 underline hover:text-white"
+          >
+            {t('Volver')}
+          </button>
+        </div>
+      )}
+
+      {step === 'generando' && (
+        <GeneracionStatus
+          estado={genEstado}
+          error={genError}
+          elapsedSeconds={elapsed}
+          onReintentar={() => { setGenError(null); setStep('recuerdo') }}
+        />
+      )}
+
       {step === 'design' && (
         <div>
           <Miniatura
@@ -321,7 +437,7 @@ export default function Activate() {
           </div>
           <h2 className="text-xl font-semibold mb-2">{t('Tu tatuaje está activado')}</h2>
           <p className="text-gray-400 mb-8 max-w-xs mx-auto">
-            Cualquier persona puede apuntar su cámara a tu tatuaje y ver tu experiencia 3D.
+            {t('Cualquier persona puede apuntar su cámara a tu tatuaje y ver tu recuerdo cobrar vida.')}
           </p>
 
           {/* Link específico con el UUID del tatuaje — targetLoader lo resuelve en Supabase */}
@@ -362,7 +478,7 @@ export default function Activate() {
 function StepIndicator({ current }) {
   const steps = [
     { key: 'upload', label: t('Foto') },
-    { key: 'design', label: t('Diseño') },
+    { key: 'design', label: t('Contenido') },
     { key: 'saving', label: t('Activar') },
   ]
 
@@ -376,7 +492,8 @@ function StepIndicator({ current }) {
   */
   const stepMap = {
     upload: 0, uploading: 0, compiling: 0, quality: 0,
-    design: 1, saving: 2, done: 3,
+    eleccion: 1, design: 1, recuerdo: 1,
+    generando: 2, saving: 2, done: 3,
   }
   const currentIdx = stepMap[current] ?? 0
 

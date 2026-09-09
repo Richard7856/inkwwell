@@ -44,7 +44,26 @@ Por eso: un contenedor de larga vida (Railway, Render, Fly, un VPS).
    # → {"status":"ok","service":"inkar-worker",...}
    ```
 
-No hacen falta variables de entorno: `PORT` la inyecta Railway y el server ya la
+## Variables de entorno (Railway → Variables)
+
+La compilación no necesita ninguna. **La generación de video sí**, y sin ellas
+`/generar` responde 503 `no_configurado` — el resto del worker sigue funcionando.
+
+| Variable | Qué es | Dónde se consigue |
+|---|---|---|
+| `SUPABASE_URL` | URL del proyecto | Supabase → Settings → API |
+| `SUPABASE_SERVICE_ROLE_KEY` | Llave de **servicio** (no la anónima) | Supabase → Settings → API. **Secreta: nunca al repo ni al bundle** |
+| `HIGGSFIELD_KEY_ID` | Id de la llave de API | Higgsfield Cloud → API keys |
+| `HIGGSFIELD_KEY_SECRET` | Secreto de la llave | Higgsfield Cloud → API keys |
+| `HIGGSFIELD_ENDPOINT` | Modelo, opcional | Por defecto `/bytedance/seedance/v1/lite/image-to-video`. Alternativas en `higgsfield.js` (`/veo3.1/image-to-video`, Kling…) |
+| `HIGGSFIELD_DURACION` | Segundos, opcional | Por defecto 6 |
+
+Por qué la llave de servicio vive aquí y no en el cliente: reservar créditos
+en nombre de un usuario y escribir `generaciones` son cosas que el cliente no
+puede hacer por diseño. El worker verifica el JWT del usuario en cada petición
+antes de usarla.
+
+Antes había una nota de que no hacían falta variables: `PORT` la inyecta Railway y el server ya la
 respeta (`process.env.PORT || 3001`).
 
 ## Después de desplegar: apuntar el frontend

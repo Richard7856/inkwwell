@@ -83,3 +83,33 @@ export async function uploadMindFile(mindData) {
     path,
   }
 }
+
+/**
+ * Sube la foto del RECUERDO (la mascota, la persona), no la del tatuaje.
+ *
+ * Va al mismo bucket que las fotos de tatuaje pero con su propio prefijo: son
+ * imágenes públicas por igual (el worker las lee por URL para mandarlas al
+ * generador), y separarlas por carpeta permite limpiarlas o medirlas aparte.
+ *
+ * No se reduce de tamaño: no se compila ni se rastrea, se anima. La nitidez
+ * de la foto es lo que el generador tiene para reconocer al sujeto.
+ *
+ * @param {File} file
+ * @returns {Promise<{ url: string, path: string }>}
+ */
+export async function uploadRecuerdo(file) {
+  if (!supabase) {
+    throw new Error('Supabase no configurado. Agrega VITE_SUPABASE_URL y VITE_SUPABASE_ANON_KEY a .env')
+  }
+
+  const ext = (file.name.split('.').pop() || 'jpg').toLowerCase()
+  const path = `recuerdos/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`
+
+  const { error } = await supabase.storage
+    .from('tattoo-images')
+    .upload(path, file, { contentType: file.type, upsert: false })
+  if (error) throw new Error(`Error subiendo la foto del recuerdo: ${error.message}`)
+
+  const { data } = supabase.storage.from('tattoo-images').getPublicUrl(path)
+  return { url: data.publicUrl, path }
+}
