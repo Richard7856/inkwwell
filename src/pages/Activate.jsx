@@ -44,10 +44,10 @@ import { t } from '../lib/i18n.js'
  * El costo aceptado es que quien abandone en el selector deja una compilación
  * sin usar. Frente a un reembolso, no se compara.
  *
- * ── Por qué guardamos imageFile en estado además de imageUrl ──
- * La foto se sube a Supabase al terminar el paso 1, pero el worker de
- * compilación necesita el File original (binario) — no la URL pública. Mantener
- * ambas referencias evita re-descargar la imagen desde Supabase para compilar.
+ * ── Por qué el File de la foto NO se guarda en estado ──
+ * Se sube y se compila en el mismo manejador, con el File en la mano. Antes se
+ * guardaba porque la compilación ocurría dos pasos después; desde que va justo
+ * tras la subida, guardarlo solo dejaría una referencia viva de más.
  *
  * ── Por qué el error de guardado vuelve a 'design' y no a 'upload' ──
  * La foto y el .mind ya existen — no tiene sentido rehacer nada de eso. El
@@ -58,11 +58,9 @@ export default function Activate() {
   // upload | uploading | compiling | quality | eleccion | design | recuerdo | generando | saving | done
   const [step, setStep] = useState('upload')
   const [imageUrl, setImageUrl] = useState(null)
-  const [imageFile, setImageFile] = useState(null) // referencia al File original para el worker
   const [mindBuffer, setMindBuffer] = useState(null) // .mind ya compilado, pendiente de subir
   const [metrics, setMetrics] = useState(null) // veredicto del analizador; null = no se midió
   const [overridden, setOverridden] = useState(false) // activó pese a la advertencia
-  const [selectedDesign, setSelectedDesign] = useState(null)
   const [tattooId, setTattooId] = useState(null) // UUID del tatuaje en Supabase
   // El mismo id, en un ref: se necesita dentro de una función async justo
   // después de crearlo, y el estado de React no se actualiza hasta el siguiente render
@@ -106,16 +104,15 @@ export default function Activate() {
     segunda. Ver solo el porcentaje daría la impresión de que se atoró.
   */
   useEffect(() => {
-    if (step !== 'compiling' && step !== 'generando') {
-      setElapsed(0)
-      return
-    }
-
+    if (step !== 'compiling' && step !== 'generando') return undefined
     const startedAt = Date.now()
     const id = setInterval(() => {
       setElapsed(Math.floor((Date.now() - startedAt) / 1000))
     }, 1000)
-    return () => clearInterval(id)
+    // El reinicio a cero va en la limpieza, no en el cuerpo: un setState
+    // síncrono dentro del efecto dispara un render en cascada en cada cambio
+    // de paso, aunque el valor no cambie
+    return () => { clearInterval(id); setElapsed(0) }
   }, [step])
 
   // El saldo se lee al llegar a la elección, que es donde se decide gastarlo.
@@ -133,8 +130,6 @@ export default function Activate() {
     setStep('uploading')
     setError('')
 
-    // Guardar referencia al File — lo necesitamos después para el worker de compilación
-    setImageFile(file)
     setInkLayer(extractedInk)
 
     try {
@@ -277,7 +272,6 @@ export default function Activate() {
   }
 
   const handleDesignSelected = async (design) => {
-    setSelectedDesign(design)
     setStep('saving')
     setError('')
 
