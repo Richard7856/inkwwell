@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { getIdioma } from '../lib/i18n.js'
 import { useTema } from '../lib/tema.js'
+import Logo from '../components/ui/Logo.jsx'
 
 /**
  * Demo público: probar el AR sin tener un tatuaje.
@@ -55,6 +56,7 @@ export default function Demo() {
   return (
     <div className="min-h-screen overflow-y-auto">
       <div className="max-w-lg mx-auto px-6 py-12">
+        <Logo alto={30} claro className="mb-7" />
         <h1 className="text-2xl font-bold mb-3">{c.titulo}</h1>
         <p className="text-neutral-600 text-sm leading-relaxed mb-8">{c.intro}</p>
 
@@ -102,7 +104,7 @@ export default function Demo() {
 
         <p className="text-neutral-500 text-xs leading-relaxed mt-8">{c.nota}</p>
 
-        <Link to="/" className="block text-center text-neutral-500 text-sm underline mt-8">
+        <Link to="/app" className="block text-center text-neutral-500 text-sm underline mt-8">
           {c.volver}
         </Link>
       </div>

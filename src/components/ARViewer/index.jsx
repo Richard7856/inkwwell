@@ -2,6 +2,7 @@ import { useRef, useState, useEffect, useCallback } from 'react'
 import { useMindAR } from './useMindAR.js'
 import { useThreeScene } from './useThreeScene.js'
 import { loadTarget } from './targetLoader.js'
+import { t } from '../../lib/i18n.js'
 
 /**
  * ARViewer — componente principal de la experiencia AR.
@@ -242,10 +243,12 @@ export default function ARViewer({ tattooId = null, demo = null }) {
       {status === 'error' && (
         <div className="absolute inset-0 flex items-center justify-center bg-black/80 p-6 z-20">
           <div className="text-center max-w-sm">
-            <p className="text-red-400 text-lg font-medium mb-2">No se pudo iniciar AR</p>
+            <img src="/logo-inkar-blanco.png" alt="InkAR"
+                 className="h-7 w-auto mx-auto mb-6 opacity-60 select-none" draggable={false} />
+            <p className="text-red-400 text-lg font-medium mb-2">{t('No se pudo iniciar la cámara')}</p>
             <p className="text-gray-400 text-sm">{errorMsg}</p>
             <p className="text-gray-500 text-xs mt-4">
-              Verifica que diste permiso de cámara y estás en HTTPS
+              {t('Revisa que hayas dado permiso de cámara y que estés en HTTPS.')}
             </p>
           </div>
         </div>
@@ -281,7 +284,7 @@ export default function ARViewer({ tattooId = null, demo = null }) {
                 px-4 py-2 rounded-full text-sm font-semibold
                 border transition-all duration-200 shadow-lg
                 ${activeAnim === name
-                  ? 'bg-white text-black border-white scale-105'
+                  ? 'bg-realidad text-white border-realidad scale-105'
                   : 'bg-gray-900 text-white border-gray-600'
                 }
               `}

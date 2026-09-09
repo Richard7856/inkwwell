@@ -67,9 +67,13 @@ Si algo de eso falla, es el primer bug del cobro y va antes que cualquier otra c
 
 - Analizador conectado al flujo: compila y mide antes de elegir diseño, advierte
   sin bloquear, y guarda el veredicto en `tattoos` (migración 007, ya aplicada).
-- Marca en la app (9 sep): todo botón, tarjeta, spinner y cabecera sale de
-  `src/components/ui/`. No volver a escribir `bg-white text-black rounded-full`
-  a mano: es `<Boton>`. `Profile.jsx` sigue siendo un esqueleto (v5).
+- Marca en la app (9 sep): **todas** las pantallas usan `src/components/ui/`.
+  No volver a escribir `bg-white text-black rounded-full` a mano: es `<Boton>`
+  (variantes primario / secundario / peligro / enlace).
+- `Profile.jsx` ya es real: lista los tatuajes con su estado (video listo,
+  modelo del catálogo, esperando video) y su liga copiable. Era un placeholder,
+  y con la generación funcionando se volvió un hueco: quien generaba un video y
+  cerraba la app no podía volver a encontrar su tatuaje.
 - Esquema de precio y canal decidido y escrito en DECISIONS.md (8 sep). No
   reabrir sin datos: la primera transacción real es el dato que falta.
 - Estudios, atribución y códigos promo: migración 008, `lib/estudios.js`,

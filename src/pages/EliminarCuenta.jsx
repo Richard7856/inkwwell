@@ -4,6 +4,10 @@ import { useAuth } from '../hooks/useAuth.js'
 import LoginGate from '../components/Auth/LoginGate.jsx'
 import { eliminarMiCuenta } from '../lib/account.js'
 import { t } from '../lib/i18n.js'
+import Logo from '../components/ui/Logo.jsx'
+import Boton from '../components/ui/Boton.jsx'
+import Tarjeta from '../components/ui/Tarjeta.jsx'
+import Spinner from '../components/ui/Spinner.jsx'
 
 /**
  * Borrado de cuenta. Google Play exige DOS caminos y esta pantalla es los dos:
@@ -47,7 +51,7 @@ export default function EliminarCuenta() {
   }
 
   if (loading) {
-    return <Marco><p className="text-gray-500 text-center">{t('Cargando...')}</p></Marco>
+    return <Marco><Spinner className="mx-auto mt-12" /></Marco>
   }
 
   if (estado === 'listo') {
@@ -59,9 +63,7 @@ export default function EliminarCuenta() {
           {t('Se eliminaron {tatuajes} tatuaje(s) y {archivos} archivo(s). Los links que hayas compartido dejaron de funcionar.',
              { tatuajes: resultado.tatuajes, archivos: resultado.archivos })}
         </p>
-        <Link to="/" className="inline-block bg-white text-black font-semibold py-3 px-6 rounded-full">
-          {t('Volver al inicio')}
-        </Link>
+        <Boton to="/app">{t('Volver al inicio')}</Boton>
       </Marco>
     )
   }
@@ -107,20 +109,20 @@ export default function EliminarCuenta() {
                    text-white text-center tracking-[0.3em] font-mono
                    placeholder-gray-600 focus:outline-none focus:border-red-500/60"
       />
-      <button
+      <Boton
+        variante="peligro"
         onClick={borrar}
         disabled={confirmacion !== PALABRA || estado === 'borrando'}
-        className="w-full mt-3 py-4 rounded-2xl bg-red-600 text-white font-semibold
-                   disabled:opacity-30 transition-opacity"
+        className="mt-3"
       >
         {estado === 'borrando' ? t('Borrando...') : t('Eliminar mi cuenta para siempre')}
-      </button>
+      </Boton>
 
       {error && <p className="text-red-400 text-sm mt-4">{error}</p>}
 
-      <Link to="/" className="block text-center text-gray-500 text-sm mt-8 underline">
+      <Boton to="/app" variante="enlace" className="block text-center mt-8">
         {t('Mejor no, volver al inicio')}
-      </Link>
+      </Boton>
     </Marco>
   )
 }
@@ -143,7 +145,7 @@ function Frase({ texto, resaltado }) {
 
 function QueSeBorra() {
   return (
-    <div className="bg-white/5 rounded-2xl p-5 border border-white/10 mt-6">
+    <Tarjeta className="mt-6">
       <p className="text-gray-300 text-sm font-medium mb-2">{t('Qué se elimina')}</p>
       <ul className="text-gray-400 text-sm leading-relaxed list-disc pl-5 space-y-1">
         <li>{t('Las fotos de tus tatuajes')}</li>
@@ -154,14 +156,17 @@ function QueSeBorra() {
       <p className="text-gray-500 text-xs mt-3 leading-relaxed">
         {t('El borrado es inmediato y definitivo: no hay copia de respaldo de la que podamos recuperarlo después.')}
       </p>
-    </div>
+    </Tarjeta>
   )
 }
 
 function Marco({ children }) {
   return (
     <div className="min-h-screen px-6 py-10 overflow-y-auto">
-      <div className="max-w-sm mx-auto">{children}</div>
+      <div className="max-w-sm mx-auto">
+        <Logo alto={26} className="mb-8 opacity-80" />
+        {children}
+      </div>
     </div>
   )
 }

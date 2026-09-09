@@ -59,8 +59,11 @@ del usuario a su estudio. Migración 008 aplicada, webhook v3 desplegado.
 el inicio, acento `realidad` en el botón primario, entrada a "Pruébalo sin
 tatuaje" dentro de la app para los jueces.
 
-**No existe todavía:** catálogo con video desde la base, perfil con liga
-compartible, versionCode 4 en Play.
+**Perfil con liga compartible: hecho** (9 sep). Falta la fusión de `.mind`
+por usuario para el perfil público `/u/:slug`, que es otra cosa.
+
+**No existe todavía:** catálogo con video desde la base, perfil público por
+usuario, versionCode 4 en Play.
 
 ## Plan por bloques
 

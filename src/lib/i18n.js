@@ -277,6 +277,23 @@ const EN = {
   'Solo tu primera vez': 'First time only',
   'Mis créditos': 'My credits',
 
+  // ── Perfil, visor y pantallas legales ──
+  'Mis tatuajes': 'My tattoos',
+  'Identifícate para ver tus tatuajes': 'Sign in to see your tattoos',
+  'Cargando tus tatuajes...': 'Loading your tattoos…',
+  'Todavía no activas ningún tatuaje': 'You haven’t activated any tattoo yet',
+  'Activa uno y cualquier persona que apunte su cámara podrá ver tu recuerdo.':
+    'Activate one and anyone who points their camera at it can see your memory.',
+  'Activar otro tatuaje': 'Activate another tattoo',
+  'Tu recuerdo, listo': 'Your memory, ready',
+  'Modelo del catálogo': 'Catalog model',
+  'Esperando tu video': 'Waiting for your video',
+  'Probar': 'Try it',
+  'Copiar liga': 'Copy link',
+  '¡Copiada!': 'Copied!',
+  'Revisa que hayas dado permiso de cámara y que estés en HTTPS.':
+    'Check that you granted camera permission and that you’re on HTTPS.',
+
   // ── Generación de video ──
   '¿Qué quieres que aparezca sobre tu tatuaje?': 'What should appear over your tattoo?',
   '1 crédito': '1 credit',

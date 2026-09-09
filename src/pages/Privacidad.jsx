@@ -1,5 +1,7 @@
 import { Link } from 'react-router-dom'
 import { getIdioma, t } from '../lib/i18n.js'
+import Logo from '../components/ui/Logo.jsx'
+import Boton from '../components/ui/Boton.jsx'
 
 /**
  * Política de privacidad. Google Play exige una dirección web pública y
@@ -170,6 +172,7 @@ export default function Privacidad() {
   return (
     <div className="min-h-screen px-6 py-10 overflow-y-auto">
       <div className="max-w-2xl mx-auto">
+        <Logo alto={28} className="mb-8 opacity-80" />
         <h1 className="text-3xl font-bold mb-2">{doc.titulo}</h1>
         <p className="text-gray-500 text-sm mb-10">{doc.pie(VIGENCIA[idioma])}</p>
 
@@ -191,12 +194,7 @@ export default function Privacidad() {
                 </ul>
               )}
               {s.accion && (
-                <Link
-                  to="/eliminar-cuenta"
-                  className="inline-block mt-4 bg-white text-black font-semibold py-3 px-6 rounded-full"
-                >
-                  {s.accion}
-                </Link>
+                <Boton to="/eliminar-cuenta" className="mt-4 max-w-xs">{s.accion}</Boton>
               )}
             </div>
           </section>

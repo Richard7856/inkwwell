@@ -14,7 +14,7 @@ import { Link } from 'react-router-dom'
  * InkAR. Los colores semánticos (rojo de error, ámbar de aviso, verde de
  * listo) NO son el acento y no pasan por aquí: viven en `Aviso`.
  *
- * @param {'primario'|'secundario'|'enlace'} [variante]
+ * @param {'primario'|'secundario'|'peligro'|'enlace'} [variante]
  * @param {string} [to] - Si se da, renderiza un Link en vez de un button
  * @param {'button'|'submit'} [type] - Solo para button. Por defecto 'button'
  *   para que un botón suelto dentro de un form no lo envíe sin querer.
@@ -43,5 +43,8 @@ export default function Boton({ variante = 'primario', to, type = 'button', clas
 const VARIANTES = {
   primario: 'bg-realidad text-white font-semibold hover:bg-realidad/90',
   secundario: 'bg-white/10 text-white font-medium border border-white/15 hover:bg-white/15',
+  // El borrado NO lleva el acento: rojo es semántico, y el acento es identidad.
+  // Confundirlos haría que lo destructivo se sintiera como lo principal.
+  peligro: 'bg-red-600 text-white font-semibold hover:bg-red-500',
   enlace: 'text-gray-400 underline hover:text-white',
 }

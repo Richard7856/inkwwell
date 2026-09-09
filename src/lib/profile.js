@@ -81,7 +81,7 @@ export async function getMyTattoos(userId) {
   if (!supabase) throw new Error('Supabase no configurado')
   const { data, error } = await supabase
     .from('tattoos')
-    .select('id, image_url, glb_url, target_index, created_at')
+    .select('id, image_url, glb_url, video_url, target_index, created_at')
     .eq('user_id', userId)
     .eq('is_active', true)
     .order('target_index', { ascending: true })

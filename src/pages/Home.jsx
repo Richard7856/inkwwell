@@ -41,7 +41,10 @@ export default function Home() {
         <div className="flex flex-col gap-3 w-full">
           <Boton to="/activate">{t('Activar mi tatuaje')}</Boton>
           <Boton to="/demo" variante="secundario">{t('Pruébalo sin tatuaje')}</Boton>
-          <Boton to="/creditos" variante="enlace" className="mt-1">{t('Mis créditos')}</Boton>
+          <div className="flex justify-center gap-5 mt-1">
+            <Boton to="/profile" variante="enlace">{t('Mis tatuajes')}</Boton>
+            <Boton to="/creditos" variante="enlace">{t('Mis créditos')}</Boton>
+          </div>
         </div>
 
         <p className="text-gray-500 text-sm mt-8">
