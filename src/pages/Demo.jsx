@@ -55,21 +55,29 @@ export default function Demo() {
 
   return (
     <div className="min-h-screen overflow-y-auto">
-      <div className="max-w-lg mx-auto px-6 py-12">
-        <Logo alto={30} claro className="mb-7" />
+      <div className="max-w-lg mx-auto px-6 py-8">
+        <Logo alto={26} claro className="mb-5" />
         <h1 className="text-2xl font-bold mb-3">{c.titulo}</h1>
-        <p className="text-neutral-600 text-sm leading-relaxed mb-8">{c.intro}</p>
+        <p className="text-neutral-600 text-sm leading-relaxed mb-6">{c.intro}</p>
 
-        {/* El marcador, en blanco para que se lea igual impreso que en pantalla */}
-        <div className="bg-white border border-black/10 rounded-2xl p-4 mb-8 shadow-sm">
+        {/*
+          El marcador, en blanco para que se lea igual impreso que en pantalla.
+
+          El alto va topado: a tamaño completo empujaba el botón de la cámara
+          21px por debajo del pliegue en un teléfono de 812px, y quien no hacía
+          scroll veía tres pasos y ningún botón. Es la puerta de entrada de
+          quien no tiene tatuaje —los jueces del concurso, entre otros—, así que
+          tiene que caber en la primera pantalla.
+        */}
+        <div className="bg-white border border-black/10 rounded-2xl p-4 mb-6 shadow-sm">
           <img
             src="/targets/marcador-demo.png"
             alt={c.titulo}
-            className="w-full max-w-xs mx-auto block"
+            className="w-full max-w-[13rem] mx-auto block"
           />
         </div>
 
-        <ol className="flex flex-col gap-4 mb-8">
+        <ol className="flex flex-col gap-3 mb-6">
           {c.pasos.map((paso, i) => (
             <li key={paso} className="flex gap-3 text-sm text-neutral-700 leading-relaxed">
               <span className="shrink-0 w-6 h-6 rounded-full bg-tinta text-white
