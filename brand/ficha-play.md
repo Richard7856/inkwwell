@@ -26,46 +26,10 @@ congelado para siempre.
 InkAR
 ```
 
-**Descripción corta** (80 caracteres máx.)
-```
-Tu tatuaje cobra vida en realidad aumentada. Apunta la cámara y míralo.
-```
-
-**Descripción completa**
-```
-InkAR convierte tu tatuaje en una puerta a contenido en 3D.
-
-No es una prueba de tatuajes ni un filtro. Tu tatuaje real —el que ya traes en la
-piel— queda vinculado a una experiencia en realidad aumentada. Cualquier persona
-que apunte la cámara hacia él la ve aparecer, anclada a tu piel y siguiendo tu
-movimiento.
-
-CÓMO FUNCIONA
-
-1. Tomas una foto de tu tatuaje
-2. Eliges un modelo 3D del catálogo
-3. Tu tatuaje queda activado
-
-Desde ese momento, quien apunte su cámara a tu tatuaje ve tu contenido. No
-necesita instalar nada: basta abrir tu liga en el navegador.
-
-PARA QUIEN NO TIENE TATUAJE
-
-También puedes activar cualquier imagen con suficiente detalle: un dibujo, una
-carta, la portada de un cuaderno. El reconocimiento funciona igual.
-
-QUÉ NECESITAS
-
-Un tatuaje sanado, de al menos 4 cm, con detalle visual claro, y buena
-iluminación al registrarlo. Los tatuajes muy pequeños o de trazo muy simple
-pueden costar más trabajo de reconocer.
-
-PRIVACIDAD
-
-Las imágenes de la cámara al escanear nunca salen de tu teléfono: el
-reconocimiento ocurre completo en el dispositivo. Puedes borrar tu cuenta y todos
-tus datos cuando quieras, desde la app o desde inkar.app/eliminar-cuenta.
-```
+> **Los textos viven en `brand/textos-ficha.md`**, en los dos idiomas y ya
+> reescritos para la v4. Antes estaban duplicados aquí y en ese archivo, y al
+> girar a video quedó una copia describiendo el producto anterior. Una sola
+> fuente evita que vuelva a pasar.
 
 **Assets**
 
@@ -75,8 +39,9 @@ tus datos cuando quieras, desde la app o desde inkar.app/eliminar-cuenta.
 | Gráfico destacado 1024×500 | `brand/play-destacado-1024x500.png` | ✅ |
 | Capturas de teléfono (mínimo 2) | — | ⬜ **faltan** |
 
-Las capturas conviene tomarlas del teléfono real con un tatuaje activado: es lo
-que vende el producto y no se puede simular desde el navegador.
+La lista de qué capturar y en qué orden está en `brand/textos-ficha.md`. Solo
+la primera —el video sobre el tatuaje en cámara— exige el teléfono con la app;
+las de interfaz se pueden tomar del navegador del celular en inkar.app.
 
 ---
 
@@ -124,28 +89,42 @@ lenguaje ofensivo, sin sustancias, sin juego de apuestas.
 | Tipo | ¿Se comparte? | ¿Obligatorio? | Propósito |
 |---|---|---|---|
 | Dirección de correo | No | Sí | Gestión de la cuenta |
-| Fotos | No | Sí | Funcionalidad de la app |
+| Fotos | **Sí** | Sí | Funcionalidad de la app |
+| Historial de compras | No | Sí | Funcionalidad de la app |
 
-"Compartir" en Play significa transferir a un tercero. Supabase, Railway y Vercel
-procesan por encargo, no son terceros que reciban los datos para sus fines: por
-eso va **No**.
+**"Fotos" pasó a compartido en la v4, y hay que declararlo.** "Compartir" en Play
+significa transferir a un tercero. Supabase, Railway y Vercel procesan por
+encargo y no cuentan — pero **Higgsfield sí**: la foto del recuerdo y la historia
+salen a su infraestructura para generar el video. Es una transferencia real y
+declararla mal es declaración falsa.
+
+Ojo con la distinción, porque no todas las fotos viajan: la del **tatuaje** solo
+va a Railway (en memoria, sin guardarse) y a Supabase. La del **recuerdo** es la
+que sale a Higgsfield, y solo cuando el usuario pide una generación.
+
+**Historial de compras** se declara ahora que la app cobra créditos. En la v3 no
+se declaró a propósito, porque entonces no podía cobrar.
 
 **Prácticas de seguridad:**
 - Datos cifrados en tránsito: **Sí**
 - El usuario puede solicitar el borrado de sus datos: **Sí**
 - Revisión de seguridad independiente: No
 
-**NO declarar todavía:** historial de compras. La app aún no puede cobrar. Se
-agrega al publicar la actualización con el paywall — declarar hoy datos que no se
-recopilan también es una declaración falsa.
+**Recordatorio para la próxima vez:** declarar solo lo que el código hace hoy.
+En la v3 no se declaró historial de compras porque la app no podía cobrar;
+declarar datos que no se recopilan también es declaración falsa.
 
 ---
 
-## Después de subir el bundle
+## Estado de los trámites
 
-1. **Crear los productos de créditos** en Monetización → Productos integrados.
-   Se habilita porque el bundle ya trae la librería de facturación.
-2. **Cuenta de servicio de Google Cloud** para RevenueCat. **Empezar el mismo
-   día: tarda hasta 36 horas en propagar permisos.**
-3. Países: **incluir Estados Unidos** — regla del concurso, los jueces deben
-   poder probarla.
+| | |
+|---|---|
+| App publicada | ✅ 8 sep 2026, versionCode 3 |
+| Cuenta de servicio de Google Cloud | ✅ credenciales validadas |
+| Países, con Estados Unidos incluido | ✅ regla del concurso |
+| Productos de créditos | ⬜ Monetizar con Play → Productos → **Productos únicos** |
+| Verificación de identidad de desarrollador | ⬜ vence el **30 sep**, el mismo día que el concurso |
+
+Los identificadores de los productos, con sus precios, están en `SHIPATON.md`.
+El nombre del menú cambió: ya no es "Productos integrados".

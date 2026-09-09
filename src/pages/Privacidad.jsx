@@ -22,9 +22,14 @@ import Boton from '../components/ui/Boton.jsx'
  *    sola llamada de red con imagen en src/components/ARViewer/.
  *  - Railway no guarda la foto: worker/index.js usa multer.memoryStorage().
  *  - Las fotos y los .mind son públicos: buckets públicos en src/lib/storage.js.
+ *  - La foto del recuerdo y la historia salen a Higgsfield: worker/higgsfield.js
+ *    manda `image_url` y `prompt`, y nada más. El correo y la foto del tatuaje
+ *    nunca se envían ahí.
+ *  - El video generado se copia a nuestro Storage: worker/supabase-admin.js
+ *    subirVideo(), bucket `videos`, público.
  */
 
-const VIGENCIA = { es: '7 de septiembre de 2026', en: 'September 7, 2026' }
+const VIGENCIA = { es: '9 de septiembre de 2026', en: 'September 9, 2026' }
 const CONTACTO = 'contacto@inkar.app'
 
 const ES = {
@@ -43,8 +48,11 @@ const ES = {
         ['Tu correo electrónico', 'Es lo único que pedimos para crear la cuenta. Se usa para enviarte el código de acceso o validar tu contraseña, y para reconocerte cuando vuelvas. No enviamos publicidad.'],
         ['La foto del tatuaje que subes', 'Se guarda para mostrar tu tatuaje en tu perfil y para generar el descriptor visual que permite reconocerlo con la cámara.'],
         ['El descriptor visual del tatuaje', 'Un archivo técnico que resume los puntos característicos de la imagen. Es lo que permite que la cámara reconozca tu tatuaje. No contiene datos biométricos ni identifica a una persona: describe un dibujo, no un cuerpo.'],
-        ['El modelo 3D que eliges', 'Para saber qué contenido mostrar sobre tu tatuaje.'],
+        ['La foto del recuerdo y la historia que escribes', 'Cuando pides que animemos un recuerdo, la foto que subes y el texto que escribes se envían al proveedor de inteligencia artificial que genera el video. No es una foto de tu tatuaje: es la de tu mascota, tu persona o tu momento, y puede contener la imagen de alguien. Sube solo fotos que tengas derecho a usar.'],
+        ['El video generado', 'Se guarda en nuestros servidores y queda vinculado a tu tatuaje. Cualquiera que apunte la cámara a tu tatuaje —o abra tu link— lo verá: eso es lo que hace la app.'],
+        ['El contenido que eliges del catálogo', 'Para saber qué mostrar sobre tu tatuaje cuando no generas un video.'],
         ['Tu identificador compartible', 'Un código corto y aleatorio que forma tu link público.'],
+        ['Tus créditos y compras', 'Un registro de cuántos créditos compraste, te regalamos y gastaste. No incluye datos de pago: esos los maneja Google.'],
       ],
     },
     {
@@ -70,6 +78,7 @@ const ES = {
         ['Railway', 'Genera el descriptor visual a partir de tu foto. La foto se procesa en memoria y no se almacena allí en ningún momento.'],
         ['Vercel', 'Publica la aplicación web.'],
         ['Google Play y RevenueCat', 'Procesan las compras dentro de la app. No recibimos ni almacenamos los datos de tu tarjeta: los maneja Google directamente.'],
+        ['Higgsfield', 'Genera el video a partir de la foto del recuerdo y de la historia que escribes. Solo recibe esos dos datos —nunca tu correo ni la foto de tu tatuaje— y solo cuando tú pides una generación. Sus servidores están fuera de México.'],
       ],
     },
     {
@@ -112,8 +121,11 @@ const EN = {
         ['Your email address', 'The only thing we ask for to create your account. We use it to send your access code or validate your password, and to recognize you when you return. We do not send marketing.'],
         ['The tattoo photo you upload', 'Stored to show your tattoo on your profile and to generate the visual descriptor that lets a camera recognize it.'],
         ['The tattoo’s visual descriptor', 'A technical file summarizing the distinctive points of the image. It is what lets a camera recognize your tattoo. It contains no biometric data and identifies no person: it describes a drawing, not a body.'],
-        ['The 3D model you choose', 'So we know what content to show over your tattoo.'],
+        ['The memory photo and the story you write', 'When you ask us to bring a memory to life, the photo you upload and the text you write are sent to the artificial intelligence provider that generates the video. This is not a photo of your tattoo: it is your pet, your person, your moment, and it may contain someone’s likeness. Only upload photos you have the right to use.'],
+        ['The generated video', 'Stored on our servers and linked to your tattoo. Anyone who points a camera at your tattoo — or opens your link — will see it: that is what the app does.'],
+        ['The catalog content you choose', 'So we know what to show over your tattoo when you don’t generate a video.'],
         ['Your shareable identifier', 'A short random code that forms your public link.'],
+        ['Your credits and purchases', 'A record of how many credits you bought, were given, and spent. It does not include payment details: Google handles those.'],
       ],
     },
     {
@@ -139,6 +151,7 @@ const EN = {
         ['Railway', 'Generates the visual descriptor from your photo. The photo is processed in memory and is never stored there.'],
         ['Vercel', 'Hosts the web application.'],
         ['Google Play and RevenueCat', 'Process in-app purchases. We never receive or store your card details: Google handles them directly.'],
+        ['Higgsfield', 'Generates the video from your memory photo and the story you write. It receives only those two things — never your email or your tattoo photo — and only when you request a generation. Its servers are outside Mexico.'],
       ],
     },
     {

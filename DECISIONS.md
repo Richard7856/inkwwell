@@ -571,3 +571,20 @@ O sea, ese tatuaje está en el extremo bajo de lo ACEPTABLE, y con poca luz se c
 **Estado del saldo:** `403 not_enough_credits`. Las llaves son válidas (un status de id inexistente devuelve `404`, no `401`) y no se ha podido generar nada todavía. Falta que Richard recargue.
 
 **Verificado, no supuesto:** las llaves NO se filtran al bundle — Vite solo expone lo prefijado con `VITE_`, comprobado con grep contra `dist/`.
+
+## [2026-09-09] La ficha de Play describía otro producto, y la política ocultaba un flujo de datos
+**Context:** Bloque C — actualizar la ficha para la v4. Lo que se encontró fue más que texto viejo.
+
+**El problema de fondo:** la ficha publicada dice "Eliges un modelo 3D del catálogo" y es de antes del giro a video. Alguien que instalara por esa descripción encontraría otra app. Pero al revisar apareció algo peor.
+
+**El hueco de cumplimiento:** la política de privacidad **no mencionaba la generación de video ni a Higgsfield**. Desde la v4, la foto del recuerdo y la historia del usuario salen a la infraestructura de un tercero fuera de México, y eso no estaba declarado en ningún lado. Tampoco estaban los créditos ni las compras.
+
+**Decision:** se declara explícitamente, en ambos idiomas, distinguiendo lo que la mayoría de las políticas confunde: **no todas las fotos viajan igual.** La del tatuaje solo va a Railway —en memoria, sin guardarse— y a Supabase. La del **recuerdo** es la única que sale a Higgsfield, y solo cuando el usuario pide una generación. Se añade también la advertencia de que esa foto puede contener la imagen de otra persona ("sube solo fotos que tengas derecho a usar").
+
+**Consecuencia en la declaración de datos de Play:** "Fotos" pasa de *no compartido* a **compartido** —Higgsfield es un tercero real, no un encargado— y se agrega **historial de compras**, que en la v3 se omitió a propósito porque la app entonces no podía cobrar. Declararlo mal en cualquiera de las dos direcciones es declaración falsa.
+
+**Los textos dejan de estar duplicados.** Vivían en `ficha-play.md` y en `textos-ficha.md` a la vez; al girar a video quedó una copia describiendo el producto anterior. Ahora `textos-ficha.md` es la única fuente y `ficha-play.md` remite a ella.
+
+**Lo que se agregó para el revisor:** instrucciones para el código promocional `SHIPATON`. Generar un video cuesta un crédito, y un revisor sin créditos no puede probar la función principal — calificaría lo que se imagina. También la ruta a "Pruébalo sin tatuaje", que es la vía más rápida a ver el AR funcionando sin tener uno.
+
+**Verificado en navegador, en los dos idiomas:** la política renderiza con la vigencia nueva, con Higgsfield en la lista de terceros y con las entradas de la foto del recuerdo y de los créditos.
