@@ -93,10 +93,26 @@ export async function iniciarGeneracion({ authorization, ...cuerpo }) {
   try {
     ;({ requestId } = await hf.enviar({ prompt: promptDe(historia), imageUrl: fotoUrl }))
   } catch (err) {
-    console.error(`${etiqueta} Higgsfield rechazó el envío:`, err.message)
+    /*
+      Se separa "es culpa de nuestra cuenta" de "no se pudo generar". En ambos
+      casos el crédito vuelve, pero al usuario no se le puede insinuar que su
+      foto estuvo mal cuando lo que pasa es que nos quedamos sin saldo o el
+      modelo no está habilitado. Eso sí queda gritado en los registros.
+    */
+    if (err.esDeCuenta) {
+      console.error(`${etiqueta} ⚠️ REVISAR LA CUENTA DE HIGGSFIELD: ${err.message}`)
+    } else {
+      console.error(`${etiqueta} Higgsfield rechazó el envío:`, err.message)
+    }
     await db.reembolsar(userId, generacionId)
     await db.actualizarGeneracion(generacionId, { estado: 'fallida', error: err.message })
-    throw new ErrorGeneracion('proveedor', `El generador no aceptó la petición: ${err.message}`, 502)
+    throw new ErrorGeneracion(
+      'proveedor',
+      err.esDeCuenta
+        ? 'La generación no está disponible en este momento. No se te cobró el crédito.'
+        : `El generador no aceptó la petición: ${err.message}`,
+      502,
+    )
   }
 
   await db.actualizarGeneracion(generacionId, { request_id: requestId, estado: 'pendiente' })

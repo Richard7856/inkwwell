@@ -11,10 +11,17 @@
  * - La imagen de entrada es una URL https pública: nuestro Storage sirve.
  * - Los archivos de salida caducan a los 7 días: hay que copiarlos.
  *
- * ── Por qué el endpoint es configurable ──
- * El catálogo de la API pública NO es el del panel: aquí no existe MiniMax.
- * Cambiar de modelo debe ser una variable de entorno, no un despliegue —
- * sobre todo mientras no sepamos cuál da mejor resultado sobre piel.
+ * ── Por qué el endpoint es configurable, y por qué importa MÁS de lo que parece ──
+ * El catálogo del spec NO es el que tu cuenta puede usar. Verificado el 9 sep
+ * 2026 contra la cuenta de InkAR: Seedance devuelve 404 `model_not_found` y
+ * Veo 3.1 devuelve 503 `model_disabled`, aunque ambos estén documentados.
+ * La disponibilidad depende del plan, así que el modelo tiene que poder
+ * cambiarse por variable de entorno sin tocar código.
+ *
+ * ── Cómo saber qué modelos SÍ tienes, sin gastar ──
+ *   node --env-file=.env modelos.js
+ * Manda un cuerpo vacío a cada ruta: la API resuelve el modelo ANTES de
+ * validar, así que 404 = no disponible, 400/422 = disponible. Cero costo.
  */
 
 const BASE = 'https://api.higgsfield.ai'
@@ -23,31 +30,83 @@ const SECRET = process.env.HIGGSFIELD_KEY_SECRET
 
 export const higgsfieldConfigurado = Boolean(ID && SECRET)
 
-/** Endpoint por defecto: el imagen-a-video más barato con control de duración y 9:16 */
-export const ENDPOINT = process.env.HIGGSFIELD_ENDPOINT || '/bytedance/seedance/v1/lite/image-to-video'
+/*
+  Endpoint por defecto: MiniMax Hailuo-02 estándar.
+
+  Se eligió por eliminación, con el barrido de disponibilidad del 9 sep 2026:
+  Seedance (404) y Veo 3.1 (503) no están disponibles en esta cuenta. De los
+  que sí responden —MiniMax 02 y 2.3, Kling 2.1 y 2.5, Wan 2.5— este es el
+  más barato con imagen de entrada.
+*/
+export const ENDPOINT = process.env.HIGGSFIELD_ENDPOINT || '/minimax/hailuo-02/standard/image-to-video'
 const DURACION = Number(process.env.HIGGSFIELD_DURACION || 6)
 
 /*
-  Cuerpo de la petición por endpoint. Cada familia tiene sus propios tipos:
-  Seedance quiere la duración como entero y la resolución como "720"; Veo la
-  quiere como cadena de un conjunto cerrado y exige generate_audio. Mezclarlos
-  da 422 sin explicación útil.
+  Cuerpo de la petición por endpoint, leído del openapi.json real (no de un
+  resumen: la primera versión de este archivo se escribió desde uno y los
+  perfiles salieron mal).
 
-  9:16 siempre: el video se ve en vertical, sobre un brazo.
-  Cámara fija donde exista la opción: el plano está anclado al tatuaje; un
-  paneo del generador se sentiría como si el tatuaje se moviera solo.
+  Cada familia usa tipos distintos para lo mismo: MiniMax quiere la duración en
+  un enum de enteros {6,10} y la resolución como "768P"; Kling usa {5,10}; Veo
+  la quiere como CADENA de {"4","6","8"} y exige generate_audio. Mezclarlos da
+  400 o 422 sin explicación útil.
+
+  Y no todos aceptan aspect_ratio: MiniMax y Kling heredan la proporción de la
+  imagen de entrada. Por eso la vertical no se puede dar por hecha en el
+  perfil — sale de la foto que suba el usuario.
 */
 const PERFILES = {
-  '/bytedance/seedance/v1/lite/image-to-video': (prompt, image_url) => ({
+  /*
+    MiniMax Hailuo-02 y 2.3. NO aceptan aspect_ratio: la proporción del video
+    la hereda de la foto de entrada. Para nosotros funciona — la foto del
+    recuerdo la toma el usuario con su teléfono, casi siempre vertical.
+
+    prompt_optimizer va en FALSE a propósito. Por defecto reescribe el prompt,
+    y ahí se pierde la instrucción del fondo verde plano de la que depende
+    TODO el recorte de croma (ver videoLayer.js). Mejor un prompt literal que
+    uno bonito que devuelva un fondo de bosque.
+  */
+  '/minimax/hailuo-02/standard/image-to-video': (prompt, image_url) => ({
     prompt, image_url,
-    duration: Math.min(12, Math.max(2, Math.round(DURACION))),
-    resolution: '720', aspect_ratio: '9:16', camera_fixed: true,
+    duration: DURACION > 8 ? 10 : 6,   // enum cerrado: 6 o 10
+    resolution: '768P',
+    prompt_optimizer: false,
   }),
-  '/bytedance/seedance/v1/pro/fast/image-to-video': (prompt, image_url) => ({
+  '/minimax/hailuo-02/pro/image-to-video': (prompt, image_url) => ({
     prompt, image_url,
-    duration: Math.min(12, Math.max(2, Math.round(DURACION))),
-    resolution: '720', aspect_ratio: '9:16', camera_fixed: true,
+    duration: DURACION > 8 ? 10 : 6,
+    resolution: '768P',
+    prompt_optimizer: false,
   }),
+  '/minimax/hailuo-2.3-fast/standard/image-to-video': (prompt, image_url) => ({
+    prompt, image_url,
+    duration: DURACION > 8 ? 10 : 6,
+    resolution: '768P',
+    prompt_optimizer: false,
+  }),
+  '/minimax/hailuo-2.3/standard/image-to-video': (prompt, image_url) => ({
+    prompt, image_url,
+    duration: DURACION > 8 ? 10 : 6,
+    resolution: '768P',
+    prompt_optimizer: false,
+  }),
+
+  // Kling: duración en enum 5|10, sin aspect_ratio en imagen-a-video.
+  // cfg_scale 0.5 es el valor por defecto de la API; se deja explícito.
+  '/kling-video/v2.5-turbo/standard/image-to-video': (prompt, image_url) => ({
+    prompt, image_url, duration: DURACION > 7 ? 10 : 5, cfg_scale: 0.5, negative_prompt: '',
+  }),
+  '/kling-video/v2.1/standard/image-to-video': (prompt, image_url) => ({
+    prompt, image_url, duration: DURACION > 7 ? 10 : 5, cfg_scale: 0.5, negative_prompt: '',
+  }),
+
+  '/wan-25-preview/image-to-video': (prompt, image_url) => ({ prompt, image_url }),
+
+  /*
+    Veo 3.1 — hoy 503 model_disabled en esta cuenta, pero se conserva el perfil:
+    es el único con aspect_ratio explícito, y si el plan cambia es el candidato
+    natural para vertical garantizado.
+  */
   '/veo3.1/image-to-video': (prompt, image_url) => ({
     prompt, image_url,
     duration: String([4, 6, 8].reduce((a, b) => Math.abs(b - DURACION) < Math.abs(a - DURACION) ? b : a)),
@@ -58,9 +117,17 @@ const PERFILES = {
     duration: String([4, 6, 8].reduce((a, b) => Math.abs(b - DURACION) < Math.abs(a - DURACION) ? b : a)),
     resolution: '720', aspect_ratio: '9:16', generate_audio: false,
   }),
-  '/kling-video/v2.5-turbo/standard/image-to-video': (prompt, image_url) => ({
-    prompt, image_url, duration: DURACION <= 5 ? 5 : 10, cfg_scale: 0.5, negative_prompt: '',
-  }),
+}
+
+/*
+  Fallos que NO son culpa del usuario y hay que distinguir en los registros:
+  su crédito se devuelve igual, pero a él no se le puede decir "tu foto falló"
+  cuando lo que pasa es que NOSOTROS no tenemos saldo o el modelo no existe.
+*/
+const FALLOS_DE_CUENTA = {
+  not_enough_credits: 'La cuenta de Higgsfield no tiene saldo. Recárgala en higgsfield.ai.',
+  model_not_found: `El modelo ${'${ENDPOINT}'} no está disponible en esta cuenta. Corre modelos.js para ver cuáles sí.`,
+  model_disabled: `El modelo ${'${ENDPOINT}'} está deshabilitado. Corre modelos.js para ver alternativas.`,
 }
 
 function cabeceras() {
@@ -92,8 +159,15 @@ export async function enviar({ prompt, imageUrl }) {
 
   const json = await res.json().catch(() => null)
   if (!res.ok) {
+    const detalle = String(json?.detail ?? '')
+    const nuestro = FALLOS_DE_CUENTA[detalle]
+    if (nuestro) {
+      const e = new Error(nuestro.replace('${ENDPOINT}', ENDPOINT))
+      e.esDeCuenta = true   // para el registro: revisar la cuenta, no la foto
+      throw e
+    }
     // `detail` es donde la API pone el motivo; sin él, al menos el status
-    throw new Error(`Higgsfield respondió ${res.status}: ${json?.detail ?? JSON.stringify(json) ?? res.statusText}`)
+    throw new Error(`Higgsfield respondió ${res.status}: ${detalle || JSON.stringify(json) || res.statusText}`)
   }
   if (!json?.request_id) {
     throw new Error(`Higgsfield aceptó pero no devolvió request_id: ${JSON.stringify(json)}`)

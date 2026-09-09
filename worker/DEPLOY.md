@@ -55,8 +55,22 @@ La compilación no necesita ninguna. **La generación de video sí**, y sin ella
 | `SUPABASE_SERVICE_ROLE_KEY` | Llave de **servicio** (no la anónima) | Supabase → Settings → API. **Secreta: nunca al repo ni al bundle** |
 | `HIGGSFIELD_KEY_ID` | Id de la llave de API | Higgsfield Cloud → API keys |
 | `HIGGSFIELD_KEY_SECRET` | Secreto de la llave | Higgsfield Cloud → API keys |
-| `HIGGSFIELD_ENDPOINT` | Modelo, opcional | Por defecto `/bytedance/seedance/v1/lite/image-to-video`. Alternativas en `higgsfield.js` (`/veo3.1/image-to-video`, Kling…) |
+| `HIGGSFIELD_ENDPOINT` | Modelo, opcional | Por defecto `/minimax/hailuo-02/standard/image-to-video`. **Antes de cambiarlo, corre `node --env-file=.env modelos.js`**: el catálogo documentado NO es el que tu plan habilita |
 | `HIGGSFIELD_DURACION` | Segundos, opcional | Por defecto 6 |
+
+## Qué modelos puede usar la cuenta
+
+```bash
+cd worker && node --env-file=.env modelos.js
+```
+
+No cuesta nada: manda un cuerpo vacío a cada ruta y la API resuelve el modelo
+antes de validar, así que nunca arranca una generación.
+
+Verificado el 9 sep 2026: **Seedance devuelve `model_not_found` y Veo 3.1
+`model_disabled`**, aunque los dos estén documentados. Disponibles: MiniMax
+Hailuo (02 y 2.3), Kling (2.1 y 2.5) y Wan 2.5. Si el script dice
+`SIN SALDO`, las llaves están bien y falta recargar en higgsfield.ai.
 
 Por qué la llave de servicio vive aquí y no en el cliente: reservar créditos
 en nombre de un usuario y escribir `generaciones` son cosas que el cliente no

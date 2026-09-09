@@ -548,3 +548,26 @@ O sea, ese tatuaje está en el extremo bajo de lo ACEPTABLE, y con poca luz se c
 **Riesgos:** el flujo completo no se ha ejecutado de punta a punta con llaves reales; la calidad del video de Seedance lite sobre piel es hipótesis; el prompt pide fondo verde pero ningún modelo respeta el color exacto (la capa de video lo mide, ver croma-video-ar); `RecuerdoForm` no reduce la foto y una de 12 MP viaja entera al Storage y a Higgsfield.
 
 **Implementación:** migración 009 (`generaciones`, `tattoos.video_url`, `reservar_credito_generacion`, `reembolsar_generacion`, bucket `videos`), `worker/higgsfield.js`, `worker/generacion.js`, `worker/supabase-admin.js`, `POST /generar`, `lib/generacion.js`, `EleccionContenido`, `RecuerdoForm`, `GeneracionStatus`, y el recableado de `Activate` (compilar → veredicto → **elegir contenido** → recuerdo | catálogo).
+
+## [2026-09-09] El catálogo documentado no es el que la cuenta habilita
+**Context:** Con las llaves de Higgsfield ya puestas, se fue a comprobar si la cuenta tenía saldo. La primera petición real —Seedance lite, el modelo que se había configurado por defecto— devolvió `404 model_not_found`.
+
+**Lo que estaba mal, y de dónde vino:** los perfiles de `higgsfield.js` se escribieron desde un **resumen** del OpenAPI, no del archivo. Al bajar el `openapi.json` de verdad, la ruta existía y el cuerpo coincidía campo por campo con el esquema. El 404 no era la petición: **la cuenta no tiene ese modelo**. Peor: el respaldo configurado, Veo 3.1, devuelve `503 model_disabled`. Los dos caminos estaban rotos y ninguno se habría detectado hasta la primera generación de un usuario real.
+
+**El descubrimiento que lo vuelve barato:** la API resuelve el modelo **antes** de validar el cuerpo. Un POST con `{}` distingue disponibilidad sin arrancar nada: `404` no disponible, `503` deshabilitado, `400`/`422` disponible, `403 not_enough_credits` disponible pero sin saldo. Cero costo.
+
+**Decision:** se agrega `worker/modelos.js`, que barre las rutas de imagen-a-video y dice cuáles sirven. Modelo por defecto pasa a `/minimax/hailuo-02/standard/image-to-video`. Los perfiles se reescriben desde el spec real.
+
+**Corrección de una afirmación anterior:** el 9 sep se escribió que "la API pública no expone MiniMax". **Es falso** — expone Hailuo-02 y 2.3, y son justo los que esta cuenta sí puede usar. Aquello salió del mismo resumen de segunda mano.
+
+**Lo que el barrido devolvió (9 sep 2026):** disponibles MiniMax Hailuo-02 (standard y pro), Hailuo-2.3 (fast, standard, pro), Kling 2.1 (standard, pro, master), Kling 2.5-turbo (standard, pro) y Wan 2.5 — once en total. No disponibles: Seedance (lite y pro) y Sora 2. Deshabilitados: Veo 3.1 y Veo 3.1 fast.
+
+**Diferencias de esquema que obligan a un perfil por familia:** MiniMax usa duración en enum de enteros `{6,10}` y resolución `"768P"`; Kling `{5,10}` con `cfg_scale`; Veo la duración como **cadena** `{"4","6","8"}` y exige `generate_audio`. Y **ni MiniMax ni Kling aceptan `aspect_ratio`**: heredan la proporción de la foto de entrada, así que la vertical no se puede dar por hecha en el perfil — sale de lo que suba el usuario.
+
+**`prompt_optimizer: false` en MiniMax.** Por defecto reescribe el prompt, y ahí se pierde la instrucción del fondo verde plano de la que depende todo el recorte de croma. Un prompt literal vale más que uno bonito con fondo de bosque.
+
+**Fallos de cuenta separados de fallos de generación.** `not_enough_credits`, `model_not_found` y `model_disabled` se marcan `esDeCuenta`: el crédito del usuario se devuelve igual, pero en los registros sale "REVISAR LA CUENTA" y al usuario se le dice "no está disponible en este momento, no se te cobró" en vez de insinuarle que su foto estuvo mal.
+
+**Estado del saldo:** `403 not_enough_credits`. Las llaves son válidas (un status de id inexistente devuelve `404`, no `401`) y no se ha podido generar nada todavía. Falta que Richard recargue.
+
+**Verificado, no supuesto:** las llaves NO se filtran al bundle — Vite solo expone lo prefijado con `VITE_`, comprobado con grep contra `dist/`.
