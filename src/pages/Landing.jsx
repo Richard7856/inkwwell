@@ -87,7 +87,9 @@ const ES = {
   soy: '¿Quién eres?',
   persona: 'Tengo tatuajes',
   artista: 'Soy tatuador o tengo estudio',
-  beneficioTitulo: 'Qué recibes por apuntarte',
+  // Deja claro por qué el botón cambia: no es una lista, es el alta de verdad
+  artistaNota: 'Los estudios no se apuntan a la lista: se registran y salen con su código listo.',
+  beneficioTitulo: { persona: 'Qué recibes por apuntarte', artista: 'Qué recibes al registrar tu estudio' },
   beneficios: {
     persona: [
       'Entras antes que el público general.',
@@ -101,7 +103,7 @@ const ES = {
       'Sin costo y sin exclusividad.',
     ],
   },
-  ciudad: 'Ciudad (opcional)',
+  irAEstudios: 'Registrar mi estudio ↓',
   enviando: 'Guardando...',
   gracias: 'Listo, quedas dentro',
   graciasDetalle: 'Te escribimos a {email} en cuanto abramos. No mandamos nada más.',
@@ -164,7 +166,8 @@ const EN = {
   soy: 'Who are you?',
   persona: 'I have tattoos',
   artista: 'I’m a tattoo artist or run a studio',
-  beneficioTitulo: 'What you get for signing up',
+  artistaNota: 'Studios don’t join the list: they register and walk away with their code.',
+  beneficioTitulo: { persona: 'What you get for joining', artista: 'What you get for registering your studio' },
   beneficios: {
     persona: [
       'You get in before the general public.',
@@ -178,7 +181,7 @@ const EN = {
       'No cost, no exclusivity.',
     ],
   },
-  ciudad: 'City (optional)',
+  irAEstudios: 'Register my studio ↓',
   enviando: 'Saving...',
   gracias: 'You’re in',
   graciasDetalle: 'We’ll write to {email} the moment we open. Nothing else.',
@@ -206,7 +209,6 @@ export default function Landing() {
 
   const [email, setEmail] = useState('')
   const [perfil, setPerfil] = useState('persona')
-  const [ciudad, setCiudad] = useState('')
   const [estado, setEstado] = useState('inicial')   // inicial | enviando | listo
   const [yaEstaba, setYaEstaba] = useState(false)
   const [error, setError] = useState('')
@@ -216,7 +218,7 @@ export default function Landing() {
     setError('')
     setEstado('enviando')
     try {
-      const { yaEstaba: repetido } = await inscribirEnLista({ email, perfil, ciudad })
+      const { yaEstaba: repetido } = await inscribirEnLista({ email, perfil })
       setYaEstaba(repetido)
       setEstado('listo')
     } catch (err) {
@@ -282,17 +284,22 @@ export default function Landing() {
             </div>
           ) : (
             <form onSubmit={enviar} className="flex flex-col gap-3">
-              <input
-                type="email"
-                inputMode="email"
-                autoComplete="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder={t('tu@correo.com')}
-                className="w-full py-4 px-4 rounded-2xl bg-white border border-black/15
-                           text-black placeholder-neutral-400 focus:outline-none focus:border-realidad"
-              />
+              {/* El correo se pide DESPUÉS de saber quién es: a un estudio se le
+                  pide abajo, junto con su nombre y su código, y pedírselo dos
+                  veces es la clase de detalle que hace dudar de un producto. */}
+              {perfil === 'persona' && (
+                <input
+                  type="email"
+                  inputMode="email"
+                  autoComplete="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder={t('tu@correo.com')}
+                  className="w-full py-4 px-4 rounded-2xl bg-white border border-black/15
+                             text-black placeholder-neutral-400 focus:outline-none focus:border-realidad"
+                />
+              )}
 
               <p className="text-neutral-500 text-xs mt-1">{c.soy}</p>
               <div className="grid grid-cols-1 gap-2">
@@ -304,6 +311,10 @@ export default function Landing() {
                 </Opcion>
               </div>
 
+              {perfil === 'artista' && (
+                <p className="text-neutral-500 text-xs -mt-1">{c.artistaNota}</p>
+              )}
+
               {/*
                 Los beneficios cambian con la selección.
 
@@ -314,7 +325,7 @@ export default function Landing() {
               */}
               <div className="bg-black/[0.03] border border-black/10 rounded-xl p-4">
                 <p className="text-[11px] uppercase tracking-wider text-neutral-500 mb-2">
-                  {c.beneficioTitulo}
+                  {c.beneficioTitulo[perfil]}
                 </p>
                 <ul className="text-neutral-700 text-sm leading-relaxed space-y-1.5">
                   {c.beneficios[perfil].map((b) => (
@@ -325,28 +336,40 @@ export default function Landing() {
                 </ul>
               </div>
 
-              {/* La ciudad solo se pide a estudios: para una persona es fricción
-                  sin propósito, pero decide en qué plaza arrancar el canal. */}
-              {perfil === 'artista' && (
-                <input
-                  type="text"
-                  value={ciudad}
-                  onChange={(e) => setCiudad(e.target.value)}
-                  placeholder={c.ciudad}
-                  className="w-full py-4 px-4 rounded-2xl bg-white border border-black/15
-                             text-black placeholder-neutral-400 focus:outline-none focus:border-realidad"
-                />
-              )}
+              {/*
+                Un estudio NO se apunta a la lista de espera: se registra abajo y
+                sale con su código funcionando en ese momento.
 
-              <button
-                type="submit"
-                disabled={estado === 'enviando' || !email}
-                className="w-full py-4 rounded-2xl bg-tinta text-white font-semibold
-                           disabled:opacity-30 transition-opacity hover:opacity-85"
-              >
-                {estado === 'enviando' ? c.enviando : c.cta}
-              </button>
-              <p className="text-neutral-500 text-xs text-center">{c.legalNota}</p>
+                Este formulario nació el 7 de septiembre, cuando el programa de
+                estudios todavía no existía y lo único que se podía ofrecer era
+                "te avisamos". Desde que existe el alta real, dejar que un
+                tatuador terminara aquí lo interceptaba antes de llegar a lo
+                bueno y le daba una promesa en vez de una herramienta.
+
+                La elección se conserva porque los beneficios de arriba son lo
+                que lo convence; lo que cambia es a dónde lo lleva el botón.
+              */}
+              {perfil === 'artista' ? (
+                <a
+                  href="#estudios"
+                  className="w-full py-4 rounded-2xl bg-tinta text-white font-semibold
+                             text-center transition-opacity hover:opacity-85"
+                >
+                  {c.irAEstudios}
+                </a>
+              ) : (
+                <>
+                  <button
+                    type="submit"
+                    disabled={estado === 'enviando' || !email}
+                    className="w-full py-4 rounded-2xl bg-tinta text-white font-semibold
+                               disabled:opacity-30 transition-opacity hover:opacity-85"
+                  >
+                    {estado === 'enviando' ? c.enviando : c.cta}
+                  </button>
+                  <p className="text-neutral-500 text-xs text-center">{c.legalNota}</p>
+                </>
+              )}
               {error && <p className="text-red-400 text-sm text-center">{error}</p>}
             </form>
           )}
@@ -403,7 +426,8 @@ export default function Landing() {
           <Tinta src="/tinta/03-esquina.png"
                  className="-right-52 -top-10 w-[520px] h-[350px] opacity-[0.11] rotate-[14deg]" />
         </div>
-        <section className="mt-14 bg-white border border-black/10 rounded-2xl p-6 shadow-sm relative">
+        <section id="estudios"
+                 className="mt-14 bg-white border border-black/10 rounded-2xl p-6 shadow-sm relative scroll-mt-6">
           <h2 className="text-lg font-semibold mb-3">{c.artistasTitulo}</h2>
           <p className="text-neutral-600 text-sm leading-relaxed">{c.artistasTexto}</p>
           <FormularioEstudio c={c} />
