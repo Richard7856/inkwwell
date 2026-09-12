@@ -1,113 +1,168 @@
 # Dónde retomar
 
-> Escrito al cerrar la sesión del 7 de septiembre de 2026.
-> Para el contexto completo ver `SHIPATON.md` y `DECISIONS.md`.
+> **Actualizado el 12 de septiembre de 2026.** Reescrito completo: la versión
+> anterior acumulaba parches y mandaba a perseguir cosas ya resueltas (decía que
+> la cuenta de servicio "sigue sin arrancar" cuando estaba validada).
+>
+> Si vienes de otra máquina, primero `SETUP.md`. Contexto del sprint en
+> `SHIPATON.md`; el porqué de cada decisión técnica en `DECISIONS.md`.
+
+---
+
+## La fecha que ordena todo: lanzamiento público el 17 de septiembre
+
+**La app está publicada desde el 8 sep, pero no está lanzada.** Son dos cosas
+distintas y la diferencia es deliberada (decisión de Richard):
+
+- Publicada en Play = requisito del concurso, cumplido el día 2.
+- **Lanzada = cuando se anuncia y se empuja**, en un día que Richard tenga libre
+  para atender lo que falle.
+
+**Por qué el 17:** es después de la quincena del 15, cuando la gente tiene
+dinero. Se evitó el 15-16 a propósito — son el Grito y la Independencia: hay
+dinero y tiempo libre, pero la atención está con la familia, no en instalar
+apps.
+
+**Por qué la landing sigue diciendo "avísame":** la lista de espera junta
+demanda antes, para que la gente aparte dinero. No es un resto viejo, es la
+herramienta del plan.
+
+**Los estudios no esperan a la quincena.** Son negocios, no consumidores
+esperando su pago: se registran desde ya, y cada uno llega con cartera propia.
+
+### ⚠️ La cuenta que aprieta
+
+**La v4 tiene que estar PUBLICADA antes del 17.** La revisión de Play tardó ~1
+día. Hay que **entregarla a más tardar el 14-15**. Hoy es 12.
+
+---
 
 ## Lo primero, en orden
 
-1. **Catálogo con video desde la base.** Hoy `demo=zero` tiene las rutas fijas en
-   `targetLoader.js`. Falta que `tattoos` acepte `video_url` y que el
-   `DesignPicker` ofrezca piezas de video. Es lo que convierte el demo en
-   producto.
+1. **Probar la generación de video de punta a punta.** Es el producto y nunca
+   se ha ejecutado con llaves reales. Necesita saldo en Higgsfield Cloud y la
+   `service_role` de Supabase en `worker/.env`. Con eso se corre en local, sin
+   teléfono: worker + token real de la cuenta del revisor + su crédito.
+   Ahí sale **el costo real por video**, el último número que falta para
+   cerrar precios.
+2. **Productos en Play Console** — ver "Bloqueado por Richard".
+3. **Compilar v4** (`versionCode` 4), verificar con grep que la llave de
+   RevenueCat quedó dentro, **entregar a Play**.
+4. **Probar en el teléfono** lo que no se puede probar sin él: la compra por
+   Play y la generación desde la app. El canje, `ha_comprado` y la atribución
+   ya se probaron con sesión real por PostgREST (9 sep).
 
-2. **Perfil, mis tatuajes y liga compartible.** Cierra el loop de crecimiento.
-   La infraestructura ya existe (`share_slug`, `getMyTattoos`, `ensureProfile`),
-   falta la fusión de `.mind` en el worker, escribir `users.mind_url`, asignar
-   `target_index` y la ruta `/u/:slug`.
+---
 
-## Lo primero: probar en el teléfono lo que se construyó a ciegas
+## Decisiones ABIERTAS — no están resueltas
 
-Todo lo del 8 sep se verificó en navegador y en la base, pero **nada del cobro
-se ha ejecutado con una sesión real en Android**. En cuanto existan los
-productos en Play y la Offering en RevenueCat:
+No las tomes como decididas. Quedaron propuestas el 9-12 sep sin respuesta final.
 
-1. Compilar versionCode 4 (`.env` ya tiene la llave; verificar con grep antes
-   de subir), instalar, entrar.
-2. `/creditos`: canjear `SHIPATON` → el saldo sube a 1. Debe aparecer el
-   paquete "Solo tu primera vez" a 12.50.
-3. Comprar `creditos_primero` con una tarjeta de prueba de Play → el saldo sube
-   y el paquete de entrada desaparece.
-4. Activar un tatuaje con un código de estudio puesto → `users.estudio_id`
-   queda escrito.
-   (El canje, `ha_comprado` y la atribución ya se probaron con sesión real por
-   PostgREST el 9 sep; en el teléfono lo que falta de verdad es la COMPRA por
-   Play y la generación.)
-5. **Generar un video**: en la activación elegir "Anima tu recuerdo", subir la
-   foto de Zero y una historia. Debe aparecer la espera, y en 1-3 min el video
-   sobre el tatuaje al escanear. Si falla, el crédito debe volver solo (ver
-   `credit_ledger`, motivo `reembolso`).
+**1. La oferta de la lista de espera.**
+Richard propuso "50% de descuento en el primer tatuaje" para quien se registre.
+Problema: **el primer crédito a $12.50 ya es el precio de todos**, sin
+registrarse. Ofrecerlo a la lista no le da nada, y presentar el precio normal
+como descuento exclusivo se lee como descuento inventado (PROFECO).
+Propuesta: **primer video gratis para la lista**, por código promocional topado
+(`codigos_promo.usos_max` ya existe). Pendiente.
 
-Si algo de eso falla, es el primer bug del cobro y va antes que cualquier otra cosa.
+**2. La comisión de estudios fundadores.**
+Richard propuso "30% por un año en vez de 20%". Lo construido es distinto:
+**los primeros 20 estudios, permanente** (`cupo_fundadores()` devuelve 20). Se
+recomendó conservarlo — "primeros 20" urge y "un año" no; y al mes 13 habría
+que bajarle la comisión a alguien con quien se construyó un año de relación.
+Propuesta intermedia: **"30% para los primeros 20 que entren antes del 17 de
+septiembre", permanente.** Pendiente.
+
+**3. Publicar el precio en la landing.** Recomendación: **todavía no**, hasta
+medir el costo por video. Subir un precio anunciado es peor que no anunciarlo.
+
+**4. Cambios propuestos a la landing** (pendientes de aprobar):
+- La fecha del 17 en el héroe — hoy no aparece por ningún lado.
+- La oferta de la lista (punto 1).
+- La fecha límite para estudios (punto 2).
+- **Una segunda invitación al final.** El formulario está arriba; después
+  vienen las cuatro secciones que de verdad venden, y al terminarlas no hay
+  dónde apuntarse.
+
+**5. Interruptor de degradación** (propuesto, no construido): que el worker
+sepa si el generador está disponible y la app deje de ofrecer "Anima tu
+recuerdo" cuando no puede cumplirlo. Seguro contra quedarse sin saldo en plena
+semana del concurso.
+
+Lenguaje: **"tu primer video"**, no "tu primer tatuaje" — no vendemos tatuajes.
+
+---
 
 ## Bloqueado por Richard
 
-- **Variables del worker en Railway** (Variables): `SUPABASE_URL`,
-  `SUPABASE_SERVICE_ROLE_KEY` (la de servicio, NO la anónima),
-  `HIGGSFIELD_KEY_ID`, `HIGGSFIELD_KEY_SECRET`. Sin ellas `/generar` responde
-  503 `no_configurado` y todo lo demás del worker sigue igual. Detalle en
-  `worker/DEPLOY.md`.
-- **El costo real por video en la API pública.** Los $0.60 cotizados eran del
-  catálogo del panel (MiniMax), que la API no expone. Se sabe al hacer la
-  primera generación real; el endpoint se cambia por `HIGGSFIELD_ENDPOINT`.
+| | Estado |
+|---|---|
+| Saldo en **Higgsfield Cloud** | Sin saldo al 9 sep (`403 not_enough_credits`). Es una cuenta distinta del plan Plus del panel |
+| `SUPABASE_SERVICE_ROLE_KEY` | Falta. Va en `worker/.env` y en Railway |
+| Las 4 variables de generación en **Railway** | Sin confirmar. Detalle en `worker/DEPLOY.md` |
+| Productos en Play: `creditos_primero`, `creditos_1`, `creditos_3`, `creditos_5` | Sin crear. Menú: Monetizar con Play → Productos → **Productos únicos** |
+| Productos dados de alta en RevenueCat **y metidos en una Offering** | Sin Offering, `getOfferings()` devuelve vacío sin error |
+| Pegar la ficha nueva (`brand/textos-ficha.md`) | Sin confirmar |
+| **Corregir la declaración de datos** en Play | "Fotos" pasa a **compartido** (Higgsfield es tercero real) y se agrega **historial de compras** |
+| **Verificación de identidad de desarrollador** | ⚠️ Vence el **30 sep**, el mismo día que el concurso. Si no, Google retira la app |
+| **Respaldo de la llave de firma** | ⬜ Solo existe en una máquina. Ver `SETUP.md` |
 
-- **Redesplegar el worker en Railway.** El analizador ya está conectado al flujo
-  de activación, pero las métricas las produce el worker: hasta que el
-  contenedor tenga el código nuevo, el cliente recibe métricas nulas, las trata
-  como "no medido" y deja pasar sin advertir. No falla nada a la vista — la
-  función simplemente no existe. Es un `git push` y esperar el build.
-- **Cuenta de servicio de Google Cloud** — tarda ~36h y sigue sin arrancar.
-  Bloquea TODO el cobro. Es lo más urgente de su lado.
-- Productos de créditos en Play Console, y sus identificadores exactos.
-- La llave pública de RevenueCat → `VITE_REVENUECAT_ANDROID_KEY`.
-- Resultado de la revisión de Play.
-- Créditos de Higgsfield (quedan 12.5; un video del modelo bueno cuesta 22.5).
-- **La prueba de Higgsfield cobra sola al tercer día** si no se cancela.
+---
 
-## Cosas que ya están listas y NO hay que rehacer
+## Listo — NO rehacer
 
-- Analizador conectado al flujo: compila y mide antes de elegir diseño, advierte
-  sin bloquear, y guarda el veredicto en `tattoos` (migración 007, ya aplicada).
-- Marca en la app (9 sep): **todas** las pantallas usan `src/components/ui/`.
-  No volver a escribir `bg-white text-black rounded-full` a mano: es `<Boton>`
-  (variantes primario / secundario / peligro / enlace).
-- `Profile.jsx` ya es real: lista los tatuajes con su estado (video listo,
-  modelo del catálogo, esperando video) y su liga copiable. Era un placeholder,
-  y con la generación funcionando se volvió un hueco: quien generaba un video y
-  cerraba la app no podía volver a encontrar su tatuaje.
-- Esquema de precio y canal decidido y escrito en DECISIONS.md (8 sep). No
-  reabrir sin datos: la primera transacción real es el dato que falta.
-- Estudios, atribución y códigos promo: migración 008, `lib/estudios.js`,
-  `lib/promo.js`, formulario en la landing, `?estudio=` en cualquier ruta.
-- Código `SHIPATON` (1 crédito, 200 usos) ya existe en `codigos_promo`. Va en
-  el envío de Devpost.
+- **v3 publicada en Play** (8 sep). Cuenta de servicio de Google Cloud validada.
+- **RevenueCat**: proyecto INKAR, credenciales validadas, llave pública de
+  Android en `.env` y horneada en el bundle.
+- **Analizador vivo en Railway**, conectado a la activación, veredicto guardado
+  en `tattoos` (migración 007).
+- **Generación de video construida** (9 sep): worker `/generar`, tabla
+  `generaciones`, reserva con cerrojo y reembolso automático, reanudación tras
+  reinicio (migración 009). Sin probar con llaves reales.
+- **Modelo por defecto: MiniMax Hailuo-02 estándar.** Seedance y Veo NO están
+  disponibles en esta cuenta. `worker/modelos.js` dice cuáles sí, sin gastar.
+- **Flujo de compra**, canje de códigos, primer crédito a mitad de precio,
+  estudios con atribución permanente (migración 008). `SHIPATON` = 1 crédito,
+  200 usos.
+- **Marca en todas las pantallas**: todo sale de `src/components/ui/`.
+  `<Boton>` con variantes primario / secundario / peligro / enlace.
+- **Perfil real** (`/profile`): tatuajes con estado y liga copiable.
+- **Política de privacidad** declara a Higgsfield y las compras (9 sep).
+- **Ficha de Play reescrita** en dos idiomas, con instrucciones del revisor.
+- **Landing**: el formulario de arriba ya no intercepta estudios (12 sep).
+- Borrado de cuenta, libro mayor de créditos, capa de video con croma.
 
-- Borrado de cuenta, política de privacidad, ambas desplegadas y probadas.
-- Créditos: libro mayor, consumo con cerrojo, webhook. Las tres propiedades de
-  seguridad verificadas contra producción.
-- Capa de video 2D con recorte de croma, probada sobre piel real.
-- Identidad de marca completa y generador de assets (`scripts/generar-marca.py`).
-- Landing bilingüe con lista de espera, funcionando en producción.
-- Textos de la ficha de Play en los dos idiomas (`brand/textos-ficha.md`).
+---
 
 ## Trampas registradas, para no repetirlas
 
+- **El catálogo documentado de Higgsfield NO es el que tu plan habilita.**
+  Seedance da 404 y Veo 503 aunque estén en el spec. Antes de cambiar
+  `HIGGSFIELD_ENDPOINT`: `cd worker && node --env-file=.env modelos.js`.
+- **Los perfiles de modelo se escriben desde `openapi.json`, no desde un
+  resumen.** La primera versión se escribió de un resumen y salió mal.
+- **Higgsfield Cloud (API) y el plan Plus del panel son cuentas distintas.**
+  Las llaves no gastan los créditos del panel.
+- **Capacitor empaqueta los assets** (`webDir: dist`): desplegar a Vercel NO
+  actualiza la app instalada. Todo lo que deba llegar al teléfono exige build,
+  `versionCode` nuevo y otra revisión.
+- **La llave de RevenueCat se hornea al compilar.** Tiene que estar en `.env`
+  ANTES del build; ponerla en Vercel no sirve para Android.
 - El `.mind` y el video **deben servirse con su tipo MIME correcto**; si el
-  servidor devuelve el index.html, MindAR revienta con un error de msgpack que no
-  menciona la URL.
+  servidor devuelve el index.html, MindAR revienta con un error de msgpack que
+  no menciona la URL.
 - Las rutas del SPA devuelven **200 aunque la página no exista**: verificar con
   navegador, nunca con `curl` a secas.
-- Los generadores de video **no respetan el color de fondo pedido**.
+- Los generadores de video **no respetan el color de fondo pedido**; la capa de
+  video mide el color real. `prompt_optimizer` va en `false` o se pierde el verde.
 - Three 0.151 usa `encodings_fragment`, no `colorspace_fragment`.
-- `versionCode` sube en cada entrega a Play.
-- El dev server corre en **HTTPS** con certificado autofirmado: un navegador
-  automatizado lo rechaza. Para revisiones visuales, `npm run build` y servir
-  `dist` por HTTP (la configuración `dist-http` de `.claude/launch.json`).
+- El dev server corre en **HTTPS** autofirmado y un navegador automatizado lo
+  rechaza. Para revisiones visuales: `npm run build` y servir `dist` por HTTP.
 - **Las funciones con `auth.uid()` se prueban con un JWT real por PostgREST**,
-  no simulando sesión por SQL (eso no atraviesa `security definer`). La cuenta
-  del revisor de Play (`prueba@inkar.app`, en `brand/textos-ficha.md`) abre
-  sesión por `POST /auth/v1/token?grant_type=password` y con ese token
-  `POST /rest/v1/rpc/<función>` ejercita todo sin teléfono. Así se verificaron
-  canje, `ha_comprado` y atribución el 9 sep.
-- Los textos que redacta el **worker** no pasan por el diccionario del cliente.
-  Todo texto de cara al usuario que nazca ahí necesita un `code` estable, o
-  llega en español a un usuario en inglés.
+  no simulando sesión por SQL. La cuenta del revisor (`prueba@inkar.app`) abre
+  sesión por `POST /auth/v1/token?grant_type=password`.
+- Los textos que redacta el **worker** no pasan por el diccionario del cliente:
+  necesitan un `code` estable o llegan sin traducir.
+- **Las capturas del navegador emulado muestran franjas negras** a los lados:
+  es el capturador, no la app. Medir el ancho con JS antes de "arreglar" nada.

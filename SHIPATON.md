@@ -3,6 +3,21 @@
 > Documento operativo del sprint. Para el contexto general del producto ver
 > `CLAUDE.md`; para el historial de decisiones técnicas, `DECISIONS.md`.
 
+## Lanzamiento público: 17 de septiembre
+
+**Publicada ≠ lanzada.** La v3 está en Play desde el 8 sep (requisito del
+concurso, cumplido el día 2). El **lanzamiento** —anunciar y empujar— es el
+**17 de septiembre**, decidido por Richard:
+
+- Después de la **quincena del 15**, cuando la gente tiene dinero.
+- **No el 15-16**: son el Grito y la Independencia. Hay dinero y tiempo libre,
+  pero la atención está en otro lado.
+- La **lista de espera** de la landing junta demanda antes, para que la gente
+  aparte dinero. Es deliberada.
+- **Los estudios se registran desde ya**: no esperan a la quincena.
+
+Consecuencia dura: **la v4 tiene que estar publicada antes del 17.**
+
 ## Meta
 
 Competir en el **RevenueCat Shipaton 2026** con InkAR, publicando en Google
@@ -139,7 +154,8 @@ devolver el dinero después.
 | La segunda revisión (versionCode 4, la que trae el cobro) llega tarde | **Crítico** — sin ella no hay facturación y no hay premio | La primera revisión tardó ~1 día: la cuenta de 2018 tiene revisión rápida. Aun así, entregar el 4 en cuanto exista la llave, no acumular cambios | ⬜ |
 | Tatuajes que trackean mal generan reembolsos | Alto para la reputación | El analizador advierte **antes** de elegir diseño; se guarda el veredicto para calibrar | 🟡 hecho en código, pendiente redesplegar el worker |
 | Límite de correos de Supabase corta el registro | Medio | SMTP propio (Resend/SendGrid) antes del lanzamiento | ⬜ |
-| Perder la llave de subida | Alto | Respaldo en dos lugares distintos. Con Play App Signing es recuperable pidiéndoselo a Google, pero tarda días | ⬜ |
+| Perder la llave de subida | Alto | Respaldo en dos lugares distintos. Con Play App Signing es recuperable pidiéndoselo a Google, pero tarda días. **Vive en `~/inkar-release.jks`, fuera del proyecto y de git, en una sola máquina.** Ver `SETUP.md` | ⬜ |
+| La v4 no queda publicada antes del lanzamiento del 17 | **Crítico** — se lanzaría la v3, sin generación ni cobro | Entregar a Play el 14-15 a más tardar; la revisión tardó ~1 día | ⬜ |
 
 ## Decisiones tomadas
 
