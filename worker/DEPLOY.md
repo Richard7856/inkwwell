@@ -69,8 +69,12 @@ antes de validar, así que nunca arranca una generación.
 
 Verificado el 9 sep 2026: **Seedance devuelve `model_not_found` y Veo 3.1
 `model_disabled`**, aunque los dos estén documentados. Disponibles: MiniMax
-Hailuo (02 y 2.3), Kling (2.1 y 2.5) y Wan 2.5. Si el script dice
-`SIN SALDO`, las llaves están bien y falta recargar en higgsfield.ai.
+Hailuo (02 y 2.3), Kling (2.1 y 2.5) y Wan 2.5. El script también muestra el
+**costo real por video** en USD (vía `POST /estimate<ruta>`, gratis).
+
+**Lo que el script NO puede decir es si hay saldo:** la API valida el cuerpo
+antes de revisar créditos, así que una cuenta vacía también sale "disponible".
+El saldo solo lo confirma un envío real (`403 not_enough_credits`).
 
 Por qué la llave de servicio vive aquí y no en el cliente: reservar créditos
 en nombre de un usuario y escribir `generaciones` son cosas que el cliente no
