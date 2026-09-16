@@ -1,13 +1,18 @@
 # Sprint Shipaton 2026
 
-> Documento operativo del sprint. Para el contexto general del producto ver
-> `CLAUDE.md`; para el historial de decisiones técnicas, `DECISIONS.md`.
+> Documento operativo del sprint. Para el historial de decisiones técnicas ver
+> `DECISIONS.md`; para dónde retomar, `PROXIMA-SESION.md`.
+>
+> ⚠️ `CLAUDE.md` (el contexto general del producto) vive en la carpeta **padre**,
+> fuera del repo. Una sesión en la nube solo clona el repo y por tanto **no
+> puede leerlo**. Está pendiente moverlo aquí adentro — ver `PROXIMA-SESION.md`.
 
-## Lanzamiento público: 17 de septiembre
+## Lanzamiento público: 18-19 de septiembre
 
 **Publicada ≠ lanzada.** La v3 está en Play desde el 8 sep (requisito del
-concurso, cumplido el día 2). El **lanzamiento** —anunciar y empujar— es el
-**17 de septiembre**, decidido por Richard:
+concurso, cumplido el día 2). El **lanzamiento** —anunciar y empujar— se fijó
+primero el **17 de septiembre** y se movió al **18-19** el 16 de septiembre.
+Las razones del 17 siguen valiendo para el 18-19:
 
 - Después de la **quincena del 15**, cuando la gente tiene dinero.
 - **No el 15-16**: son el Grito y la Independencia. Hay dinero y tiempo libre,
@@ -16,12 +21,16 @@ concurso, cumplido el día 2). El **lanzamiento** —anunciar y empujar— es el
   aparte dinero. Es deliberada.
 - **Los estudios se registran desde ya**: no esperan a la quincena.
 
-Consecuencia dura: **la v4 tiene que estar publicada antes del 17.**
+Consecuencia dura: **la v4 tiene que estar publicada antes del anuncio.**
 
-> **Al 15 de septiembre eso no se cumplió.** La v4 sigue sin compilarse y falta
-> recargar Higgsfield y la `service_role`. La fecha está **en revisión**: o se
-> desbloquea todo de inmediato, o se mueve al 18-19, que conserva la quincena y
-> da un día de colchón. Sin decisión de Richard. Ver `PROXIMA-SESION.md`.
+> **Al 16 de septiembre la v4 no existía** (`versionCode` sigue en 3) y la
+> revisión de Play tarda cerca de un día, así que el 17 dejó de ser posible. Se
+> movió al **18-19**: conserva la quincena y da un día de colchón.
+>
+> **Pero la fecha del anuncio no es lo que urge.** La v3 no puede cobrar, así
+> que la facturación por RevenueCat —la métrica que pondera el premio— está en
+> cero hasta que la v4 esté publicada. La v4 entra a revisión lo antes posible;
+> el anuncio va después. Ver `PROXIMA-SESION.md`.
 
 ## Meta
 

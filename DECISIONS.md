@@ -100,7 +100,7 @@ El veredicto lo determina la métrica MÁS DÉBIL, no el promedio: un target con
 - Rate limiting: los endpoints están abiertos sin auth. Aceptable en Phase 1, no en producción.
 
 ## [2026-09-07] Multi-tatuaje: un perfil, varios tatuajes en una sesión
-**Context:** El escaneo requería un link por tatuaje (`?tattoo=<uuid>`), atajo de Phase 1 que contradecía el Flujo B del CLAUDE.md ("MindAR reconoce la imagen → consulta Supabase") y mataba la viralidad: para ver un tatuaje había que recibir su link específico.
+**Context:** El escaneo requería un link por tatuaje (`?tattoo=<uuid>`), atajo de Phase 1 que contradecía el Flujo B del `CLAUDE.md` (que vive en la carpeta padre, fuera del repo) ("MindAR reconoce la imagen → consulta Supabase") y mataba la viralidad: para ver un tatuaje había que recibir su link específico.
 
 **Decision:** Un `.mind` contiene varios image targets, uno por tatuaje de la persona. Cada target tiene su ancla y su modelo 3D. Un solo link por PERSONA, no por tatuaje.
 

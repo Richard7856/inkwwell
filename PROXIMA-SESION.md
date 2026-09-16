@@ -1,6 +1,6 @@
 # Dónde retomar
 
-> **Actualizado el 15 de septiembre de 2026, al cerrar la sesión.**
+> **Actualizado el 16 de septiembre de 2026.**
 >
 > Si vienes de otra máquina, primero `SETUP.md`. El contexto del sprint está en
 > `SHIPATON.md`; el porqué de cada decisión técnica, en `DECISIONS.md`.
@@ -12,23 +12,26 @@
 
 ## ⚠️ Lo primero que tiene que leer una sesión nueva
 
-**El lanzamiento estaba planeado para el 17 de septiembre y la v4 no existe.**
+**El lanzamiento se movió al 18-19 de septiembre** (decidido por Richard el 16
+sep). Conserva la quincena y da un día de colchón. El 17 ya no era posible: la
+v4 no existía esa mañana y la revisión de Play tarda cerca de un día.
 
-Sigue en `versionCode` 3, sin compilar ni entregar. La revisión de Play tarda
-cerca de un día. **Hay una decisión pendiente de Richard y nada avanza sin
-ella:** o arranca hoy mismo el desbloqueo completo, o se mueve la fecha al
-18-19 (la quincena sigue en el bolsillo y da un día de colchón).
-
-**No dar por hecho que eligió.** Se le planteó el 15 sep y no respondió.
+**Pero la fecha no es el problema.** La v3 publicada **no puede cobrar** —la
+llave de RevenueCat se horneó vacía y no hay pantalla de compra—, así que la
+métrica que pondera el concurso (facturación por RevenueCat) está en **cero y
+ahí se queda hasta que la v4 esté publicada**. Cada día sin v4 es un día de
+facturación imposible contra el 30 de septiembre. La v4 debe entrar a revisión
+lo antes físicamente posible; el anuncio puede ir después.
 
 ---
 
-## El estado real, verificado el 15 sep (no supuesto)
+## El estado real, verificado el 16 sep (no supuesto)
 
 | | |
 |---|---|
-| App en Play | ✅ v3 publicada desde el 8 sep |
-| inkar.app | ✅ responde 200 |
+| App en Play | ✅ v3 publicada desde el 8 sep — **no puede cobrar** |
+| `versionCode` | ⚠️ sigue en **3**. La v4 no existe |
+| inkar.app | ✅ 200 (redirige a `www.inkar.app`) |
 | Worker `/health` | ✅ 200, analizador vivo |
 | Worker `/generar` | ⚠️ **503 `no_configurado`** — Railway no tiene las llaves de generación |
 | `SUPABASE_SERVICE_ROLE_KEY` en `worker/.env` | ❌ falta |
@@ -43,7 +46,7 @@ ella:** o arranca hoy mismo el desbloqueo completo, o se mueve la fecha al
 - **0** estudios registrados
 - **1** persona en la lista de espera (Richard **no ha compartido la landing**;
   no es falta de interés)
-- **5** tatuajes, **0** medidos por el analizador, **0** con video
+- **5** tatuajes, **3** usuarios
 
 ---
 
@@ -74,54 +77,63 @@ Pendiente además revisar que no se esté cobrando el plan Plus sin usarlo.
 
 ## Lo primero, en orden
 
-1. **Decidir la fecha de lanzamiento** (ver arriba). Bloquea todo lo demás.
-2. **Recargar Higgsfield Cloud** y poner `SUPABASE_SERVICE_ROLE_KEY` en
-   `worker/.env`.
-3. **Probar la generación de punta a punta en local** — sin teléfono: worker +
+1. **Recargar Higgsfield Cloud** y poner `SUPABASE_SERVICE_ROLE_KEY` en
+   `worker/.env` y en Railway.
+2. **Probar la generación de punta a punta en local** — sin teléfono: worker +
    JWT real de la cuenta del revisor + su crédito. Es la primera vez que se
-   ejecutaría.
-4. **Productos en Play** y Offering en RevenueCat.
-5. **Compilar v4** (`versionCode` 4), verificar con grep que la llave de
+   ejecutaría. **Confirma además que el interruptor de degradación se enciende
+   de vuelta** al aceptarse el primer envío.
+3. **Productos en Play** y Offering en RevenueCat.
+4. **Compilar v4** (`versionCode` 4), verificar con grep que la llave de
    RevenueCat quedó horneada, entregar a Play.
-6. **Probar en el teléfono** lo único que exige teléfono: la compra por Play y
+5. **Probar en el teléfono** lo único que exige teléfono: la compra por Play y
    la generación desde la app.
+
+> **El paso 4 no depende del 1 ni del 2.** Las llaves de Higgsfield y la
+> `service_role` viven en el worker, no en el APK: se pueden arreglar mientras
+> Play revisa. Y desde el 16 sep, si el generador no está listo, la app **no
+> ofrece** "Anima tu recuerdo" en vez de mandar al usuario a chocar. Esperar a
+> tener todo resuelto antes de compilar cuesta días de revisión que no se
+> recuperan.
 
 ---
 
 ## Decisiones ABIERTAS — no darlas por tomadas
 
-**1. La fecha de lanzamiento.** 17 (original) contra 18-19 (recomendado, con
-colchón). Sin respuesta.
-
-**2. La oferta de la lista de espera.** Richard propuso "50% de descuento en el
+**1. La oferta de la lista de espera.** Richard propuso "50% de descuento en el
 primer tatuaje" para quien se registre. Problema: **el primer crédito a $12.50
 ya es el precio de todos**, así que a la lista no le daría nada, y presentar el
 precio normal como descuento exclusivo se lee como descuento inventado.
 Propuesta: **primer video gratis para la lista**, por código promocional topado
 (`codigos_promo.usos_max` ya existe). Sin respuesta.
 
-**3. La comisión de estudios fundadores.** Richard propuso "30% por un año". Lo
+**2. La comisión de estudios fundadores.** Richard propuso "30% por un año". Lo
 construido es **los primeros 20, permanente** (`cupo_fundadores()` = 20). Se
 recomendó conservarlo: "primeros 20" urge y "un año" no, y al mes 13 habría que
 bajarle la comisión a alguien con quien se construyó un año de relación.
 Propuesta intermedia: **"30% para los primeros 20 que entren antes del
 lanzamiento", permanente.** Sin respuesta.
 
-**4. Publicar el precio en la landing.** Ahora que el costo se conoce, ya se
+**3. Publicar el precio en la landing.** Ahora que el costo se conoce, ya se
 puede decidir. Recomendación previa: el mensaje que instala es "el primero va
 por nuestra cuenta"; la conversación del dinero va después de que vean el
 producto.
 
-**5. Cambios propuestos a la landing** (pendientes): la fecha en el héroe —hoy
+**4. Cambios propuestos a la landing** (pendientes): la fecha en el héroe —hoy
 no aparece por ningún lado—, la oferta de la lista, la fecha límite de estudios,
 y **una segunda invitación al final**: el formulario está arriba, y al terminar
 las cuatro secciones que de verdad venden no hay dónde apuntarse.
 
-**6. Interruptor de degradación** (propuesto, no construido): que la app deje de
-ofrecer "Anima tu recuerdo" cuando el generador no está disponible. Seguro
-contra quedarse sin saldo en plena semana del concurso.
-
 Lenguaje: **"tu primer video"**, no "tu primer tatuaje" — no vendemos tatuajes.
+
+---
+
+## Decisiones CERRADAS en la sesión del 16 sep
+
+- **Fecha de lanzamiento: 18-19 de septiembre.** Con la advertencia de arriba:
+  la v4 no espera al anuncio.
+- **Interruptor de degradación: construido.** Ver `DECISIONS.md` [2026-09-16].
+  Ya no es una propuesta.
 
 ---
 
@@ -136,9 +148,10 @@ Lenguaje: **"tu primer video"**, no "tu primer tatuaje" — no vendemos tatuajes
 | **Offering en RevenueCat** | Sin ella `getOfferings()` devuelve vacío sin error |
 | **Pegar la ficha nueva** | `brand/textos-ficha.md`, los dos idiomas |
 | **Corregir la declaración de datos en Play** | "Fotos" pasa a **compartido** (Higgsfield es tercero real) y se agrega **historial de compras** |
-| **Verificación de identidad de desarrollador** | ⚠️ Vence el **30 sep**, el mismo día que el concurso. Si no, Google retira la app |
+| **Verificación de identidad de desarrollador** | ⚠️ Vence el **30 sep**, el mismo día que el concurso. Si no, Google retira la app — y con ella la entrega. **No es trámite, es riesgo existencial: hacerlo esta semana** |
 | **Respaldo de la llave de firma** | ⬜ `~/inkar-release.jks` existe en una sola máquina. Ver `SETUP.md` |
 | **Compartir la landing** | La lista tiene 1 persona porque no se ha movido |
+| **Meter `CLAUDE.md` al repo** | Vive en la carpeta padre, fuera del repo. Las sesiones en la nube (Claude Code web) solo clonan el repo, así que **arrancan sin el contexto general del producto** y con referencias rotas. Ver abajo |
 
 ---
 
@@ -152,6 +165,8 @@ Lenguaje: **"tu primer video"**, no "tu primer tatuaje" — no vendemos tatuajes
 - **Generación de video construida**: worker `/generar`, tabla `generaciones`,
   reserva con cerrojo y reembolso automático, reanudación tras reinicio
   (migración 009). **Sin ejecutar nunca.**
+- **Interruptor de degradación** (16 sep): `worker/disponibilidad.js`, el estado
+  en `/health`, y la tarjeta apagada en la elección de contenido.
 - **`worker/modelos.js`**: disponibilidad **y costo real** de cada modelo, gratis.
 - **Flujo de compra**, canje de códigos, primer crédito a mitad de precio,
   estudios con atribución permanente (migración 008). `SHIPATON` = 1 crédito,
@@ -166,6 +181,22 @@ Lenguaje: **"tu primer video"**, no "tu primer tatuaje" — no vendemos tatuajes
 
 ---
 
+## Ramas: una sola línea viva
+
+`main` y la rama de trabajo de cada sesión apuntan al mismo commit. No hay
+nada que reconciliar y **nunca se ha abierto un PR**: las sesiones commitean en
+su rama y eso es main.
+
+**Rama muerta, no la mergees:** `claude/retomar-proyecto-contexto-u3o686`
+(10 ago 2026, punta `ef2d231`) es un intento anterior con **historia
+independiente** —otra raíz, sin ancestro común—, paquete `com.inkwell.ar`, sin
+worker, sin analizador, sin créditos y sin generación de video. Mergearla
+borraría ~11.500 líneas del proyecto vivo. Se borró del remoto el 16 sep; si
+alguna vez hiciera falta, se restaura con
+`git push origin ef2d231:refs/heads/rescate-agosto`.
+
+---
+
 ## Trampas registradas, para no repetirlas
 
 - **El catálogo documentado de Higgsfield NO es el que tu plan habilita.**
@@ -174,7 +205,8 @@ Lenguaje: **"tu primer video"**, no "tu primer tatuaje" — no vendemos tatuajes
 - **`modelos.js` NO detecta si hay saldo.** La API valida el cuerpo antes de
   revisar créditos, así que una cuenta vacía también sale "disponible". Solo un
   envío real lo confirma (`403 not_enough_credits`). Una versión anterior del
-  script prometía detectarlo y era falso.
+  script prometía detectarlo y era falso. Por eso el interruptor de degradación
+  **reacciona a un envío fallido** en vez de sondear.
 - **Los perfiles de modelo se escriben desde `openapi.json`, no desde un
   resumen.** La primera versión salió de un resumen y quedó mal.
 - **Higgsfield Cloud (API) y el plan Plus del panel son cuentas distintas.**
@@ -200,3 +232,9 @@ Lenguaje: **"tu primer video"**, no "tu primer tatuaje" — no vendemos tatuajes
   necesitan un `code` estable o llegan sin traducir.
 - **Las capturas del navegador emulado muestran franjas negras** a los lados: es
   el capturador, no la app. Medir el ancho con JS antes de "arreglar" nada.
+- **En una sesión en la nube, `npm ci` instala sin devDependencies** porque
+  `canvas` (nativo, vía `mind-ar`) falla al compilar y aborta el paso. Se
+  resuelve con `npm ci --include=dev --ignore-scripts`. Para levantar el
+  **worker** sí hace falta canvas de verdad:
+  `apt-get update && apt-get install -y libpango1.0-dev libjpeg-dev libgif-dev`
+  y luego `npm rebuild canvas`.
