@@ -151,6 +151,7 @@ Lenguaje: **"tu primer video"**, no "tu primer tatuaje" — no vendemos tatuajes
 | **Verificación de identidad de desarrollador** | ⚠️ Vence el **30 sep**, el mismo día que el concurso. Si no, Google retira la app — y con ella la entrega. **No es trámite, es riesgo existencial: hacerlo esta semana** |
 | **Respaldo de la llave de firma** | ⬜ `~/inkar-release.jks` existe en una sola máquina. Ver `SETUP.md` |
 | **Compartir la landing** | La lista tiene 1 persona porque no se ha movido |
+| **Borrar la rama muerta de agosto** | `claude/retomar-proyecto-contexto-u3o686`. Una sesión en la nube no puede (403 del proxy). Ver abajo |
 | **Meter `CLAUDE.md` al repo** | Vive en la carpeta padre, fuera del repo. Las sesiones en la nube (Claude Code web) solo clonan el repo, así que **arrancan sin el contexto general del producto** y con referencias rotas. Ver abajo |
 
 ---
@@ -191,8 +192,13 @@ su rama y eso es main.
 (10 ago 2026, punta `ef2d231`) es un intento anterior con **historia
 independiente** —otra raíz, sin ancestro común—, paquete `com.inkwell.ar`, sin
 worker, sin analizador, sin créditos y sin generación de video. Mergearla
-borraría ~11.500 líneas del proyecto vivo. Se borró del remoto el 16 sep; si
-alguna vez hiciera falta, se restaura con
+borraría ~11.500 líneas del proyecto vivo.
+
+**Sigue existiendo en el remoto.** Se intentó borrar el 16 sep desde una sesión
+en la nube y el proxy lo rechazó con 403: ese entorno no puede borrar
+referencias. **Bórrala tú** desde GitHub → Branches, o desde tu máquina con
+`git push origin --delete claude/retomar-proyecto-contexto-u3o686`. Si alguna
+vez hiciera falta recuperarla, la punta es `ef2d231` y se restaura con
 `git push origin ef2d231:refs/heads/rescate-agosto`.
 
 ---
