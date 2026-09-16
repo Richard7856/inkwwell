@@ -603,3 +603,18 @@ O sea, ese tatuaje está en el extremo bajo de lo ACEPTABLE, y con poca luz se c
 **Costo confirmado:** la estimación previa decía $0.28 y el envío se aceptó sin objeción. Con 240 s de espera, el texto de la app ("suele tardar de 1 a 3 minutos") se queda corto: **conviene decir 2 a 5 minutos**, o la pantalla de espera parecerá colgada justo en la primera impresión.
 
 **Lo que sigue sin probarse:** el camino completo por el worker — reserva de crédito con cerrojo, copia a nuestro Storage, asignación al tatuaje y reembolso ante fallo. Todo eso necesita `SUPABASE_SERVICE_ROLE_KEY`.
+
+## [2026-09-16] La cámara en movimiento NO ensucia el croma
+**Context:** Richard pidió probar que el video "se vea 3D". Lo que da sensación de volumen en un video plano es el **paralaje**: si la cámara orbita, el cerebro lee profundidad. Se probó con el mismo modelo y la misma foto, cambiando solo el prompt, para que la comparación sirviera.
+
+**El riesgo real que se estaba probando no era estético.** Una cámara que orbita suele arrastrar sombras y degradados al fondo, y todo el recorte de `videoLayer.js` depende de que el verde sea plano. Si se ensuciaba, el efecto 3D quedaba descartado de entrada.
+
+**No se ensució.** Medido en tres momentos del video (cuadros 10, 60 y 120), desviación máxima **1.2 a 1.4** — incluso más plano que el video estático (1.9). Se pidió explícitamente `no shadows cast on the background` en el prompt, y el modelo lo respetó.
+
+**Consecuencia:** el prompt tiene mucha más libertad de la que suponíamos. Movimiento de cámara, iluminación volumétrica y estética de render 3D son compatibles con el croma. La restricción que sí hay que conservar en cada prompt es la del **fondo plano sin sombras**, no la de la cámara quieta.
+
+**Tiempos observados, con varianza alta:** 240 s el primero, **115 s** el segundo. Mismo modelo, misma resolución, misma duración. Cualquier texto de espera tiene que cubrir el peor caso, no el promedio.
+
+**Costo:** $0.28 por video, confirmado por la estimación antes de cada envío. Dos pruebas: $0.56 en total.
+
+**Lo que queda a criterio de producto, no técnico:** el video va anclado plano sobre el tatuaje. Un sujeto que gira sobre ese plano puede leerse como holograma —que es el efecto buscado— o puede romper la sensación de que está pegado a la piel. Eso se juzga viéndolo sobre piel real, no por números.
