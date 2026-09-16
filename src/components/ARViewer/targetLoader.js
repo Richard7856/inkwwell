@@ -72,6 +72,27 @@ const DEMO_ZERO = {
   ],
 }
 
+/*
+  Zero con el video generado por IA — el que se graba para la landing.
+
+  Reusa el MISMO .mind que DEMO_ZERO (los dos tatuajes del founder ya
+  compilados) y cambia solo la pieza que va encima. Se conserva `demo=zero`
+  intacto para poder comparar las dos versiones sobre la misma piel sin
+  recompilar nada.
+
+  ── Por qué la escala baja de 1.4 a 0.9 ──
+  El video es vertical (768x1364) y `videoLayer` calcula el alto a partir del
+  ancho: con 1.4 el plano mediría 2.5 de alto y taparía medio brazo. Con 0.9
+  queda alto pero contenido, como si el perro se levantara desde el tatuaje.
+*/
+const DEMO_ZERO_CONCHA = {
+  mindUrl: DEMO_ZERO.mindUrl,
+  targets: [
+    { videoUrl: '/video/zero-concha.mp4', escala: 0.9, label: 'Zero' },
+    { glbUrl: '/models/Fenix.glb', label: 'Esqueleto' },
+  ],
+}
+
 /**
  * @param {object} params
  * @param {string|null} params.tattooId - UUID de un tatuaje concreto
@@ -82,6 +103,7 @@ export async function loadTarget({ tattooId = null, demo = null } = {}) {
   if (demo === 'multi') return DEMO_MULTI
   if (demo === 'marcador') return DEMO_MARCADOR
   if (demo === 'zero') return DEMO_ZERO
+  if (demo === 'zero-concha') return DEMO_ZERO_CONCHA
 
   if (!tattooId) {
     throw new Error('No se indicó qué tatuaje escanear')
