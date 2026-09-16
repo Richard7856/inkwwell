@@ -12,9 +12,9 @@
 
 ## ⚠️ Lo primero que tiene que leer una sesión nueva
 
-**El lanzamiento se movió al 18-19 de septiembre** (decidido por Richard el 16
-sep). Conserva la quincena y da un día de colchón. El 17 ya no era posible: la
-v4 no existía esa mañana y la revisión de Play tarda cerca de un día.
+**La ventana quedó cerrada el 16 sep: se comparte la landing HOY, la lista
+cierra el jueves 18, se lanza el viernes 19.** Los pasos concretos, en orden y
+con tiempos, están en **`LANZAMIENTO.md`** — ese archivo es la guía operativa.
 
 **Pero la fecha no es el problema.** La v3 publicada **no puede cobrar** —la
 llave de RevenueCat se horneó vacía y no hay pantalla de compra—, así que la
@@ -100,29 +100,16 @@ Pendiente además revisar que no se esté cobrando el plan Plus sin usarlo.
 
 ## Decisiones ABIERTAS — no darlas por tomadas
 
-**1. La oferta de la lista de espera.** Richard propuso "50% de descuento en el
-primer tatuaje" para quien se registre. Problema: **el primer crédito a $12.50
-ya es el precio de todos**, así que a la lista no le daría nada, y presentar el
-precio normal como descuento exclusivo se lee como descuento inventado.
-Propuesta: **primer video gratis para la lista**, por código promocional topado
-(`codigos_promo.usos_max` ya existe). Sin respuesta.
+**1. Publicar el precio en la landing.** Sigue sin publicarse, y es deliberado:
+el mensaje que instala es "el primero va por nuestra cuenta"; la conversación
+del dinero va después de que vean el producto. Revisar después del lanzamiento,
+con datos de conversión.
 
-**2. La comisión de estudios fundadores.** Richard propuso "30% por un año". Lo
-construido es **los primeros 20, permanente** (`cupo_fundadores()` = 20). Se
-recomendó conservarlo: "primeros 20" urge y "un año" no, y al mes 13 habría que
-bajarle la comisión a alguien con quien se construyó un año de relación.
-Propuesta intermedia: **"30% para los primeros 20 que entren antes del
-lanzamiento", permanente.** Sin respuesta.
-
-**3. Publicar el precio en la landing.** Ahora que el costo se conoce, ya se
-puede decidir. Recomendación previa: el mensaje que instala es "el primero va
-por nuestra cuenta"; la conversación del dinero va después de que vean el
-producto.
-
-**4. Cambios propuestos a la landing** (pendientes): la fecha en el héroe —hoy
-no aparece por ningún lado—, la oferta de la lista, la fecha límite de estudios,
-y **una segunda invitación al final**: el formulario está arriba, y al terminar
-las cuatro secciones que de verdad venden no hay dónde apuntarse.
+**2. Un código promocional para la lista de espera.** La landing ya promete que
+el primer video va por nuestra cuenta. **Falta decidir CÓMO se cumple**: hoy no
+hay un código creado para eso. `codigos_promo.usos_max` existe y `SHIPATON`
+—1 crédito, 200 usos— podría servir de molde. Si la lista crece, esto se vuelve
+urgente antes del 19.
 
 Lenguaje: **"tu primer video"**, no "tu primer tatuaje" — no vendemos tatuajes.
 
@@ -130,14 +117,25 @@ Lenguaje: **"tu primer video"**, no "tu primer tatuaje" — no vendemos tatuajes
 
 ## Decisiones CERRADAS en la sesión del 16 sep
 
-- **Fecha de lanzamiento: 18-19 de septiembre.** Con la advertencia de arriba:
-  la v4 no espera al anuncio.
+- **Ventana del lanzamiento:** comparte el 16, la lista cierra el 18, se lanza
+  el 19. Guía operativa en `LANZAMIENTO.md`.
 - **Interruptor de degradación: construido.** Ver `DECISIONS.md` [2026-09-16].
-  Ya no es una propuesta.
+  Ya no es una propuesta. Incluye el caso de llave revocada (401/403).
+- **Oferta de la lista:** "tu primer video va por nuestra cuenta". No era una
+  decisión abierta — la landing ya lo prometía y el "50% de descuento" habría
+  sido peor que lo publicado.
+- **Estudios fundadores:** se quedan con el cupo de 20, permanente, **sin fecha
+  límite**. El cupo es la restricción real; una fecha habría sido urgencia
+  inventada encima de una verdadera.
+- **Landing:** fecha en el héroe, oferta con vencimiento y segunda invitación al
+  final. Construido y verificado en navegador.
 
 ---
 
 ## Bloqueado por Richard
+
+> **Los pasos en orden, con tiempos y comandos, están en `LANZAMIENTO.md`.**
+> Esta tabla es el índice.
 
 | | |
 |---|---|
