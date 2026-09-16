@@ -1,6 +1,6 @@
 # Dónde retomar
 
-> **Actualizado el 15 de septiembre de 2026, al cerrar la sesión.**
+> **Actualizado el 16 de septiembre de 2026.**
 >
 > Si vienes de otra máquina, primero `SETUP.md`. El contexto del sprint está en
 > `SHIPATON.md`; el porqué de cada decisión técnica, en `DECISIONS.md`.
@@ -23,7 +23,7 @@ ella:** o arranca hoy mismo el desbloqueo completo, o se mueve la fecha al
 
 ---
 
-## El estado real, verificado el 15 sep (no supuesto)
+## El estado real, verificado (no supuesto)
 
 | | |
 |---|---|
@@ -36,9 +36,13 @@ ella:** o arranca hoy mismo el desbloqueo completo, o se mueve la fecha al
 | Saldo en Higgsfield Cloud | ✅ **recargado el 16 sep** — primera generación real exitosa |
 | Repo | ✅ todo commiteado y empujado |
 
-**Lo que dice la base — nada del núcleo se ha ejercitado en producción:**
+**Lo que dice la base.** Ojo con leer el cero de generaciones: el 16 sep sí se
+generó un video real, pero **directo contra Higgsfield, sin pasar por el
+worker**, así que no dejó fila en `generaciones`. El camino de la app sigue sin
+ejercitarse.
 
-- **0** generaciones de video, jamás
+- **0** filas en `generaciones` — el worker nunca ha corrido una
+- **1** generación real contra Higgsfield (16 sep): 240 s, croma correcto
 - **0** compras reales
 - **0** estudios registrados
 - **1** persona en la lista de espera (Richard **no ha compartido la landing**;
@@ -47,7 +51,7 @@ ella:** o arranca hoy mismo el desbloqueo completo, o se mueve la fecha al
 
 ---
 
-## El costo por video ya se conoce (15 sep)
+## El costo por video ya se conoce
 
 Se encontró `POST /estimate<ruta>`: devuelve créditos **y USD sin generar nada**.
 No aparece en el `openapi.json`, está en la página de billing.
@@ -69,6 +73,7 @@ alimenta el producto. Evidencia: el 9 sep el panel tenía 12.5 créditos y la AP
 rechazó un video de 4.476 con `not_enough_credits`. Recomendación dada:
 **recargar la API con ~$10 USD** (≈35 videos) y **no** pagar suscripción.
 Pendiente además revisar que no se esté cobrando el plan Plus sin usarlo.
+**La API ya está recargada** (16 sep) y el primer envío real fue aceptado.
 
 ---
 
@@ -119,7 +124,12 @@ no aparece por ningún lado—, la oferta de la lista, la fecha límite de estud
 y **una segunda invitación al final**: el formulario está arriba, y al terminar
 las cuatro secciones que de verdad venden no hay dónde apuntarse.
 
-**6. Interruptor de degradación** (propuesto, no construido): que la app deje de
+**6. Ajustar el texto de la espera.** La generación real tardó **240 segundos** y
+`GeneracionStatus` dice "suele tardar de 1 a 3 minutos". Se queda corto justo en
+la primera impresión. Propuesta: **"de 2 a 5 minutos"**. Cambio de una línea,
+sin decidir.
+
+**7. Interruptor de degradación** (propuesto, no construido): que la app deje de
 ofrecer "Anima tu recuerdo" cuando el generador no está disponible. Seguro
 contra quedarse sin saldo en plena semana del concurso.
 
@@ -152,7 +162,8 @@ Lenguaje: **"tu primer video"**, no "tu primer tatuaje" — no vendemos tatuajes
   en `tattoos` (migración 007).
 - **Generación de video construida**: worker `/generar`, tabla `generaciones`,
   reserva con cerrojo y reembolso automático, reanudación tras reinicio
-  (migración 009). **Sin ejecutar nunca.**
+  (migración 009). **La parte de Higgsfield está probada** (16 sep, ver
+  `DECISIONS.md`); lo que rodea —crédito, Storage, asignación, reembolso— no.
 - **`worker/modelos.js`**: disponibilidad **y costo real** de cada modelo, gratis.
 - **Flujo de compra**, canje de códigos, primer crédito a mitad de precio,
   estudios con atribución permanente (migración 008). `SHIPATON` = 1 crédito,
