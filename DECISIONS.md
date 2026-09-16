@@ -668,3 +668,16 @@ O sea, ese tatuaje está en el extremo bajo de lo ACEPTABLE, y con poca luz se c
 **Si se quiere que sea exclusivo de verdad**, hay una sola forma: restringir `creditos_primero` a quien esté en `waitlist`. Es un cambio de reglas de negocio, no de copy, y sube el precio de entrada de $12.50 a $25 para todo el que llegue sin apuntarse — probablemente malo para la conversión del día del lanzamiento. No se hizo; queda anotado como decisión abierta.
 
 **Verificado en navegador a 390 px, en los dos idiomas**, en la píldora del héroe y en la caja de beneficios.
+
+## [2026-09-16] El video de la landing sale de un archivo del repo, y declara qué es
+**Context:** El hueco del video en la landing dependía de `VITE_VIDEO_DEMO`, una variable de entorno. Subir el archivo no bastaba: había que ir a Vercel, configurar la variable y redesplegar. Tres pasos y tres lugares donde equivocarse, en una ventana de dos días.
+
+**Decision:** el video sale por omisión de `public/media/demo.mp4`. Se deja el archivo, se commitea, aparece. La variable de entorno sigue funcionando y gana si está puesta, para un video alojado fuera del repo.
+
+**La regla que motivaba lo anterior se conserva, por otra vía.** Un reproductor roto en la primera pantalla hace más daño que no tener video: sugiere que el producto tampoco funciona. Antes eso se evitaba no dibujando la sección sin variable; ahora se dibuja y **`onError` la retira entera** si el archivo no está. Verificado en navegador en los dos sentidos: sin archivo la sección no existe (cero elementos `<video>`); con archivo aparece en su lugar, entre "¿Qué es InkAR?" y el formulario.
+
+**`VIDEO_ES_GRABACION`: hay que declarar qué se está enseñando.** No es un detalle de copy, decide el rótulo impreso debajo. Ya pasó una vez —se publicó un dragón fotorrealista generado con IA y hubo que retirarlo— porque enseñar algo que el motor no produce pone al producto en deuda desde el primer día. Y al revés cuenta igual: rotular "representación del concepto" una grabación real tira a la basura lo único que de verdad convence.
+
+**Por qué esto importa ahora:** `zero-nace.mp4` y `zero-concha.mp4` están en el repo y es tentador ponerlos aquí. **Son la capa de contenido** —lo que se proyecta encima del tatuaje—, no el producto funcionando. Sueltos muestran una animación bonita; no muestran que la app reconozca un tatuaje ni que el contenido se pegue a la piel y la siga. Lo que vende InkAR es el mecanismo, y el mecanismo solo se ve en una grabación de la cámara sobre piel real. Si alguno de esos archivos se usa aquí, `VIDEO_ES_GRABACION` va en `false`.
+
+**`?demo=zero-nace` no es un video y no se puede enlazar desde la landing.** Es la experiencia AR: exige apuntar la cámara al tatuaje real de la huella de Zero. Un visitante que haga clic ve una pantalla de cámara y nada más — peor que no poner nada. Sirve para enseñar en persona, no para una página pública.

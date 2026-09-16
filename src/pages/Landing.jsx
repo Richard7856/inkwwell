@@ -42,8 +42,26 @@ import { useTema } from '../lib/tema.js'
   El póster no es decorativo: sin él el reproductor muestra un rectángulo negro
   hasta que alguien lo toca, y en una landing eso se lee como un elemento roto.
 */
-const VIDEO = import.meta.env.VITE_VIDEO_DEMO || ''
-const POSTER = import.meta.env.VITE_VIDEO_POSTER || ''
+const VIDEO = import.meta.env.VITE_VIDEO_DEMO || '/media/demo.mp4'
+const POSTER = import.meta.env.VITE_VIDEO_POSTER || '/media/demo.jpg'
+
+/*
+  ── Qué es el video que se muestre aquí, y por qué hay que declararlo ──
+
+  `true`  → es una GRABACIÓN de la app funcionando sobre piel real.
+  `false` → es una representación (capa de contenido suelta, concepto, render).
+
+  No es un detalle de copy: decide qué rótulo se imprime debajo. Ya pasó una vez
+  —se publicó un dragón fotorrealista generado con IA y hubo que retirarlo—
+  porque enseñar algo que el motor no produce pone al producto en deuda desde el
+  primer día. Y al revés también importa: rotular "representación" una grabación
+  real tira a la basura lo único que de verdad convence.
+
+  Los archivos `zero-nace.mp4` y `zero-concha.mp4` del repo son la CAPA DE
+  CONTENIDO —lo que se proyecta encima del tatuaje—, no el producto funcionando.
+  Si alguno de esos se usa aquí, esto va en `false`.
+*/
+const VIDEO_ES_GRABACION = true
 
 /*
   ── Las fechas del lanzamiento, en un solo lugar ──
@@ -113,7 +131,8 @@ const ES = {
   ],
 
   videoTitulo: 'La idea, en movimiento',
-  videoTexto: 'Representación del concepto, generada con IA. No es una grabación de la app.',
+  videoTexto: 'Representación del concepto. No es una grabación de la app.',
+  videoTextoReal: 'Grabado con un teléfono, sobre un tatuaje real. Sin editar.',
 
   distintoTitulo: 'Por qué no es un filtro',
   distinto: [
@@ -205,7 +224,8 @@ const EN = {
   ],
 
   videoTitulo: 'The idea, in motion',
-  videoTexto: 'Concept illustration, AI-generated. Not a recording of the app.',
+  videoTexto: 'Concept illustration. Not a recording of the app.',
+  videoTextoReal: 'Shot on a phone, over a real tattoo. Unedited.',
 
   distintoTitulo: 'Why this isn’t a filter',
   distinto: [
@@ -273,6 +293,7 @@ export default function Landing() {
   const [estado, setEstado] = useState('inicial')   // inicial | enviando | listo
   const [yaEstaba, setYaEstaba] = useState(false)
   const [error, setError] = useState('')
+  const [videoRoto, setVideoRoto] = useState(false) // el archivo del demo no cargó
 
   // Se calcula una vez por render, no con temporizador: ver `momento()`
   const cuando = momento()
@@ -365,18 +386,36 @@ export default function Landing() {
           la primera pantalla hace más daño que no tener video: sugiere que el
           producto tampoco funciona.
         */}
-        {VIDEO && (
+        {VIDEO && !videoRoto && (
           <section className="mt-12">
             <h2 className="text-lg font-semibold mb-3">{c.videoTitulo}</h2>
+            {/*
+              Se intenta dibujar y se retira si NO carga, en vez de exigir una
+              variable de entorno que diga si existe.
+
+              Por qué se cambió: antes el video dependía de `VITE_VIDEO_DEMO`, o
+              sea que subir el archivo no bastaba — había que ir a Vercel,
+              configurar la variable y redesplegar. Tres pasos y tres lugares
+              donde equivocarse, en una ventana de dos días. Ahora se deja el
+              archivo en `public/media/demo.mp4` y aparece.
+
+              La regla que motivaba lo anterior se conserva: un reproductor roto
+              en la primera pantalla hace más daño que no tener video, porque
+              sugiere que el producto tampoco funciona. `onError` cubre justo
+              eso — si el archivo no está, la sección desaparece entera.
+            */}
             <video
               src={VIDEO}
               poster={POSTER || undefined}
               controls
               playsInline
               preload="metadata"
+              onError={() => setVideoRoto(true)}
               className="w-full rounded-2xl border border-black/10 bg-black"
             />
-            <p className="text-neutral-500 text-xs mt-2">{c.videoTexto}</p>
+            <p className="text-neutral-500 text-xs mt-2">
+              {VIDEO_ES_GRABACION ? c.videoTextoReal : c.videoTexto}
+            </p>
           </section>
         )}
 
