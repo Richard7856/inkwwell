@@ -631,3 +631,24 @@ O sea, ese tatuaje está en el extremo bajo de lo ACEPTABLE, y con poca luz se c
 **Por qué por omisión no gasta:** un video cuesta ~$0.28 reales. El modo por omisión comprueba llaves, modelo, costo estimado y estado del interruptor sin enviar nada; gastar exige escribir `--generar`. Un script de pruebas que cobra por correrse se corre menos.
 
 **Lo que el CLI aclara a propósito:** el interruptor que muestra es la copia en memoria de ESE proceso, no el del worker en Railway; y cuando sale `no_configurado` dice cuál mitad falta, porque `estadoGeneracion()` también exige Supabase y el script no la necesita. Sin esas dos notas, se sale de ahí con una conclusión equivocada.
+
+## [2026-09-16] La landing dice para cuándo, y vuelve a invitar al final
+**Context:** La landing recogía correos sin decir nunca cuándo abría, y el único formulario estaba arriba — antes de las cuatro secciones que de verdad venden. Quien leía la página entera llegaba convencido al pie y no tenía dónde apuntarse: tenía que subir a buscar el formulario, y eso no lo hace casi nadie. Con una ventana de dos días (16 → 18, lanzamiento el 19), las dos cosas costaban conversiones que no se recuperan.
+
+**La fecha, en el héroe.** Pedir el correo sin decir para cuándo es pedir un cheque en blanco, y la fecha es justamente lo que vuelve urgente apuntarse. La oferta va en la misma píldora y no en un banner aparte: "abrimos el 19, apúntate antes del 18" es una sola frase, y separarla haría que se leyeran como dos avisos que compiten.
+
+**Las fechas viven en dos constantes al principio del archivo**, no repartidas por la copy. Esta fecha ya se movió una vez —del 17 al 19— y la revisión de Play puede moverla otra. Importa saber que corregirla es barato: **la landing se sirve desde Vercel, así que cambiar una fecha es un despliegue de segundos**, no un build del APK ni otra revisión. Con huso horario explícito (UTC-6): sin él, `new Date()` de un texto sin huso se interpreta distinto según el navegador y la cuenta saldría corrida un día para alguien en otro país.
+
+**Tres estados y no dos.** El intermedio —oferta cerrada, todavía no abrimos— dura **un segundo** con las fechas de hoy, y aun así se construyó: es la red para el caso que sí puede pasar. Si Play tarda y hay que mover la apertura al 22, la página deja de prometer una oferta vencida **sin dejar de recoger correos**, cambiando una sola constante. Cerrar la lista entera en vez de cerrar solo la oferta habría tirado los correos de esos días.
+
+**La oferta de la lista ya estaba decidida, y no por nosotros.** La landing publicada prometía "créditos de lanzamiento sin costo". La propuesta de "50% de descuento en el primer tatuaje" era **peor que lo ya prometido** —y encima el primer crédito a $12.50 ya es el precio de todos, así que no daba nada exclusivo—. Se conserva la promesa y se vuelve concreta: **"tu primer video va por nuestra cuenta. Sin tarjeta."** De paso corrige el idioma: decía "animar tu primer tatuaje" y no vendemos tatuajes.
+
+**"Entras antes que el público general" se retira.** Con la lista cerrando el 18 y la apertura el 19, entrar "antes" no significaba nada. Se reemplaza por algo verdadero y comprobable: "te escribimos el día que abrimos, antes de que lo anunciemos en público".
+
+**La segunda invitación va ANTES de estudios, no después.** El 9 de septiembre se corrigió que el formulario de arriba interceptara a los tatuadores y les diera una promesa en vez de su código; ponerla después de la caja de estudios repetiría el error al revés, dejando la última palabra de la página en un formulario que no es para ellos. Por la misma razón respeta la regla: si el visitante eligió "tengo estudio", ahí **no** se le pide el correo — se le señala su alta.
+
+**Los estudios se quedan solo con el cupo, sin fecha.** Lo construido son los primeros 20, permanente (`cupo_fundadores()` = 20). Se evaluó sumarle fecha límite y se descartó: el cupo es la restricción real y está en el código; una fecha además habría sido una urgencia inventada encima de una verdadera.
+
+**`source` distingue cuál formulario convirtió** (`landing` contra `landing-final`). La segunda invitación es una apuesta —que quien lee la página entera se convence más que quien ve el formulario antes de entender el producto— y sin la etiqueta no habría forma de saber en dos días si acertó. El costo de averiguarlo es una palabra: `select source, count(*) from waitlist group by source;`
+
+**Verificado en navegador a 390 px, en los dos idiomas**, con el reloj falseado para recorrer los tres estados: oferta vigente, oferta cerrada y ya abiertos. Sin desborde horizontal, sin errores de consola propios (solo Google Fonts, que el proxy TLS del entorno de pruebas rechaza), y las tres formas de la página en su lugar: lista arriba, lista al final, alta de estudio.

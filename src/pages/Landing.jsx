@@ -45,6 +45,45 @@ import { useTema } from '../lib/tema.js'
 const VIDEO = import.meta.env.VITE_VIDEO_DEMO || ''
 const POSTER = import.meta.env.VITE_VIDEO_POSTER || ''
 
+/*
+  ── Las fechas del lanzamiento, en un solo lugar ──
+
+  Van aquí arriba y no repartidas por la copy porque esta fecha YA se movió una
+  vez (del 17 al 19) y se puede volver a mover: la revisión de Play tarda cerca
+  de un día y no se puede apurar.
+
+  Cambiarlas es barato y hay que saberlo: la landing se sirve desde Vercel, así
+  que corregir una fecha es un despliegue de segundos. NO exige compilar el APK
+  ni pasar por otra revisión — eso solo aplica a lo que va dentro de la app.
+
+  Zona horaria explícita (UTC-6, centro de México). Sin ella, `new Date()` de un
+  texto sin huso se interpreta distinto según el navegador y la cuenta regresiva
+  saldría corrida un día para alguien en otro país.
+*/
+const CIERRE_OFERTA = new Date('2026-09-18T23:59:59-06:00')
+const APERTURA = new Date('2026-09-19T00:00:00-06:00')
+
+/*
+  Tres estados, y el orden importa: primero se pregunta si ya abrimos.
+
+  Se calcula al dibujar y no con un temporizador: la página se abre, se lee y se
+  cierra en minutos. Un contador que se actualice solo no cambia ninguna
+  decisión y sí agrega una suscripción que mantener.
+*/
+function momento(ahora = Date.now()) {
+  if (ahora >= APERTURA.getTime()) return 'abierto'
+  if (ahora > CIERRE_OFERTA.getTime()) return 'oferta-cerrada'
+  return 'oferta-vigente'
+}
+
+/*
+  Con las fechas de hoy, 'oferta-cerrada' dura un segundo: la oferta cierra al
+  terminar el 18 y abrimos al empezar el 19. No sobra — es exactamente la red
+  para el caso que puede pasar. Si Play tarda y hay que mover APERTURA al 22, la
+  página deja de prometer una oferta vencida sin dejar de recoger correos, y sin
+  tocar nada más que la constante de arriba.
+*/
+
 const ES = {
   descriptor: 'Historias que siguen vivas',
   promesa: 'Tu tatuaje deja de ser una imagen quieta',
@@ -83,6 +122,13 @@ const ES = {
     ['Se registra una vez y se cambia cuando quieras', 'El tatuaje ya lo traes. Lo que agregamos es la capa que vive encima, y esa la puedes cambiar las veces que se te antoje sin volver a registrar nada.'],
   ],
 
+  // Fecha en el héroe: hoy no aparece por ningún lado, y una landing que pide
+  // el correo sin decir para cuándo pide un cheque en blanco.
+  abreEl: 'Abrimos el viernes 19 de septiembre',
+  yaAbrimos: 'Ya estamos abiertos',
+  ofertaVigente: 'Apúntate antes del jueves 18 y tu primer video va por nuestra cuenta.',
+  ofertaCerrada: 'La oferta de apertura ya cerró, pero te avisamos en cuanto abramos.',
+
   cta: 'Avísame cuando abra',
   soy: '¿Quién eres?',
   persona: 'Tengo tatuajes',
@@ -92,8 +138,8 @@ const ES = {
   beneficioTitulo: { persona: 'Qué recibes por apuntarte', artista: 'Qué recibes al registrar tu estudio' },
   beneficios: {
     persona: [
-      'Entras antes que el público general.',
-      'Créditos de lanzamiento sin costo para animar tu primer tatuaje.',
+      'Tu primer video va por nuestra cuenta. Sin tarjeta.',
+      'Te escribimos el día que abrimos, antes de que lo anunciemos en público.',
       'Nos dices qué te gustaría ver encima del tuyo y lo tomamos en cuenta para el catálogo.',
     ],
     artista: [
@@ -122,6 +168,12 @@ const ES = {
   estudioFundador: 'Entraste como estudio fundador: 30% de comisión en vez de 20%.',
   estudioLiga: 'O comparte esta liga, que ya trae tu código:',
   legalNota: 'Solo usamos tu correo para avisarte del lanzamiento.',
+
+  // Segunda invitación, al final: quien leyó hasta aquí ya entendió el producto
+  // y no tenía dónde apuntarse sin volver a subir.
+  segundaTitulo: 'Entonces, ¿te apuntamos?',
+  segundaTexto: 'Ya sabes qué es. Déjanos tu correo y te escribimos el día que abrimos.',
+  segundaEstudios: '¿Tienes estudio? No te apuntes aquí — regístralo abajo y sales con tu código.',
 }
 
 const EN = {
@@ -162,6 +214,11 @@ const EN = {
     ['Registered once, changed whenever', 'You already have the tattoo. What we add is the layer living on top, and that one you can change as many times as you like without registering anything again.'],
   ],
 
+  abreEl: 'We open Friday, September 19',
+  yaAbrimos: 'We’re open',
+  ofertaVigente: 'Join before Thursday the 18th and your first video is on us.',
+  ofertaCerrada: 'The opening offer has closed, but we’ll still tell you when we open.',
+
   cta: 'Tell me when it opens',
   soy: 'Who are you?',
   persona: 'I have tattoos',
@@ -170,8 +227,8 @@ const EN = {
   beneficioTitulo: { persona: 'What you get for joining', artista: 'What you get for registering your studio' },
   beneficios: {
     persona: [
-      'You get in before the general public.',
-      'Free launch credits to animate your first tattoo.',
+      'Your first video is on us. No card.',
+      'We write to you the day we open, before we announce it publicly.',
       'You tell us what you’d like to see over yours, and we factor it into the catalog.',
     ],
     artista: [
@@ -200,6 +257,10 @@ const EN = {
   estudioFundador: 'You’re in as a founding studio: 30% commission instead of 20%.',
   estudioLiga: 'Or share this link, which already carries your code:',
   legalNota: 'We only use your email to tell you about the launch.',
+
+  segundaTitulo: 'So — shall we put you on the list?',
+  segundaTexto: 'You know what it is now. Leave us your email and we’ll write the day we open.',
+  segundaEstudios: 'Run a studio? Don’t join here — register below and walk away with your code.',
 }
 
 export default function Landing() {
@@ -213,12 +274,25 @@ export default function Landing() {
   const [yaEstaba, setYaEstaba] = useState(false)
   const [error, setError] = useState('')
 
-  const enviar = async (e) => {
+  // Se calcula una vez por render, no con temporizador: ver `momento()`
+  const cuando = momento()
+
+  /*
+    `origen` distingue cuál de los dos formularios convirtió.
+
+    Vale la pena porque la segunda invitación es una apuesta: la hipótesis es
+    que quien lee la página entera se convence más que quien ve el formulario
+    antes de entender el producto. Sin esta etiqueta, en dos días no habría
+    forma de saber si acertó — y el costo de averiguarlo es una palabra.
+
+    Se lee con:  select source, count(*) from waitlist group by source;
+  */
+  const enviar = async (e, origen = 'landing') => {
     e.preventDefault()
     setError('')
     setEstado('enviando')
     try {
-      const { yaEstaba: repetido } = await inscribirEnLista({ email, perfil })
+      const { yaEstaba: repetido } = await inscribirEnLista({ email, perfil, source: origen })
       setYaEstaba(repetido)
       setEstado('listo')
     } catch (err) {
@@ -242,6 +316,31 @@ export default function Landing() {
         {/* El ritmo de tres palabras es el eje de la voz de marca; se le da aire
             propio en vez de esconderlo dentro de un párrafo. */}
         <p className="marca text-realidad text-center text-sm mt-5">{c.ritmo}</p>
+
+        {/*
+          La fecha, debajo de la promesa y antes de cualquier otra cosa.
+
+          Hasta ahora no aparecía por ningún lado: se le pedía el correo a la
+          gente sin decirle para cuándo, que es pedir un cheque en blanco. Y la
+          fecha es justamente lo que vuelve urgente apuntarse.
+
+          La oferta va en la misma píldora y no en un banner aparte: son la misma
+          frase —abrimos el 19, apúntate antes del 18— y separarlas haría que se
+          leyeran como dos avisos que compiten.
+        */}
+        <div className="mt-6 flex justify-center">
+          <div className="inline-flex flex-col items-center gap-1 rounded-2xl
+                          bg-realidad/[0.08] border border-realidad/30 px-5 py-3 text-center">
+            <p className="text-sm font-semibold text-black">
+              {cuando === 'abierto' ? c.yaAbrimos : c.abreEl}
+            </p>
+            {cuando !== 'abierto' && (
+              <p className="text-neutral-600 text-xs leading-relaxed max-w-[22rem]">
+                {cuando === 'oferta-vigente' ? c.ofertaVigente : c.ofertaCerrada}
+              </p>
+            )}
+          </div>
+        </div>
         {/* ── Qué es: la pregunta que la versión anterior nunca contestaba ── */}
         <Seccion titulo={c.queEsTitulo} className="mt-12">
           {c.queEs.map((t) => <Parrafo key={t}>{t}</Parrafo>)}
@@ -419,6 +518,79 @@ export default function Landing() {
               </div>
             ))}
           </div>
+        </section>
+
+        {/*
+          ── Segunda invitación ──
+
+          El formulario de arriba aparece antes de que la mayoría entienda qué
+          es esto. Quien sí leyó las cuatro secciones que de verdad venden
+          —la tinta cobra vida, cómo funciona, a dónde vamos, por qué no es un
+          filtro— llegaba hasta aquí ya convencido y sin dónde apuntarse: tenía
+          que subir a buscar el formulario, y eso no lo hace casi nadie.
+
+          Va ANTES de estudios y no después, a propósito. El 9 de septiembre se
+          corrigió que el formulario de arriba interceptara a los tatuadores y
+          les diera una promesa en vez de su código; ponerlo después de la caja
+          de estudios repetiría el error al revés, dejando la última palabra de
+          la página en un formulario que no es para ellos.
+
+          Por eso, además, respeta la misma regla: si eligió "tengo estudio",
+          aquí NO se le pide el correo — se le señala su alta, que es mejor
+          trato que apuntarse a una lista.
+        */}
+        <section className="mt-16 bg-white border border-black/10 rounded-2xl p-6 shadow-sm">
+          <h2 className="text-lg font-semibold">{c.segundaTitulo}</h2>
+
+          {estado === 'listo' ? (
+            <p className="text-neutral-600 text-sm leading-relaxed mt-3">
+              {yaEstaba
+                ? c.yaEstabas
+                : c.graciasDetalle.replace('{email}', email.trim().toLowerCase())}
+            </p>
+          ) : perfil === 'artista' ? (
+            <>
+              <p className="text-neutral-600 text-sm leading-relaxed mt-3">{c.segundaEstudios}</p>
+              <a
+                href="#estudios"
+                className="mt-4 block w-full py-4 rounded-2xl bg-tinta text-white
+                           font-semibold text-center transition-opacity hover:opacity-85"
+              >
+                {c.irAEstudios}
+              </a>
+            </>
+          ) : (
+            <>
+              <p className="text-neutral-600 text-sm leading-relaxed mt-3">{c.segundaTexto}</p>
+              {cuando === 'oferta-vigente' && (
+                <p className="text-realidad text-sm font-medium mt-2">{c.ofertaVigente}</p>
+              )}
+              <form onSubmit={(e) => enviar(e, 'landing-final')} className="flex flex-col gap-3 mt-4">
+                <input
+                  type="email"
+                  inputMode="email"
+                  autoComplete="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder={t('tu@correo.com')}
+                  className="w-full py-4 px-4 rounded-2xl bg-white border border-black/15
+                             text-black placeholder-neutral-400 focus:outline-none focus:border-realidad"
+                />
+                <button
+                  type="submit"
+                  disabled={estado === 'enviando' || !email}
+                  className="w-full py-4 rounded-2xl bg-tinta text-white font-semibold
+                             disabled:opacity-30 transition-opacity hover:opacity-85"
+                >
+                  {estado === 'enviando' ? c.enviando : c.cta}
+                </button>
+                <p className="text-neutral-500 text-xs text-center">{c.legalNota}</p>
+                {error && <p className="text-red-400 text-sm text-center">{error}</p>}
+                <p className="text-neutral-500 text-xs text-center">{c.segundaEstudios}</p>
+              </form>
+            </>
+          )}
         </section>
 
         {/* ── Estudios: el canal de distribución ── */}
