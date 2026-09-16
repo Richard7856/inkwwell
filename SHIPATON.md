@@ -18,10 +18,11 @@ concurso, cumplido el día 2). El **lanzamiento** —anunciar y empujar— es el
 
 Consecuencia dura: **la v4 tiene que estar publicada antes del 17.**
 
-> **Al 15 de septiembre eso no se cumplió.** La v4 sigue sin compilarse y falta
-> recargar Higgsfield y la `service_role`. La fecha está **en revisión**: o se
-> desbloquea todo de inmediato, o se mueve al 18-19, que conserva la quincena y
-> da un día de colchón. Sin decisión de Richard. Ver `PROXIMA-SESION.md`.
+> **Al 16 de septiembre la fecha ya no es alcanzable.** La v4 sigue en
+> `versionCode` 3, sin compilar, y la revisión de Play tarda ~1 día. Higgsfield
+> ya tiene saldo y la generación está probada, pero falta la `service_role` para
+> el camino del worker. **Recomendación: mover al 19-20**, que conserva la
+> quincena. Sin decisión de Richard desde el 15. Ver `PROXIMA-SESION.md`.
 
 ## Meta
 
@@ -120,7 +121,7 @@ limitado por el costo. La API es una cuenta distinta del plan Plus del panel.
 |---|---|
 | Textura de video sobre plano anclado al target | ✅ probado sobre piel real |
 | Catálogo que acepte assets de video desde la base | ⬜ **lo siguiente** |
-| Generación de video desde foto + historia, vía Higgsfield | ✅ **construida el 9 sep** — worker `/generar`, sin probar con llaves reales |
+| Generación de video desde foto + historia, vía Higgsfield | ✅ construida (9 sep) y **probada contra la API el 16 sep** — croma estable, arco de acción correcto. Falta el camino por el worker |
 | Créditos que se consumen por generación | ✅ el worker reserva con cerrojo y reembolsa si falla |
 | Perfil con liga compartible (cierra el loop de crecimiento) | ⬜ |
 | Actualización publicada en Play | ⬜ |
