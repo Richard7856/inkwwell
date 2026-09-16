@@ -50,6 +50,7 @@ export const MOTIVOS = {
   NO_CONFIGURADO: 'no_configurado',
   SIN_SALDO: 'sin_saldo',
   MODELO: 'modelo',
+  CREDENCIALES: 'credenciales',
 }
 
 /** Último fallo atribuible a nuestra cuenta: `{ motivo, cuando }` o null. */
@@ -59,6 +60,9 @@ let ultimoFallo = null
 function motivoDe(detalle) {
   if (detalle === 'not_enough_credits') return MOTIVOS.SIN_SALDO
   if (detalle === 'model_not_found' || detalle === 'model_disabled') return MOTIVOS.MODELO
+  // Llave inválida o sin permiso: las variables están puestas, pero no sirven.
+  // No es `no_configurado` —eso es "faltan"— y el usuario tampoco puede nada.
+  if (detalle === 'credenciales_invalidas' || detalle === 'sin_permiso') return MOTIVOS.CREDENCIALES
   return null
 }
 

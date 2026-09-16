@@ -611,3 +611,23 @@ O sea, ese tatuaje está en el extremo bajo de lo ACEPTABLE, y con poca luz se c
 **Verificado contra las rutas reales**, worker levantado en local: sin llaves, `/health` reporta `no_configurado` y `/generar` sigue devolviendo 503 con el mismo código que antes (compatible hacia atrás); con llaves, `/health` reporta disponible y `/generar` pasa el guardia y cae en la validación normal. El circuito se probó aparte en 13 casos: apagado por cada motivo de cuenta, encendido por envío aceptado, indiferencia ante fallos del usuario, y caducidad del enfriamiento.
 
 **Limitación conocida:** `BASE` de Higgsfield es una constante, así que el camino completo —envío real rechazado por saldo → circuito apagado— no se puede ejercitar sin la API de verdad. Se probaron por separado las dos mitades que se tocan en ese punto.
+
+## [2026-09-16] Una llave revocada no apagaba el interruptor
+**Context:** Al ejercitar el camino de Higgsfield con llaves inválidas apareció un hueco en la clasificación recién construida. `FALLOS_DE_CUENTA` reconocía `not_enough_credits`, `model_not_found` y `model_disabled` —los tres por su `detail`— pero un **401/403 de autenticación** no traía ninguno de esos textos, así que caía en el camino genérico: `esDeCuenta` quedaba en `false`, el interruptor de degradación **no se apagaba**, y cada usuario repetía el mismo choque hasta que alguien mirara los registros.
+
+**Cuándo pasa de verdad:** al rotar las llaves de Higgsfield y dejar Railway con la vieja. Es el escenario más probable de toda la lista, porque es el único que se provoca haciendo algo bien (rotar credenciales).
+
+**Decision:** un 401 o 403 que no traiga un `detail` conocido se clasifica como fallo de cuenta, con motivo `credenciales`. Va **por status y no por `detail`** a propósito: el texto de un error de autenticación no es estable entre versiones de una API y no conviene depender de él.
+
+**Por qué `credenciales` y no `no_configurado`:** `no_configurado` significa "faltan las variables" y se arregla poniéndolas; aquí están puestas y no sirven. La app trata los dos igual —apaga la tarjeta— pero los registros y `/health` los distinguen, que es donde se depura.
+
+**Verificado sin red**, sustituyendo `fetch`: 401 y 403 genéricos se clasifican como de cuenta y apagan el interruptor con motivo `credenciales`; 403 `not_enough_credits` y 404 `model_not_found` siguen clasificándose como antes; 422 y 500 **no** apagan nada, que es lo correcto — un cuerpo mal formado o un tropiezo del proveedor no son problema de la cuenta.
+
+## [2026-09-16] `generar-cli.js`: ejercitar Higgsfield sin Supabase, sin app y sin gastar por accidente
+**Context:** La generación está construida desde el 9 de septiembre y nunca se ha ejecutado. Todo lo que hay entre `enviar` y el video descargado está escrito contra el `openapi.json`, no contra una corrida real. Probarlo por la app exige worker + Supabase + JWT + crédito + tatuaje: cinco cosas que pueden fallar antes de llegar a la que importa.
+
+**Decision:** un CLI que corre solo la mitad de Higgsfield —`enviar`, `esperar`, descargar— con las mismas funciones del worker, sin tocar Supabase ni reservar créditos. Si el perfil del cuerpo está mal para el endpoint configurado, se ve aquí en segundos.
+
+**Por qué por omisión no gasta:** un video cuesta ~$0.28 reales. El modo por omisión comprueba llaves, modelo, costo estimado y estado del interruptor sin enviar nada; gastar exige escribir `--generar`. Un script de pruebas que cobra por correrse se corre menos.
+
+**Lo que el CLI aclara a propósito:** el interruptor que muestra es la copia en memoria de ESE proceso, no el del worker en Railway; y cuando sale `no_configurado` dice cuál mitad falta, porque `estadoGeneracion()` también exige Supabase y el script no la necesita. Sin esas dos notas, se sale de ahí con una conclusión equivocada.

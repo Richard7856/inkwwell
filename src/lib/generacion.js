@@ -57,7 +57,7 @@ let recordado = null // { valor, cuando }
  * ¿Se puede generar video ahora? Consulta `/health` del worker.
  *
  * @param {{ forzar?: boolean }} [opciones]
- * @returns {Promise<{ disponible: boolean, motivo: 'ok'|'no_configurado'|'sin_saldo'|'modelo'|'desconocido' }>}
+ * @returns {Promise<{ disponible: boolean, motivo: 'ok'|'no_configurado'|'sin_saldo'|'modelo'|'credenciales'|'desconocido' }>}
  */
 export async function disponibilidadGeneracion({ forzar = false } = {}) {
   const ofrecer = { disponible: true, motivo: 'desconocido' }
