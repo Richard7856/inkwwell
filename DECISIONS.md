@@ -588,3 +588,18 @@ O sea, ese tatuaje está en el extremo bajo de lo ACEPTABLE, y con poca luz se c
 **Lo que se agregó para el revisor:** instrucciones para el código promocional `SHIPATON`. Generar un video cuesta un crédito, y un revisor sin créditos no puede probar la función principal — calificaría lo que se imagina. También la ruta a "Pruébalo sin tatuaje", que es la vía más rápida a ver el AR funcionando sin tener uno.
 
 **Verificado en navegador, en los dos idiomas:** la política renderiza con la vigencia nueva, con Higgsfield en la lista de terceros y con las entradas de la foto del recuerdo y de los créditos.
+
+## [2026-09-16] La primera generación real: funcionó, y el croma también
+**Context:** El motor de video se construyó el 9 sep y nunca se había ejecutado — cero generaciones en la base. Con la API recargada se corrió la primera de punta a punta contra Higgsfield (sin pasar por el worker todavía: falta la `service_role`).
+
+**Resultado, medido:** `completed` en **240 segundos**. Video de **768x768, 5.875 s, 24 fps, 240 KB**. Ni un error.
+
+**Lo que de verdad se estaba probando — el fondo:** el prompt pide verde plano porque de eso depende todo el recorte de `videoLayer.js`. Medido sobre las cuatro esquinas del cuadro 20: color **[96, 206, 67]**, desviación **[2.9, 1.8, 2.1]**. Plano. Y muy cerca del histórico [105, 195, 80], lo que confirma que el comportamiento es estable entre modelos distintos: **ninguno respeta el `#00FF00` que se pide, pero todos devuelven un verde plano**, que es justo lo que la capa necesita porque mide el color real en vez de asumirlo.
+
+**Verificado en la capa real, no solo por números:** el video se sirvió en `/preview?video=` y se cargó (206 Partial Content en la petición del `.mp4`). En pantalla aparece el sujeto sin recuadro verde alrededor. La decisión de medir el color en lugar de asumirlo se valida por segunda vez, ahora con un generador distinto al original.
+
+**Un detalle que hay que tener presente:** la salida es **cuadrada (768x768) porque la entrada era cuadrada**. MiniMax y Kling heredan la proporción de la foto; no aceptan `aspect_ratio`. Con la foto vertical de un teléfono saldría vertical, que es lo que quiere el producto — pero no está garantizado por el perfil, sale de lo que suba el usuario.
+
+**Costo confirmado:** la estimación previa decía $0.28 y el envío se aceptó sin objeción. Con 240 s de espera, el texto de la app ("suele tardar de 1 a 3 minutos") se queda corto: **conviene decir 2 a 5 minutos**, o la pantalla de espera parecerá colgada justo en la primera impresión.
+
+**Lo que sigue sin probarse:** el camino completo por el worker — reserva de crédito con cerrojo, copia a nuestro Storage, asignación al tatuaje y reembolso ante fallo. Todo eso necesita `SUPABASE_SERVICE_ROLE_KEY`.

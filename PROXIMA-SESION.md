@@ -33,7 +33,7 @@ ella:** o arranca hoy mismo el desbloqueo completo, o se mueve la fecha al
 | Worker `/generar` | ⚠️ **503 `no_configurado`** — Railway no tiene las llaves de generación |
 | `SUPABASE_SERVICE_ROLE_KEY` en `worker/.env` | ❌ falta |
 | Llaves de Higgsfield en `worker/.env` | ✅ válidas |
-| Saldo en Higgsfield Cloud | ❌ sin recargar (al 9 sep: `403 not_enough_credits`) |
+| Saldo en Higgsfield Cloud | ✅ **recargado el 16 sep** — primera generación real exitosa |
 | Repo | ✅ todo commiteado y empujado |
 
 **Lo que dice la base — nada del núcleo se ha ejercitado en producción:**
@@ -75,11 +75,13 @@ Pendiente además revisar que no se esté cobrando el plan Plus sin usarlo.
 ## Lo primero, en orden
 
 1. **Decidir la fecha de lanzamiento** (ver arriba). Bloquea todo lo demás.
-2. **Recargar Higgsfield Cloud** y poner `SUPABASE_SERVICE_ROLE_KEY` en
-   `worker/.env`.
-3. **Probar la generación de punta a punta en local** — sin teléfono: worker +
-   JWT real de la cuenta del revisor + su crédito. Es la primera vez que se
-   ejecutaría.
+2. **Poner `SUPABASE_SERVICE_ROLE_KEY`** en `worker/.env`. Es lo único que
+   bloquea la prueba del worker.
+3. **Probar el camino completo por el WORKER** — la generación contra Higgsfield
+   ya se probó el 16 sep y funciona (240 s, fondo verde plano, croma correcto,
+   ver `DECISIONS.md`). Lo que falta es lo que rodea: reserva de crédito con
+   cerrojo, copia a nuestro Storage, asignación al tatuaje y reembolso ante
+   fallo. Necesita la `service_role`.
 4. **Productos en Play** y Offering en RevenueCat.
 5. **Compilar v4** (`versionCode` 4), verificar con grep que la llave de
    RevenueCat quedó horneada, entregar a Play.
@@ -129,7 +131,6 @@ Lenguaje: **"tu primer video"**, no "tu primer tatuaje" — no vendemos tatuajes
 
 | | |
 |---|---|
-| **Recargar Higgsfield Cloud** | ~$10 USD. Es una cuenta distinta del plan Plus |
 | **`SUPABASE_SERVICE_ROLE_KEY`** | Settings → API → service_role (NO la anon). Va en `worker/.env` y en Railway |
 | **Las 4 variables de generación en Railway** | `/generar` responde 503 hoy. Detalle en `worker/DEPLOY.md` |
 | **Productos en Play** | `creditos_primero`, `creditos_1`, `creditos_3`, `creditos_5`. Menú: Monetizar con Play → Productos → **Productos únicos** |
