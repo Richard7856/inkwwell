@@ -2,7 +2,8 @@ import { useRef, useCallback } from 'react'
 import * as THREE from 'three'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js'
-import { cargarVideo, alternarVideo, liberarVideo } from './videoLayer.js'
+import { cargarVideo, alternarVideo, liberarVideo, formarVideo } from './videoLayer.js'
+import { crearEvocacion } from './evocacion.js'
 
 /*
   DRACOLoader compartido — necesario para decodificar GLBs comprimidos con Draco.
@@ -74,8 +75,11 @@ export function useThreeScene() {
    *
    * @param {THREE.Group[]} anchorGroups - Grupo de cada ancla, en orden de targetIndex
    * @param {{glbUrl: string}[]} targets - Configuración de cada target
+   * @param {object} [opciones]
+   * @param {(object|null)[]} [opciones.imagenes] - Imagen de rastreo por target
+   *   (ver `leerImagenesDeTarget`). Sin ella, el contenido aparece directo.
    */
-  const loadModels = useCallback(async (anchorGroups, targets, renderer, scene, camera) => {
+  const loadModels = useCallback(async (anchorGroups, targets, renderer, scene, camera, opciones = {}) => {
     /*
       Luces: se agregan UNA vez a la escena, no por modelo.
 
@@ -117,9 +121,30 @@ export function useThreeScene() {
     )
 
     targetsRef.current = resultados.map((r, i) => {
-      if (r.status === 'fulfilled') return r.value
-      console.error(`[loadModels] Falló el modelo del target ${i}:`, r.reason?.message)
-      return null
+      if (r.status !== 'fulfilled') {
+        console.error(`[loadModels] Falló el modelo del target ${i}:`, r.reason?.message)
+        return null
+      }
+      const capa = r.value
+      const imagen = opciones.imagenes?.[i]
+      if (!imagen || targets[i].evocacion === false) return capa
+
+      /*
+        La evocación es un adorno: si algo falla al montarla, el contenido se
+        muestra como antes en vez de perder el target entero.
+      */
+      try {
+        capa.evocacion = crearEvocacion(imagen, anchorGroups[i], {
+          objeto: capa.tipo === 'video' ? capa.plano : capa.raiz,
+          alFormarse: (p) => formarVideo(capa, p),
+          // El video arranca cuando empieza a formarse, no al detectar el
+          // tatuaje: si no, el primer segundo de la pieza se pierde bajo el efecto
+          alEmpezar: (opc) => alternarVideo(capa, true, opc),
+        })
+      } catch (err) {
+        console.error(`[loadModels] No se pudo montar la evocación del target ${i}:`, err)
+      }
+      return capa
     })
 
     clockRef.current.start()
@@ -130,7 +155,10 @@ export function useThreeScene() {
       // Un solo delta para todos: si cada mixer pidiera el suyo, el primero
       // consumiría el tiempo transcurrido y los demás avanzarían en cámara lenta
       // Solo los GLB tienen mixer; la textura de video se actualiza sola
-      for (const t of targetsRef.current) t?.mixer?.update(delta)
+      for (const t of targetsRef.current) {
+        t?.mixer?.update(delta)
+        t?.evocacion?.actualizar(delta, renderer.domElement.height)
+      }
       renderer.render(scene, camera)
     }
     animate()
@@ -152,7 +180,18 @@ export function useThreeScene() {
    * principio que respetar.
    */
   const setTargetVisible = useCallback((targetIndex, visible) => {
-    alternarVideo(targetsRef.current[targetIndex], visible)
+    const t = targetsRef.current[targetIndex]
+    if (!t?.evocacion) {
+      alternarVideo(t, visible)
+      return
+    }
+    // Con evocación, ella decide cuándo arranca el video (ver alEmpezar)
+    if (visible) {
+      t.evocacion.mostrar()
+    } else {
+      t.evocacion.ocultar()
+      alternarVideo(t, false)
+    }
   }, [])
 
   /** Cambia la animación de un target concreto, con transición suave */
@@ -184,6 +223,7 @@ export function useThreeScene() {
 
     for (const t of targetsRef.current) {
       if (!t) continue
+      t.evocacion?.liberar()
       if (t.tipo === 'video') { liberarVideo(t); continue }
       t.mixer?.stopAllAction()
       t.model?.traverse((obj) => {
@@ -198,7 +238,7 @@ export function useThreeScene() {
           m.dispose?.()
         })
       })
-      t.model?.parent?.remove(t.model)
+      t.raiz?.parent?.remove(t.raiz)
     }
     targetsRef.current = []
 
@@ -226,7 +266,15 @@ async function loadOneModel(glbUrl, anchorGroup) {
 
   hideUnwantedMeshes(model, gltf, cfg)
   fitModelToTarget(model, cfg.scaleMultiplier ?? 1)
-  anchorGroup.add(model)
+  /*
+    Contenedor propio: fitModelToTarget centra el modelo con un desplazamiento
+    que depende de su escala. Si la evocación escalara el modelo directamente,
+    se correría de lugar mientras crece; escalando el contenedor, crece en su
+    sitio.
+  */
+  const raiz = new THREE.Group()
+  raiz.add(model)
+  anchorGroup.add(raiz)
 
   const actions = {}
   let mixer = null
@@ -244,7 +292,7 @@ async function loadOneModel(glbUrl, anchorGroup) {
     }
   }
 
-  return { model, mixer, actions, currentAction, animationNames }
+  return { model, raiz, mixer, actions, currentAction, animationNames }
 }
 
 /**

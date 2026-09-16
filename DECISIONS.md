@@ -633,3 +633,24 @@ O sea, ese tatuaje está en el extremo bajo de lo ACEPTABLE, y con poca luz se c
 **Costos de esta ronda:** imagen $0.09 + video de 10 s $0.47. Total del día con las cuatro generaciones: **$1.21**.
 
 **Dato de precio nuevo:** 10 segundos cuestan $0.467 contra $0.28 de 6 segundos — no es proporcional, sale más barato por segundo. Si el arco de una acción necesita 10 s, el costo sigue siendo ~2% del neto.
+
+## [2026-09-16] Evocación: el contenido sale del tatuaje, y se hace en la GPU
+**Context:** A Richard le comentaron que "solo vincular" un video a un tatuaje no impresiona y es fácil de copiar. La propuesta fue que el contenido se vea **salir** del tatuaje. La pregunta era si eso se hornea en el video generado o se anima en la app.
+
+**Decision:** se anima en la app (`ARViewer/evocacion.js`), con los píxeles del propio tatuaje. La secuencia dura ~2 s: una onda enciende las líneas de tinta en violeta de marca, la tinta se desprende en ~700 partículas que suben de la piel, y el contenido se materializa desde el centro con el borde encendido, crece y se despega 0.12 del brazo (paralaje).
+
+**De dónde salen los píxeles del tatuaje:** el `.mind` guarda la foto de cada target en escala de grises (256 px de ancho). MindAR ya la tiene en memoria en `controller.tracker.trackingDataList`, así que no hay descarga extra ni cambio de esquema. `mascaraTinta.js` separa la tinta de la piel comparando cada píxel contra la luz de su zona en dos escalas (6 px para trazos, 36 px para rellenos). La primera versión comparaba contra un nivel de piel global, y la sombra del brazo brillaba como tatuaje.
+
+**Alternatives considered:**
+- **Hornearlo en el video generado** ("el perro sale de un dibujo de tinta"): el generador no sabe dónde está el tatuaje real ni desde qué ángulo se mira, así que el efecto se vería pegado. Además cuesta otra generación por cliente y hereda el estilo de la imagen de entrada (ver la entrada anterior).
+- **Una animación genérica** (portal, humo): cualquiera la copia en una tarde. Lo que protege es que el efecto dependa del rastreo **y** de la forma exacta de ese tatuaje.
+
+**Hallazgo colateral, corregido:** el recorte de croma tenía un umbral absoluto (0.32) casi igual a la saturación del verde apagado que entrega el generador (~0.31). Resultado: **todo color neutro —el pelaje negro, el pecho blanco— quedaba a alfa ~0.45**, y se veía el tatuaje a través del perro. Esto ya estaba en producción con `demo=zero-concha`. Ahora la distancia se divide entre la saturación del fondo y un neutro vale 1.0 siempre.
+
+**Risks/Limitations:**
+- `trackingDataList` no es API pública de MindAR. Si cambia, el visor sigue funcionando pero sin evocación.
+- Con `LuminanceFormat` la textura llegaba vacía en WebGL2 sin ningún error. Se usa RGBA.
+- **Solo se probó en una página que simula el ancla** (`prueba-evocacion.html`), no con cámara sobre piel. Falta probar en el teléfono: fps en gama media, cómo se ve el violeta sobre piel real y la gracia de 1.5 s ante los parpadeos del rastreo (la huella rastrea al 16%).
+- Llega al APK solo con una versión nueva (Capacitor empaqueta `dist`). En la web basta con desplegar.
+
+**Improvement opportunities:** color de tinta por tatuaje; destino de las partículas con la silueta del primer cuadro en vez de una elipse; `?evocacion=0` ya permite grabar el antes y el después.

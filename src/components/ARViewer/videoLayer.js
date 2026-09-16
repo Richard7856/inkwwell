@@ -93,15 +93,23 @@ function detectarCroma(video) {
 }
 
 /*
-  Tolerancia del recorte.
+  Tolerancia del recorte, en PROPORCIÓN de la saturación del fondo.
 
-  `umbral` es la distancia de color a partir de la cual un píxel se considera
-  fondo. `suavizado` define la franja de transición: sin ella el borde queda
+  `umbral` es la distancia a partir de la cual un píxel deja de ser fondo.
+  `suavizado` define la franja de transición: sin ella el borde queda
   dentado, porque la compresión de video difumina el contorno y crea píxeles
   intermedios entre el dibujo y el fondo.
+
+  ── Por qué relativa y no absoluta ──
+  Un color neutro (negro, blanco, gris) está SIEMPRE a la misma distancia del
+  fondo: exactamente la saturación del verde. El generador entrega un verde
+  apagado (~0.31 de saturación), y el umbral absoluto anterior era 0.32±0.10:
+  el pelaje negro y el pecho blanco de Zero quedaban a alfa ~0.45 y se veía el
+  tatuaje a través del perro. Dividiendo entre la saturación, un neutro vale
+  1.0 sin importar qué tan apagado salga el fondo, y queda opaco.
 */
-const UMBRAL = 0.32
-const SUAVIZADO = 0.10
+const UMBRAL = 0.45
+const SUAVIZADO = 0.15
 
 const VERTEX = `
   varying vec2 vUv;
@@ -117,9 +125,36 @@ const FRAGMENT = `
   uniform float umbral;
   uniform float suavizado;
   uniform float opacidad;
+  uniform float aparicion;
+  uniform float proporcion;
+  uniform vec3 colorBorde;
   varying vec2 vUv;
 
+  // Ruido de valor barato: solo sirve para que el borde del disolvido no
+  // sea un círculo perfecto
+  float azar(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+  float ruido(vec2 p) {
+    vec2 i = floor(p), f = fract(p);
+    f = f * f * (3.0 - 2.0 * f);
+    return mix(mix(azar(i), azar(i + vec2(1, 0)), f.x),
+               mix(azar(i + vec2(0, 1)), azar(i + vec2(1, 1)), f.x), f.y);
+  }
+
   void main() {
+    /*
+      Materialización (ver evocacion.js): el sujeto se forma desde un punto
+      algo por debajo del centro —donde suele tener los pies— hacia afuera.
+      Con aparicion = 1 este bloque no descarta nada y el video se ve entero.
+    */
+    float borde = 0.0;
+    if (aparicion < 1.0) {
+      vec2 q = (vUv - vec2(0.5, 0.4)) * vec2(1.0, proporcion);
+      float campo = length(q) / (0.5 * proporcion) * 0.75 + ruido(vUv * 9.0) * 0.25;
+      float frente = aparicion * 1.1;
+      if (campo > frente) discard;
+      borde = 1.0 - smoothstep(0.0, 0.07, frente - campo);
+    }
+
     vec4 color = texture2D(mapa, vUv);
 
     /*
@@ -132,7 +167,10 @@ const FRAGMENT = `
     */
     vec3 d = color.rgb - croma;
     float brillo = (d.r + d.g + d.b) / 3.0;
-    float distancia = length(d - brillo);
+    // Saturación del fondo: la distancia de un gris a él. Piso de 0.05 por si
+    // el fondo medido fuera casi neutro y la división se disparara.
+    float saturacion = max(length(croma - (croma.r + croma.g + croma.b) / 3.0), 0.05);
+    float distancia = length(d - brillo) / saturacion;
 
     float alfa = smoothstep(umbral - suavizado, umbral + suavizado, distancia);
     if (alfa < 0.01) discard;   // píxel de fondo: ni siquiera se escribe
@@ -176,6 +214,9 @@ const FRAGMENT = `
         if (rgb.b > ref) rgb.b = mix(rgb.b, ref, derrame);
       }
     }
+
+    // El frente del disolvido brilla del color de la tinta encendida
+    rgb = mix(rgb, colorBorde * 1.6, borde * 0.85);
 
     gl_FragColor = vec4(rgb, alfa * opacidad);
 
@@ -259,6 +300,10 @@ export function cargarVideo(config, anchorGroup) {
               umbral: { value: UMBRAL },
               suavizado: { value: SUAVIZADO },
               opacidad: { value: 1 },
+              // 1 = visible entero; la evocación lo anima de 0 a 1
+              aparicion: { value: 1 },
+              proporcion: { value: 1 / proporcion },
+              colorBorde: { value: new THREE.Color(0x8b5cf6) },
             },
             vertexShader: VERTEX,
             fragmentShader: FRAGMENT,
@@ -301,12 +346,13 @@ export function cargarVideo(config, anchorGroup) {
  * tatuaje, la animación va por la mitad o ya terminó. Además gasta batería
  * decodificando cuadros que nadie ve.
  */
-export function alternarVideo(capa, visible) {
+export function alternarVideo(capa, visible, { reiniciar = true } = {}) {
   if (capa?.tipo !== 'video') return
   if (visible) {
     // Se reinicia al aparecer: quien apunta al tatuaje debe ver la pieza
-    // desde el principio, no desde donde se había quedado.
-    capa.video.currentTime = 0
+    // desde el principio, no desde donde se había quedado. La excepción es un
+    // parpadeo del rastreo, que la evocación distingue y pide continuar.
+    if (reiniciar) capa.video.currentTime = 0
     // play() devuelve una promesa que el navegador rechaza si bloquea la
     // autoreproducción. Se ignora: el video queda en el primer cuadro, que es
     // preferible a un error en consola que no le sirve a nadie.
@@ -314,6 +360,15 @@ export function alternarVideo(capa, visible) {
   } else {
     capa.video.pause()
   }
+}
+
+/**
+ * Progreso 0..1 de la materialización. Sin croma no hay sombreador propio, así
+ * que el video sin recorte solo crece (lo hace la evocación) sin disolverse.
+ */
+export function formarVideo(capa, p) {
+  const u = capa?.material?.uniforms?.aparicion
+  if (u) u.value = p
 }
 
 /** Libera el video y su textura. */
