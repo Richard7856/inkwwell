@@ -2,7 +2,7 @@ import { useRef, useCallback } from 'react'
 import * as THREE from 'three'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js'
-import { cargarVideo, alternarVideo, liberarVideo } from './videoLayer.js'
+import { cargarVideo, alternarVideo, liberarVideo, actualizarVideo } from './videoLayer.js'
 
 /*
   DRACOLoader compartido — necesario para decodificar GLBs comprimidos con Draco.
@@ -158,7 +158,10 @@ export function useThreeScene() {
       // Un solo delta para todos: si cada mixer pidiera el suyo, el primero
       // consumiría el tiempo transcurrido y los demás avanzarían en cámara lenta
       // Solo los GLB tienen mixer; la textura de video se actualiza sola
-      for (const t of targetsRef.current) t?.mixer?.update(delta)
+      for (const t of targetsRef.current) {
+        t?.mixer?.update(delta)
+        actualizarVideo(t)
+      }
       const ahora = performance.now()
       seguidoresRef.current.forEach((seg, i) => actualizarSeguidor(seg, targetsRef.current[i], ahora))
       renderer.render(scene, camera)

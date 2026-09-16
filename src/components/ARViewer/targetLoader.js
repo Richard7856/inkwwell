@@ -117,21 +117,6 @@ const DEMO_ZERO_NACE = {
   ],
 }
 
-/*
-  La misma idea, pero la intro arranca con UNA GOTA de tinta sobre el centro
-  de la almohadilla principal en vez del dibujo completo. Con el brazo en
-  movimiento el rastreo se desfasa unos milímetros: con el dibujo completo eso
-  se ve como líneas dobles; una gota sobre relleno oscuro lo tolera.
-  Se conserva `zero-nace` para comparar las dos sobre la misma piel.
-*/
-const DEMO_ZERO_GOTA = {
-  mindUrl: DEMO_ZERO.mindUrl,
-  targets: [
-    { ...DEMO_ZERO_NACE.targets[0], introUrl: '/video/zero-gota.mp4' },
-    DEMO_ZERO_NACE.targets[1],
-  ],
-}
-
 /**
  * @param {object} params
  * @param {string|null} params.tattooId - UUID de un tatuaje concreto
@@ -144,7 +129,6 @@ export async function loadTarget({ tattooId = null, demo = null } = {}) {
   if (demo === 'zero') return DEMO_ZERO
   if (demo === 'zero-concha') return DEMO_ZERO_CONCHA
   if (demo === 'zero-nace') return DEMO_ZERO_NACE
-  if (demo === 'zero-gota') return DEMO_ZERO_GOTA
 
   if (!tattooId) {
     throw new Error('No se indicó qué tatuaje escanear')

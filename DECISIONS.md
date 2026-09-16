@@ -703,3 +703,19 @@ Resultado de la prueba (`demo=zero-nace`): 6 s, **$0.28**, 110 s de generación.
 - Tres intentos para ubicar la gota: la zona más densa (cayó entre dos almohadillas), densidad ponderada al centro (cayó en la piel del hueco), y el que quedó.
 
 **Improvement opportunities:** pedir en el prompt que el charco no pase de cierto tamaño; un cuadro final más pequeño (el sujeto a la escala del tatuaje) para evitar el acercamiento.
+
+## [2026-09-16] Llave por diferencia: el dibujo quieto de la intro no se pinta
+**Context:** Richard descartó la intro de gota ("exagerada, la tinta se sale y se corta en los lados") y eligió `zero-nace`: le encantó cómo escurre la tinta y forma el charco. Lo único problemático era el arranque: el dibujo del video se pinta encima del tatuaje real, y con el rastreo imperfecto se ven líneas dobles.
+
+**Decision:** `videoLayer` captura el primer cuadro de la intro y, en el sombreador, no pinta los píxeles que siguen iguales a él. Mientras el dibujo está quieto se ve el tatuaje REAL; solo aparece la tinta que empieza a moverse. La llave se apaga entre el 40% y el 48% de la intro (2.4-2.8 s en `zero-nace`), cuando el charco ya cubrió el dibujo: sin eso, el pelaje negro del perro sobre una línea del dibujo original contaba como "sin cambio" y quedaba recortado. `introLlave: [ini, fin]` lo ajusta por video.
+
+Probado en la página de simulación con el video corrido a propósito (1.5% del ancho y 1° de giro): a los 0.3 s no hay ninguna línea doble; a 1.3 s la tinta burbujea desde la almohadilla; a 3.2 s Zero sale sólido.
+
+**Alternatives considered:**
+- Saltar el primer segundo y hacer un fundido: resuelve el arranque, pero las almohadillas de abajo siguen dibujadas quietas hasta ~2.4 s y el desfase se vería ahí.
+- Intro de gota: descartada por Richard; el compositor la conserva como `--modo=gota`, pero el modo por defecto vuelve a ser `trazo`. Se retira `demo=zero-gota` y su video (1.1 MB menos en el APK).
+
+**Risks/Limitations:**
+- Cuando la llave se apaga, los trazos de los dedos que el charco no cubrió se ven un instante (poco, y ya derritiéndose).
+- La fracción 40-48% está medida sobre UN video. Otra intro con otro ritmo puede necesitar `introLlave`. Para producción conviene calcularla del propio video (cuando la cobertura de tinta deja de crecer).
+- Si el primer cuadro no se puede capturar (CORS o cuadro sin decodificar), se reintenta al reproducir; si vuelve a fallar, se muestra el dibujo completo como antes.

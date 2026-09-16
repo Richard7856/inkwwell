@@ -3,16 +3,17 @@
  * tatuaje.
  *
  * Uso:
- *   node componer-inicio.js [--modo=gota|trazo] <foto-compilada.jpg> <salida-inicio.png> \
+ *   node componer-inicio.js [--modo=trazo|gota] <foto-compilada.jpg> <salida-inicio.png> \
  *        [<cuadro-final-de-otro-video.png> <salida-final.png>]
  *
  * ── Modos ──
- * - `gota` (por defecto): solo una gota de tinta sobre el centro de la zona
- *   más oscura del tatuaje. El video la hace brotar y de ahí sale el sujeto.
- * - `trazo`: el dibujo completo del tatuaje. Se ve espectacular quieto, pero
- *   con el brazo en movimiento el rastreo se desfasa unos milímetros y las
- *   líneas aparecen DOBLES — se lee como error (probado el 16 sep). Una gota
- *   sobre un relleno oscuro tolera ese desfase sin que se note.
+ * - `trazo` (por defecto): el dibujo completo del tatuaje. La tinta se
+ *   derrite desde su propio trazo, que es lo que Richard eligió. El riesgo de
+ *   líneas dobles con el rastreo desfasado lo resuelve la app: no pinta la
+ *   parte del video que sigue igual al primer cuadro (ver videoLayer.js).
+ * - `gota`: solo una gota de tinta en el corazón de la forma más grande.
+ *   Probado el 16 sep y descartado: el charco crece demasiado, se sale del
+ *   lienzo y se ve exagerado. Se conserva por si otro diseño lo necesita.
  *
  * ── Por qué este lienzo ──
  * El generador (Hailuo-02) hereda la proporción de la imagen de entrada, y el
@@ -44,7 +45,7 @@ const VERDE = [95, 196, 77]
 const TINTA = [28, 30, 36]
 
 const argumentos = process.argv.slice(2)
-const modo = (argumentos.find((a) => a.startsWith('--modo='))?.split('=')[1]) ?? 'gota'
+const modo = (argumentos.find((a) => a.startsWith('--modo='))?.split('=')[1]) ?? 'trazo'
 const [fotoRuta, salidaInicio, finalRuta, salidaFinal] = argumentos.filter((a) => !a.startsWith('--'))
 if (!['gota', 'trazo'].includes(modo)) {
   console.error(`Modo desconocido: ${modo}. Usa gota o trazo.`)

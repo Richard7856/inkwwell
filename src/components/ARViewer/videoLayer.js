@@ -141,6 +141,8 @@ const FRAGMENT = `
   uniform float umbral;
   uniform float suavizado;
   uniform float opacidad;
+  uniform sampler2D base;
+  uniform float usarBase;
   varying vec2 vUv;
 
   void main() {
@@ -162,7 +164,29 @@ const FRAGMENT = `
     float distancia = length(d - brillo) / saturacion;
 
     float alfa = smoothstep(umbral - suavizado, umbral + suavizado, distancia);
-    if (alfa < 0.01) discard;   // píxel de fondo: ni siquiera se escribe
+
+    /*
+      Llave por diferencia (solo durante la intro).
+
+      La intro arranca con el dibujo del tatuaje, pero el tatuaje REAL ya está
+      ahí, en la piel. Si se pinta el dibujo del video encima, cualquier
+      desfase del rastreo se ve como líneas dobles (visto en el teléfono el
+      16 sep). Así que lo que sigue igual que en el primer cuadro no se pinta:
+      se ve la piel. Solo aparece lo que cambió — la tinta que empieza a
+      escurrir y lo que sale de ella.
+
+      Umbral 0.10-0.22 en distancia RGB: la compresión mueve los píxeles
+      quietos ~0.03-0.06; la tinta que se derrite cambia de verde a negro
+      (~0.6), así que hay margen amplio.
+    */
+    if (usarBase > 0.0) {
+      float cambio = length(color.rgb - texture2D(base, vUv).rgb);
+      // usarBase baja a 0 cuando el sujeto sale: si no, su pelaje negro sobre
+      // una línea del dibujo original contaría como "sin cambio" y se recortaría
+      alfa *= mix(1.0, smoothstep(0.10, 0.22, cambio), usarBase);
+    }
+
+    if (alfa < 0.01) discard;   // píxel de fondo o dibujo quieto: no se escribe
 
     /*
       Desderrame.
@@ -210,11 +234,44 @@ const FRAGMENT = `
 `
 
 /*
+  En qué tramo de la intro se apaga la llave por diferencia, como fracción de
+  su duración. Antes, el dibujo quieto no se pinta (se ve el tatuaje real);
+  después, se pinta todo. Medido en zero-nace (6 s): el charco ya cubrió el
+  dibujo a los ~2.4 s y el perro asoma a los ~2.9 s. Un video con otro ritmo
+  puede ajustarlo con `introLlave: [inicio, fin]` en segundos.
+*/
+const LLAVE_FRACCION = [0.40, 0.48]
+
+/*
   Si el rastreo se pierde menos que esto, al recuperarlo el video CONTINÚA en
   vez de volver al inicio. El tatuaje de la huella rastrea al 16% y parpadea:
   reiniciar en cada parpadeo repetiría la intro sin fin.
 */
 const GRACIA_PERDIDA_MS = 1500
+
+/**
+ * Copia el cuadro actual del video a una textura, a media resolución (la
+ * comparación no necesita detalle y así pesa la cuarta parte).
+ *
+ * @returns {THREE.CanvasTexture|null} null si el cuadro sale negro (Android a
+ *   veces entrega 'loadeddata' sin cuadro decodificado) o si CORS lo impide
+ */
+function capturarCuadro(video) {
+  const lienzo = document.createElement('canvas')
+  lienzo.width = Math.max(1, Math.round(video.videoWidth / 2))
+  lienzo.height = Math.max(1, Math.round(video.videoHeight / 2))
+  const ctx = lienzo.getContext('2d', { willReadFrequently: true })
+  try {
+    ctx.drawImage(video, 0, 0, lienzo.width, lienzo.height)
+    // Una esquina negra delata un cuadro sin decodificar: el croma nunca es negro
+    const [r, g, b] = ctx.getImageData(0, 0, 1, 1).data
+    if (r + g + b < 30) return null
+  } catch {
+    return null
+  }
+  // Mismo criterio que la textura del video: sin declarar espacio de color
+  return new THREE.CanvasTexture(lienzo)
+}
 
 /**
  * Abre un <video> y espera a que tenga un cuadro decodificado.
@@ -301,6 +358,8 @@ function abrirVideo(url, { bucle, croma }) {
  * @param {object} config
  * @param {string} config.videoUrl - Video principal, en bucle
  * @param {string} [config.introUrl] - Se reproduce una vez antes del principal
+ * @param {[number, number]} [config.introLlave] - Segundos en que la llave por
+ *   diferencia se apaga. Por defecto, LLAVE_FRACCION de la duración.
  * @param {boolean} [config.croma] - Recortar el fondo por color. Con false el
  *   video se muestra completo, dentro de su rectángulo.
  * @param {number} [config.escala] - Ancho del plano en unidades del target,
@@ -309,7 +368,7 @@ function abrirVideo(url, { bucle, croma }) {
  * @returns {Promise<object>} handle de la capa
  */
 export async function cargarVideo(config, anchorGroup) {
-  const { videoUrl, introUrl = null, croma = true, escala = 1 } = config
+  const { videoUrl, introUrl = null, croma = true, escala = 1, introLlave = null } = config
 
   const [principal, intro] = await Promise.all([
     abrirVideo(videoUrl, { bucle: true, croma }),
@@ -335,6 +394,25 @@ export async function cargarVideo(config, anchorGroup) {
   }
 
   const primera = intro ?? principal
+
+  /*
+    Primer cuadro de la intro, para la llave por diferencia. Si no se puede
+    capturar ahora, se reintenta al reproducir: los primeros ~0.8 s de la
+    intro son el dibujo quieto, así que ese cuadro sigue sirviendo.
+  */
+  if (intro && croma) {
+    const d = intro.video.duration || 6
+    intro.llave = introLlave ?? [d * LLAVE_FRACCION[0], d * LLAVE_FRACCION[1]]
+    intro.base = capturarCuadro(intro.video)
+    if (!intro.base) {
+      intro.video.addEventListener('playing', () => requestAnimationFrame(() => {
+        intro.base = capturarCuadro(intro.video)
+        if (intro.base && capa.actual === intro) mostrarPieza(capa, intro)
+        if (!intro.base) console.warn('[videoLayer] Sin primer cuadro de la intro; se mostrará el dibujo completo')
+      }), { once: true })
+    }
+  }
+
   const material = croma
     ? new THREE.ShaderMaterial({
         uniforms: {
@@ -343,6 +421,8 @@ export async function cargarVideo(config, anchorGroup) {
           umbral: { value: UMBRAL },
           suavizado: { value: SUAVIZADO },
           opacidad: { value: 1 },
+          base: { value: null },
+          usarBase: { value: 0 },
         },
         vertexShader: VERTEX,
         fragmentShader: FRAGMENT,
@@ -361,6 +441,8 @@ export async function cargarVideo(config, anchorGroup) {
   // él en el buffer de profundidad y parpadee
   plano.position.z = 0.01
   anchorGroup.add(plano)
+
+  if (croma) mostrarPiezaEnMaterial(material, primera)
 
   const capa = {
     tipo: 'video',
@@ -395,14 +477,37 @@ export async function cargarVideo(config, anchorGroup) {
 /** Pone una pieza (intro o principal) en el plano, con su color de fondo. */
 function mostrarPieza(capa, pieza) {
   capa.actual = pieza
-  const u = capa.material.uniforms
-  if (u) {
-    u.mapa.value = pieza.textura
-    if (pieza.croma) u.croma.value.copy(pieza.croma)
+  if (capa.material.uniforms) {
+    mostrarPiezaEnMaterial(capa.material, pieza)
   } else {
     capa.material.map = pieza.textura
     capa.material.needsUpdate = true
   }
+}
+
+function mostrarPiezaEnMaterial(material, pieza) {
+  const u = material.uniforms
+  u.mapa.value = pieza.textura
+  if (pieza.croma) u.croma.value.copy(pieza.croma)
+  // Solo la intro tiene base: el principal se pinta completo
+  u.base.value = pieza.base ?? null
+  u.usarBase.value = pieza.base ? fuerzaLlave(pieza) : 0
+}
+
+function fuerzaLlave(pieza) {
+  const [ini, fin] = pieza.llave
+  const t = pieza.video.currentTime
+  return 1 - Math.min(1, Math.max(0, (t - ini) / (fin - ini)))
+}
+
+/**
+ * Se llama en cada cuadro: la fuerza de la llave depende del tiempo del video,
+ * y la textura del video se actualiza sola pero los uniformes no.
+ */
+export function actualizarVideo(capa) {
+  if (capa?.tipo !== 'video') return
+  const u = capa.material.uniforms
+  if (u && capa.actual.base) u.usarBase.value = fuerzaLlave(capa.actual)
 }
 
 /**
@@ -451,6 +556,7 @@ export function liberarVideo(capa) {
     */
     pieza.video.load()
     pieza.textura.dispose()
+    pieza.base?.dispose()
   }
   capa.material?.dispose()
   capa.plano?.geometry?.dispose()
