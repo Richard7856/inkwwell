@@ -682,3 +682,24 @@ Resultado de la prueba (`demo=zero-nace`): 6 s, **$0.28**, 110 s de generación.
 - Para el producto hace falta llevar esto al worker: dos generaciones por cliente (intro + recuerdo) o una sola con el recuerdo como cuadro final. Costo sigue en ~2-4% del neto.
 
 **Improvement opportunities:** probar 10 s para una salida más lenta; `hailuo-02/pro` para más calidad; un borde de trazo más limpio si la foto es de estudio.
+
+## [2026-09-16] Contenido tolerante al rastreo: congelar al perderlo e intro de gota
+**Context:** Con `zero-nace` en el teléfono, Richard confirmó que se ve mucho mejor, pero que al mover el brazo el rastreo falla mucho. Opciones que puso sobre la mesa: omitir el rastreo, tinta solo en algunas zonas, solo el efecto de la tinta que escurre, o compilar varias fotos del mismo tatuaje.
+
+**Diagnóstico:** MindAR supone un objetivo plano y rígido. El brazo es curvo, la piel se deforma, el movimiento desenfoca, y la huella rastrea al 16%. Ningún ajuste lo deja pegado con el brazo en movimiento rápido; lo que se puede controlar es cuánto SE NOTA la falla.
+
+**Decision:**
+1. **Congelar en vez de desaparecer** (`useThreeScene`): el contenido cuelga de un grupo seguidor que copia la matriz del ancla mientras hay rastreo. Al perderlo se queda quieto 600 ms, se desvanece en 400 ms y solo entonces se pausa. Antes, MindAR lo apagaba en el mismo cuadro y se sentía como parpadeo.
+2. **Intro de gota** (`componer-inicio.js --modo=gota`, `demo=zero-gota`): el primer cuadro ya no es el dibujo completo sino una gota de tinta en el corazón de la forma más grande del tatuaje (transformada de distancia sobre el relleno cerrado). Con el dibujo completo, un desfase de milímetros se ve como líneas dobles; una gota sobre relleno oscuro lo tolera. Generación: 6 s, $0.28, 117 s.
+
+**Alternatives considered:**
+- **Varias fotos del mismo tatuaje:** ayudaría a *detectarlo* con distinta luz y ángulo, no a *seguirlo* en movimiento. Cada foto tiene su propia perspectiva, así que al alternar entre targets el contenido brincaría; evitarlo exige registrar las fotos entre sí. Varios días de trabajo con 14 días al cierre: se pospone.
+- **Omitir el rastreo:** sin ancla el contenido deja de ser "del tatuaje", que es el producto.
+
+**Risks/Limitations:**
+- El congelado no se ha visto en el teléfono todavía.
+- En la intro de gota el charco llega al borde inferior del lienzo entre 2.5 y 3.5 s; en piel puede verse un corte recto.
+- Cerca de 4.5 s hay un acercamiento: el modelo lo mete para llegar al tamaño del cuadro final.
+- Tres intentos para ubicar la gota: la zona más densa (cayó entre dos almohadillas), densidad ponderada al centro (cayó en la piel del hueco), y el que quedó.
+
+**Improvement opportunities:** pedir en el prompt que el charco no pase de cierto tamaño; un cuadro final más pequeño (el sujeto a la escala del tatuaje) para evitar el acercamiento.
