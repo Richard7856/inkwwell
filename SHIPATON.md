@@ -18,6 +18,11 @@ concurso, cumplido el día 2). El **lanzamiento** —anunciar y empujar— es el
 
 Consecuencia dura: **la v4 tiene que estar publicada antes del 17.**
 
+> **Al 15 de septiembre eso no se cumplió.** La v4 sigue sin compilarse y falta
+> recargar Higgsfield y la `service_role`. La fecha está **en revisión**: o se
+> desbloquea todo de inmediato, o se mueve al 18-19, que conserva la quincena y
+> da un día de colchón. Sin decisión de Richard. Ver `PROXIMA-SESION.md`.
+
 ## Meta
 
 Competir en el **RevenueCat Shipaton 2026** con InkAR, publicando en Google
@@ -106,6 +111,11 @@ Meta: **app viva en Play antes del día 14**, aunque sea mínima.
 **Giro del 7 de septiembre: el contenido pasa de 3D a video 2D.** Ver
 `DECISIONS.md`. El 3D no se abandona — se mueve de producto a promesa.
 
+**Costo por video, medido el 15 sep** vía `POST /estimate<ruta>` (gratis):
+Hailuo-02 estándar **$0.28**, Hailuo-2.3-fast $0.19, Kling 2.5 turbo $0.21.
+Contra $25 por crédito de usuario es **1-2% del neto**: el precio no está
+limitado por el costo. La API es una cuenta distinta del plan Plus del panel.
+
 | Tarea | Estado |
 |---|---|
 | Textura de video sobre plano anclado al target | ✅ probado sobre piel real |
@@ -155,7 +165,7 @@ devolver el dinero después.
 | Tatuajes que trackean mal generan reembolsos | Alto para la reputación | El analizador advierte **antes** de elegir diseño; se guarda el veredicto para calibrar | 🟡 hecho en código, pendiente redesplegar el worker |
 | Límite de correos de Supabase corta el registro | Medio | SMTP propio (Resend/SendGrid) antes del lanzamiento | ⬜ |
 | Perder la llave de subida | Alto | Respaldo en dos lugares distintos. Con Play App Signing es recuperable pidiéndoselo a Google, pero tarda días. **Vive en `~/inkar-release.jks`, fuera del proyecto y de git, en una sola máquina.** Ver `SETUP.md` | ⬜ |
-| La v4 no queda publicada antes del lanzamiento del 17 | **Crítico** — se lanzaría la v3, sin generación ni cobro | Entregar a Play el 14-15 a más tardar; la revisión tardó ~1 día | ⬜ |
+| La v4 no queda publicada antes del lanzamiento del 17 | **Crítico** — se lanzaría la v3, sin generación ni cobro | Entregar a Play el 14-15 a más tardar; la revisión tardó ~1 día | 🔴 **REALIZÁNDOSE**: al 15 sep sigue en versionCode 3, sin compilar. Decidir entre arrancar hoy o mover al 18-19 |
 
 ## Decisiones tomadas
 
