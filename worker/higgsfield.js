@@ -164,6 +164,7 @@ export async function enviar({ prompt, imageUrl }) {
     if (nuestro) {
       const e = new Error(nuestro.replace('${ENDPOINT}', ENDPOINT))
       e.esDeCuenta = true   // para el registro: revisar la cuenta, no la foto
+      e.detalle = detalle   // crudo, para que disponibilidad.js sepa cuál fue
       throw e
     }
     // `detail` es donde la API pone el motivo; sin él, al menos el status

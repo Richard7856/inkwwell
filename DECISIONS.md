@@ -588,3 +588,26 @@ O sea, ese tatuaje está en el extremo bajo de lo ACEPTABLE, y con poca luz se c
 **Lo que se agregó para el revisor:** instrucciones para el código promocional `SHIPATON`. Generar un video cuesta un crédito, y un revisor sin créditos no puede probar la función principal — calificaría lo que se imagina. También la ruta a "Pruébalo sin tatuaje", que es la vía más rápida a ver el AR funcionando sin tener uno.
 
 **Verificado en navegador, en los dos idiomas:** la política renderiza con la vigencia nueva, con Higgsfield en la lista de terceros y con las entradas de la foto del recuerdo y de los créditos.
+
+## [2026-09-16] Interruptor de degradación: la app deja de ofrecer el video cuando no se puede generar
+**Context:** El generador puede estar caído por tres motivos distintos y la app no distinguía ninguno: faltan llaves en Railway (hoy mismo, `/generar` responde 503 `no_configurado` en producción), la cuenta de Higgsfield se quedó sin saldo, o el modelo configurado dejó de estar habilitado en el plan. En los tres casos "Anima tu recuerdo" se ofrecía igual: el usuario subía la foto del recuerdo, escribía su historia, y chocaba al final. El crédito vuelve —el worker reembolsa con cerrojo— pero el esfuerzo no, y la impresión que queda es que el producto no sirve.
+
+**El problema que casi se resuelve mal:** la propuesta original era un interruptor contra quedarse sin saldo. Pero un interruptor por configuración **no detecta saldo**: las llaves siguen presentes con la cuenta vacía. Y sondear el saldo es imposible — está registrado como trampa: la API de Higgsfield valida el cuerpo del pedido ANTES de revisar créditos, así que una cuenta vacía responde igual que una llena a cualquier sondeo que no sea una generación real. `modelos.js` prometía detectarlo y era falso.
+
+**Decision:** no predecir, **reaccionar**. El único informe fiable sobre la cuenta es un envío de verdad, y `higgsfield.js` ya separaba "es culpa de nuestra cuenta" (`esDeCuenta`: `not_enough_credits`, `model_not_found`, `model_disabled`) de "esta petición estuvo mal". `worker/disponibilidad.js` recuerda ese fallo y apaga el producto; un envío aceptado lo enciende de vuelta. El primer usuario choca y recupera su crédito; los siguientes ven una pantalla honesta en lugar de la misma pared.
+
+**Por qué el fallo caduca a los 15 minutos:** recargar Higgsfield no reinicia el worker ni avisa a nadie. Sin caducidad, el producto seguiría escondido después de recargar hasta el siguiente despliegue. Pasado el enfriamiento se vuelve a ofrecer y el siguiente envío real decide.
+
+**Por qué en memoria y no en la base:** es una señal operativa de segundos, no un dato del negocio. Reiniciar el worker la borra, y eso es correcto: un despliegue suele ser justamente lo que cambió la configuración.
+
+**Por qué el estado viaja por `/health` y no por una ruta nueva:** las dos combinaciones de versiones sobreviven. Un APK viejo contra el worker nuevo recibe el campo extra y lo ignora; un APK nuevo contra un worker viejo no ve el campo y asume que sí se puede generar. `generacion.motivo` es un **código**, nunca una frase: lo que redacta el worker no pasa por el diccionario del cliente y llegaría sin traducir a un teléfono en inglés.
+
+**Ante la duda, se ofrece.** El sondeo del cliente tiene 4 s de límite y falla abierto: una red móvil que parpadea no es evidencia de que el generador esté mal, y esconder lo que se vende por eso cuesta más que el error que se quiere evitar. Solo se apaga cuando el worker lo afirma. El guardia real está en el worker —rechaza antes de tocar el crédito—, así que apagarlo en la pantalla es cortesía, no seguridad.
+
+**Por qué la tarjeta se queda visible, apagada, en vez de desaparecer:** esconderla dejaría el catálogo como si fuera la oferta completa y el usuario aprendería que InkAR es "modelos 3D gratis", sin saber que se perdió de algo. Se conserva el título, se quita el botón y se dice que vuelve pronto. El motivo NO se le explica: "el proveedor no tiene saldo" es un problema nuestro contado como si fuera suyo. Eso va a los registros del worker, donde ya se grita `⚠️ REVISAR LA CUENTA DE HIGGSFIELD`. Cuando el recuerdo está apagado, el destacado pasa al catálogo — la regla de `Tarjeta` es que solo una cosa por pantalla pide atención.
+
+**Nuevo código de error `no_disponible`**, distinto de `no_configurado`: el primero es "la cuenta falló hace poco", el segundo "faltan variables". La pantalla los trata igual (volver a la elección con la tarjeta apagada) pero los registros no.
+
+**Verificado contra las rutas reales**, worker levantado en local: sin llaves, `/health` reporta `no_configurado` y `/generar` sigue devolviendo 503 con el mismo código que antes (compatible hacia atrás); con llaves, `/health` reporta disponible y `/generar` pasa el guardia y cae en la validación normal. El circuito se probó aparte en 13 casos: apagado por cada motivo de cuenta, encendido por envío aceptado, indiferencia ante fallos del usuario, y caducidad del enfriamiento.
+
+**Limitación conocida:** `BASE` de Higgsfield es una constante, así que el camino completo —envío real rechazado por saldo → circuito apagado— no se puede ejercitar sin la API de verdad. Se probaron por separado las dos mitades que se tocan en ese punto.

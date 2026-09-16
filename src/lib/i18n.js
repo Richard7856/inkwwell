@@ -304,6 +304,11 @@ const EN = {
   'Empezar': 'Start',
   'Tienes 1 crédito': 'You have 1 credit',
   'Tienes {n} créditos': 'You have {n} credits',
+  'Vuelve pronto': 'Back soon',
+  'No se pueden crear videos en este momento. Estamos en eso — tu tatuaje ya quedó activado y puedes animarlo cuando volvamos.':
+    'Videos can’t be created right now. We’re on it — your tattoo is already activated and you can animate it when we’re back.',
+  'No se pueden crear videos en este momento. No se te cobró ningún crédito.':
+    'Videos can’t be created right now. You weren’t charged any credit.',
   'Elegir del catálogo': 'Pick from the catalog',
   'Modelos 3D listos. Gratis, para probar cómo se ve.': 'Ready-made 3D models. Free, to see how it looks.',
   'La foto del recuerdo': 'The photo of the memory',
