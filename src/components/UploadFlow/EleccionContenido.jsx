@@ -45,7 +45,11 @@ export default function EleccionContenido({
       <p className="text-gray-400">{t('¿Qué quieres que aparezca sobre tu tatuaje?')}</p>
 
       <Tarjeta destacada={generacionDisponible}>
-        <p className="text-[10px] uppercase tracking-wider text-realidad mb-1">
+        <p
+          className={`text-[10px] uppercase tracking-wider mb-1 ${
+            generacionDisponible ? 'text-realidad' : 'text-gray-500'
+          }`}
+        >
           {generacionDisponible ? t('1 crédito') : t('Vuelve pronto')}
         </p>
         <h3 className={`font-semibold text-lg ${generacionDisponible ? '' : 'text-gray-400'}`}>
