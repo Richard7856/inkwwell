@@ -618,3 +618,18 @@ O sea, ese tatuaje está en el extremo bajo de lo ACEPTABLE, y con poca luz se c
 **Costo:** $0.28 por video, confirmado por la estimación antes de cada envío. Dos pruebas: $0.56 en total.
 
 **Lo que queda a criterio de producto, no técnico:** el video va anclado plano sobre el tatuaje. Un sujeto que gira sobre ese plano puede leerse como holograma —que es el efecto buscado— o puede romper la sensación de que está pegado a la piel. Eso se juzga viéndolo sobre piel real, no por números.
+
+## [2026-09-16] El video hereda el estilo de la foto de entrada, y eso define el producto
+**Context:** Richard pidió que el video "se viera más 3D y realista", con una acción de verdad —el perro agarrando la concha del suelo— y no una animación corta.
+
+**La acción sí se consiguió.** Con la imagen de partida correcta y 10 segundos, el arco quedó completo: el perro mira la concha en el suelo, se echa, la sujeta con las patas y se la come, con un acercamiento lento de cámara. Vertical 9:16 (768x1364), 146 s de generación. El croma aguantó todo el video (desviación 1.8 a 2.3).
+
+**El realismo NO se consiguió, y la causa es estructural:** `image-to-video` **hereda el estilo de la imagen de entrada**. La foto que se estaba usando era un cuadro de `brand/video/zero-croma.mp4`, que resultó ser una **ilustración plana de caricatura** — no un render 3D, como se había supuesto al describirla de lejos. De una caricatura sale animación de caricatura, siempre, sin importar el prompt.
+
+**Se intentó convertirla a foto y no se puede con este plan.** `nano-banana` responde `model_not_found`; toda la familia `reve` responde `423 model_blocked`; `flux-pro/kontext` tampoco está. Sí están `higgsfield-ai/soul/*` ($0.188) y `popcorn/auto` ($0.092). Se probó popcorn con la caricatura como referencia pidiendo explícitamente fotografía: **devolvió otra ilustración**, más detallada y con la concha en el suelo, pero ilustración. Popcorn conserva el estilo de la referencia; es lo que hace.
+
+**Consecuencia para el producto, y es la buena noticia:** esto no es una limitación del motor, es exactamente cómo debe funcionar. **El usuario sube la foto real de su mascota**, y de una foto real sale video realista. El pipeline está bien; lo que estaba mal era la entrada de prueba. Para validar el realismo hace falta una foto real de Zero — que es justo lo que hará cualquier cliente.
+
+**Costos de esta ronda:** imagen $0.09 + video de 10 s $0.47. Total del día con las cuatro generaciones: **$1.21**.
+
+**Dato de precio nuevo:** 10 segundos cuestan $0.467 contra $0.28 de 6 segundos — no es proporcional, sale más barato por segundo. Si el arco de una acción necesita 10 s, el costo sigue siendo ~2% del neto.
