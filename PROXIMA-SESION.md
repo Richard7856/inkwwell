@@ -105,11 +105,17 @@ el mensaje que instala es "el primero va por nuestra cuenta"; la conversación
 del dinero va después de que vean el producto. Revisar después del lanzamiento,
 con datos de conversión.
 
-**2. Un código promocional para la lista de espera.** La landing ya promete que
-el primer video va por nuestra cuenta. **Falta decidir CÓMO se cumple**: hoy no
-hay un código creado para eso. `codigos_promo.usos_max` existe y `SHIPATON`
-—1 crédito, 200 usos— podría servir de molde. Si la lista crece, esto se vuelve
-urgente antes del 19.
+**2. Si el 50% debe ser exclusivo de la lista.** La landing ofrece 50% de
+descuento en el primer video. **Ya está construido** —el SKU `creditos_primero`,
+regla en `ha_comprado()`, migración 008— pero se le ofrece a cualquiera que
+nunca haya comprado, no solo a quien se apuntó. Por eso la copy enuncia los dos
+hechos por separado y no dice "apúntate y llévate el 50%": sería prometer una
+exclusividad que el producto no aplica.
+
+Para volverlo exclusivo de verdad hay una sola vía: restringir `creditos_primero`
+a quien esté en `waitlist`. Es cambio de reglas de negocio, no de copy, y sube el
+precio de entrada de $12.50 a $25 para todo el que llegue sin apuntarse — malo
+para la conversión del día del lanzamiento. Sin decidir.
 
 Lenguaje: **"tu primer video"**, no "tu primer tatuaje" — no vendemos tatuajes.
 
@@ -121,9 +127,11 @@ Lenguaje: **"tu primer video"**, no "tu primer tatuaje" — no vendemos tatuajes
   el 19. Guía operativa en `LANZAMIENTO.md`.
 - **Interruptor de degradación: construido.** Ver `DECISIONS.md` [2026-09-16].
   Ya no es una propuesta. Incluye el caso de llave revocada (401/403).
-- **Oferta de la lista:** "tu primer video va por nuestra cuenta". No era una
-  decisión abierta — la landing ya lo prometía y el "50% de descuento" habría
-  sido peor que lo publicado.
+- **Oferta de la lista: 50% de descuento en el primer video** (Richard, 16 sep,
+  antes de compartir). Ventaja que no se había visto: ya está construido
+  (`creditos_primero`), mientras que "gratis" exigía crear un código promocional
+  antes del viernes. Ver `DECISIONS.md` para cómo se redactó sin prometer una
+  exclusividad que el producto no aplica.
 - **Estudios fundadores:** se quedan con el cupo de 20, permanente, **sin fecha
   límite**. El cupo es la restricción real; una fecha habría sido urgencia
   inventada encima de una verdadera.

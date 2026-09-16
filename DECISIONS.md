@@ -652,3 +652,19 @@ O sea, ese tatuaje está en el extremo bajo de lo ACEPTABLE, y con poca luz se c
 **`source` distingue cuál formulario convirtió** (`landing` contra `landing-final`). La segunda invitación es una apuesta —que quien lee la página entera se convence más que quien ve el formulario antes de entender el producto— y sin la etiqueta no habría forma de saber en dos días si acertó. El costo de averiguarlo es una palabra: `select source, count(*) from waitlist group by source;`
 
 **Verificado en navegador a 390 px, en los dos idiomas**, con el reloj falseado para recorrer los tres estados: oferta vigente, oferta cerrada y ya abiertos. Sin desborde horizontal, sin errores de consola propios (solo Google Fonts, que el proxy TLS del entorno de pruebas rechaza), y las tres formas de la página en su lugar: lista arriba, lista al final, alta de estudio.
+
+
+## [2026-09-16, misma tarde] La oferta de la lista pasa a 50% de descuento
+**Context:** Richard decidió, antes de compartir la landing, que la lista de espera lleve **50% de descuento en el primer video** en lugar de "va por nuestra cuenta". Revierte lo que se había escrito horas antes en este mismo archivo; la entrada anterior se conserva porque registró el razonamiento del momento y borrarla haría ilegible el historial.
+
+**Un argumento a favor que no se había visto:** "gratis" no estaba construido. Exigía crear un código promocional topado antes del viernes —`codigos_promo` existe pero ese código no—, y era trabajo nuevo en una ventana de dos días. **El 50% ya está construido y ya va en la v4**: es el SKU `creditos_primero`, con su regla en `ha_comprado()` (migración 008). La decisión elimina una dependencia del lanzamiento en vez de agregarla.
+
+**El problema que sí hay, y cómo se redactó alrededor:** `creditos_primero` se le ofrece a **cualquiera que nunca haya comprado**, no solo a quien esté en la lista. Así que el descuento es real pero **no es exclusivo de la lista**. Redactarlo como consecuencia de apuntarse —"apúntate y llévate el 50%"— prometería una exclusividad que el producto no aplica, y el primero que compre sin haberse apuntado lo descubre; además, presentar como descuento exclusivo lo que es el precio de todos es exactamente la clase de afirmación que PROFECO trata como descuento falso.
+
+**Decision:** enunciar los dos hechos por separado, ambos verdaderos, sin inventar la relación entre ellos: **"La lista cierra el jueves 18. Tu primer video, con 50% de descuento."** Conserva la urgencia (la lista sí cierra), conserva el descuento (sí es la mitad) y no afirma que uno cause el otro.
+
+**Se dice "video" y no "tatuaje"** aunque la instrucción decía "su primer tatuaje": InkAR no vende tatuajes, y prometer descuento en uno en la página pública generaría gente esperando un precio en un estudio. Es la regla de lenguaje que ya estaba registrada.
+
+**Si se quiere que sea exclusivo de verdad**, hay una sola forma: restringir `creditos_primero` a quien esté en `waitlist`. Es un cambio de reglas de negocio, no de copy, y sube el precio de entrada de $12.50 a $25 para todo el que llegue sin apuntarse — probablemente malo para la conversión del día del lanzamiento. No se hizo; queda anotado como decisión abierta.
+
+**Verificado en navegador a 390 px, en los dos idiomas**, en la píldora del héroe y en la caja de beneficios.

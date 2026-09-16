@@ -126,8 +126,8 @@ const ES = {
   // el correo sin decir para cuándo pide un cheque en blanco.
   abreEl: 'Abrimos el viernes 19 de septiembre',
   yaAbrimos: 'Ya estamos abiertos',
-  ofertaVigente: 'Apúntate antes del jueves 18 y tu primer video va por nuestra cuenta.',
-  ofertaCerrada: 'La oferta de apertura ya cerró, pero te avisamos en cuanto abramos.',
+  ofertaVigente: 'La lista cierra el jueves 18. Tu primer video, con 50% de descuento.',
+  ofertaCerrada: 'La lista ya cerró, pero te avisamos en cuanto abramos.',
 
   cta: 'Avísame cuando abra',
   soy: '¿Quién eres?',
@@ -138,7 +138,7 @@ const ES = {
   beneficioTitulo: { persona: 'Qué recibes por apuntarte', artista: 'Qué recibes al registrar tu estudio' },
   beneficios: {
     persona: [
-      'Tu primer video va por nuestra cuenta. Sin tarjeta.',
+      '50% de descuento en tu primer video.',
       'Te escribimos el día que abrimos, antes de que lo anunciemos en público.',
       'Nos dices qué te gustaría ver encima del tuyo y lo tomamos en cuenta para el catálogo.',
     ],
@@ -216,8 +216,8 @@ const EN = {
 
   abreEl: 'We open Friday, September 19',
   yaAbrimos: 'We’re open',
-  ofertaVigente: 'Join before Thursday the 18th and your first video is on us.',
-  ofertaCerrada: 'The opening offer has closed, but we’ll still tell you when we open.',
+  ofertaVigente: 'The list closes Thursday the 18th. Your first video, 50% off.',
+  ofertaCerrada: 'The list has closed, but we’ll still tell you when we open.',
 
   cta: 'Tell me when it opens',
   soy: 'Who are you?',
@@ -227,7 +227,7 @@ const EN = {
   beneficioTitulo: { persona: 'What you get for joining', artista: 'What you get for registering your studio' },
   beneficios: {
     persona: [
-      'Your first video is on us. No card.',
+      '50% off your first video.',
       'We write to you the day we open, before we announce it publicly.',
       'You tell us what you’d like to see over yours, and we factor it into the catalog.',
     ],
@@ -325,8 +325,18 @@ export default function Landing() {
           fecha es justamente lo que vuelve urgente apuntarse.
 
           La oferta va en la misma píldora y no en un banner aparte: son la misma
-          frase —abrimos el 19, apúntate antes del 18— y separarlas haría que se
+          frase —abrimos el 19, la lista cierra el 18— y separarlas haría que se
           leyeran como dos avisos que compiten.
+
+          ── Por qué NO dice "apúntate y llévate el 50%" ──
+          El descuento es real: `creditos_primero` cuesta la mitad. Pero se le
+          ofrece a CUALQUIERA que nunca haya comprado, no solo a la lista (ver
+          `ha_comprado()` en la migración 008). Redactarlo como consecuencia de
+          apuntarse —"apúntate y llévate"— prometería una exclusividad que el
+          producto no aplica, y el primero que compre sin estar en la lista lo
+          descubre. Se enuncian los dos hechos por separado: la lista cierra el
+          18, y el primer video lleva 50%. Ambos ciertos, sin inventar la
+          relación entre ellos.
         */}
         <div className="mt-6 flex justify-center">
           <div className="inline-flex flex-col items-center gap-1 rounded-2xl
