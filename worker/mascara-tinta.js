@@ -1,17 +1,19 @@
 /**
- * Separa la tinta de la piel en la imagen que MindAR guarda de cada tatuaje.
+ * Separa la tinta de la piel en la foto de un tatuaje.
  *
- * Es la pieza que permite que el contenido salga DEL tatuaje y no solo
- * encima: con esta máscara la GPU sabe qué píxeles son trazo, y de ahí se
- * iluminan las líneas y nacen las partículas.
+ * Sirve para armar el PRIMER CUADRO del video generado: el dibujo del tatuaje
+ * solo, sobre fondo de croma, en la misma posición que en la foto compilada.
+ * Así el video arranca calzado sobre el tatuaje real y la animación nace de
+ * él (ver DECISIONS.md, 16 sep, "el video empieza en el tatuaje").
  *
- * Módulo puro, sin Three ni DOM, para poder calibrarlo en Node contra los
- * `.mind` reales antes de verlo en el teléfono.
+ * Módulo puro, sin DOM: corre igual en Node (worker, scripts) que en el
+ * navegador. Se calibró contra los tatuajes reales del founder y el marcador.
  */
 
 /*
-  Dos escalas de "cómo se ve la piel alrededor", en px de la imagen de rastreo
-  (256 de ancho, donde un trazo mide 2-6 px):
+  Dos escalas de "cómo se ve la piel alrededor", en px de una imagen de 256 de
+  ancho (donde un trazo mide 2-6 px). Se escalan con el ancho real, porque la
+  proporción entre el trazo y el brazo no cambia con la resolución:
 
   - FINA (6 px): el entorno inmediato de una línea. Capta trazos finos y
     puntillismo, pero dentro de un relleno sólido el entorno también es tinta
@@ -41,8 +43,9 @@ const AMPLIO_MIN = 0.18, AMPLIO_PLENO = 0.45
  * @returns {Float32Array} Valor 0..1 por píxel, MISMA orientación que la entrada
  */
 export function calcularMascaraTinta(gris, ancho, alto) {
-  const fino = desenfocar(gris, ancho, alto, RADIO_FINO)
-  const amplio = desenfocar(gris, ancho, alto, RADIO_AMPLIO)
+  const k = ancho / 256
+  const fino = desenfocar(gris, ancho, alto, Math.max(2, Math.round(RADIO_FINO * k)))
+  const amplio = desenfocar(gris, ancho, alto, Math.round(RADIO_AMPLIO * k))
   const mascara = new Float32Array(ancho * alto)
 
   for (let y = 0; y < alto; y++) {
@@ -138,4 +141,81 @@ function generadorAzar(semilla) {
     t ^= t + Math.imul(t ^ (t >>> 7), t | 61)
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296
   }
+}
+
+/**
+ * Quita de la máscara lo que no pertenece al dibujo: las orillas del brazo y
+ * el fondo de la foto, que salen como líneas largas y sueltas.
+ *
+ * Se agrupa la tinta en manchas (dilatando un poco, para que los trazos de un
+ * mismo diseño queden unidos) y se conservan solo las manchas grandes. Una
+ * línea de la orilla del brazo es larga pero delgada: su área es mínima frente
+ * al tatuaje, y cae fuera.
+ *
+ * Edge case: un tatuaje con elementos sueltos pequeños (estrellas, puntos
+ * lejanos) puede perderlos. Por eso el corte es relativo a la mancha mayor y
+ * bajo (15%), no un área fija.
+ *
+ * @param {Float32Array} mascara - Se modifica en su lugar
+ * @returns {Float32Array} la misma máscara
+ */
+export function limpiarMascara(mascara, ancho, alto, { umbral = 0.3, fraccionMin = 0.15 } = {}) {
+  // Rejilla reducida: la limpieza no necesita detalle y así es instantánea
+  const paso = Math.max(1, Math.round(ancho / 192))
+  const gw = Math.ceil(ancho / paso)
+  const gh = Math.ceil(alto / paso)
+  const tinta = new Uint8Array(gw * gh)
+  for (let y = 0; y < alto; y++) {
+    for (let x = 0; x < ancho; x++) {
+      if (mascara[y * ancho + x] > umbral) tinta[Math.floor(y / paso) * gw + Math.floor(x / paso)] = 1
+    }
+  }
+
+  // Dilatación de 2 celdas: une los puntos de un relleno punteado
+  const unida = new Uint8Array(gw * gh)
+  for (let y = 0; y < gh; y++) {
+    for (let x = 0; x < gw; x++) {
+      if (!tinta[y * gw + x]) continue
+      for (let dy = -2; dy <= 2; dy++) {
+        for (let dx = -2; dx <= 2; dx++) {
+          const yy = y + dy, xx = x + dx
+          if (yy >= 0 && yy < gh && xx >= 0 && xx < gw) unida[yy * gw + xx] = 1
+        }
+      }
+    }
+  }
+
+  // Componentes conexas, midiendo el área con TINTA real (no la dilatada),
+  // para que una línea larga no gane área por la dilatación
+  const etiqueta = new Int32Array(gw * gh).fill(-1)
+  const areas = []
+  const pila = []
+  for (let i = 0; i < gw * gh; i++) {
+    if (!unida[i] || etiqueta[i] >= 0) continue
+    const id = areas.length
+    let area = 0
+    etiqueta[i] = id
+    pila.push(i)
+    while (pila.length) {
+      const j = pila.pop()
+      area += tinta[j]
+      const x = j % gw, y = (j - x) / gw
+      for (const [xx, yy] of [[x + 1, y], [x - 1, y], [x, y + 1], [x, y - 1]]) {
+        if (xx < 0 || yy < 0 || xx >= gw || yy >= gh) continue
+        const k = yy * gw + xx
+        if (unida[k] && etiqueta[k] < 0) { etiqueta[k] = id; pila.push(k) }
+      }
+    }
+    areas.push(area)
+  }
+  if (!areas.length) return mascara
+
+  const mayor = Math.max(...areas)
+  for (let y = 0; y < alto; y++) {
+    for (let x = 0; x < ancho; x++) {
+      const id = etiqueta[Math.floor(y / paso) * gw + Math.floor(x / paso)]
+      if (id < 0 || areas[id] < mayor * fraccionMin) mascara[y * ancho + x] = 0
+    }
+  }
+  return mascara
 }

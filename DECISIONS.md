@@ -654,3 +654,31 @@ O sea, ese tatuaje está en el extremo bajo de lo ACEPTABLE, y con poca luz se c
 - Llega al APK solo con una versión nueva (Capacitor empaqueta `dist`). En la web basta con desplegar.
 
 **Improvement opportunities:** color de tinta por tatuaje; destino de las partículas con la silueta del primer cuadro en vez de una elipse; `?evocacion=0` ya permite grabar el antes y el después.
+
+## [2026-09-16] El video empieza en el tatuaje (y se retira la evocación por GPU)
+**Context:** Richard probó la evocación en el teléfono el mismo día y la descartó: "no se ve nada profesional". Además reportó dos fallas: al mover el brazo el contenido se descuadra, y al escanear primero el esqueleto y luego la huella apareció la pantalla verde completa. Compartió como referencia un video donde el dibujo del tatuaje cobra vida desde su propio trazo.
+
+**Decision:** el efecto se hornea en el video generado, pero **anclado al trazo real**:
+1. `worker/componer-inicio.js` extrae la tinta de la MISMA foto que se compiló en el `.mind` (`mascara-tinta.js`, que sobrevivió de la evocación) y la pone sobre el verde de croma, a todo lo ancho de un lienzo 768x1364.
+2. Hailuo-02 recibe ese dibujo como `image_url` y el primer cuadro del video principal como **`end_image_url`**. Genera la transición: la tinta se vuelve líquida, forma un hoyo, Zero sale brincando y aterriza exactamente donde empieza el video de la concha.
+3. `videoLayer` reproduce la intro una vez y cambia al principal en bucle, en el mismo plano. Con `escala: 1`, el cuadro 0 cae encima del tatuaje real.
+
+Resultado de la prueba (`demo=zero-nace`): 6 s, **$0.28**, 110 s de generación. El último cuadro de la intro y el primero de la concha son prácticamente idénticos, y el fondo se mantuvo plano (el verde varía menos de 10 niveles).
+
+**Por qué ahora sí en el video y antes no:** la objeción de la entrada anterior era que el generador no sabe dónde está el tatuaje. Dándole el trazo exacto como primer cuadro y la posición final como último, sí lo sabe. Y la herencia de estilo, que era una limitación, aquí trabaja a favor: de un dibujo de tinta sale una animación de tinta.
+
+**Cómo se descubrió `end_image_url`:** el OpenAPI ya no se sirve en las rutas conocidas. Se mandó a `/estimate` (gratis) un cuerpo con varios nombres candidatos con tipo incorrecto; la API validó y nombró el que existe. Hailuo-02 (standard y pro) usa `end_image_url`; Kling 2.1 pro, `last_image_url`; Hailuo-2.3 y Kling 2.5 lo ignoran.
+
+**Pantalla verde, causa probable:** en el celular `loadeddata` puede llegar sin cuadro decodificado y la medición del croma sale negra. Con el umbral relativo a la saturación que se había agregado ese mismo día, eso apagaba el recorte por completo (antes quedaba a medias). Ahora una medición sin saturación se descarta, se usa un respaldo medido de un video real (no `#00FF00`) y se vuelve a medir al reproducir. **No se reprodujo en el teléfono**; es la explicación que encaja con el código.
+
+**Descuadre al mover el brazo:** `filterBeta` estaba en 0.001, que suaviza tanto que el contenido se queda atrás en cuanto hay movimiento. Pasa a 0.01, y `?beta=` / `?mincf=` permiten calibrarlo en piel sin recompilar.
+
+**Alternatives considered:** conservar la evocación como opción (descartado, Richard no la quiere y sería código muerto; queda en el historial de git, commit 48c205c).
+
+**Risks/Limitations:**
+- La foto de entrada DEBE ser la que se compiló. Otra toma del mismo tatuaje no calza.
+- Las orillas del brazo con vello pegadas al diseño se cuelan en el dibujo (se ve en la almohadilla izquierda de la huella). `limpiarMascara` quita las líneas sueltas, no las que tocan el tatuaje.
+- La deriva del generador dentro de la intro no se controla: si el trazo "se mueve" antes de disolverse, se notará sobre la piel.
+- Para el producto hace falta llevar esto al worker: dos generaciones por cliente (intro + recuerdo) o una sola con el recuerdo como cuadro final. Costo sigue en ~2-4% del neto.
+
+**Improvement opportunities:** probar 10 s para una salida más lenta; `hailuo-02/pro` para más calidad; un borde de trazo más limpio si la foto es de estudio.

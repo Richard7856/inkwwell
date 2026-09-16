@@ -32,7 +32,20 @@ import * as THREE from 'three'
   Solo se usa si no se puede muestrear el video. Lo normal es detectar el color
   real — ver `detectarCroma`.
 */
-const CROMA_POR_DEFECTO = new THREE.Color(0x00ff00)
+/*
+  Verde medido en las piezas generadas ([89,178,74] tal como lo decodifica el
+  navegador), no el #00FF00 que se le pide al generador: con el recorte
+  relativo a la saturación, un respaldo de verde puro queda tan lejos del
+  fondo real que no recorta nada y se ve la pantalla verde completa.
+*/
+const CROMA_POR_DEFECTO = new THREE.Color(89 / 255, 178 / 255, 74 / 255)
+
+/*
+  Saturación mínima para aceptar una medición como fondo de croma. Un cuadro
+  aún sin decodificar se lee negro (saturación 0), y aceptarlo apagaba el
+  recorte por completo.
+*/
+const SATURACION_MIN = 0.12
 
 /**
  * Detecta el color de fondo muestreando las esquinas del primer cuadro.
@@ -47,7 +60,7 @@ const CROMA_POR_DEFECTO = new THREE.Color(0x00ff00)
  * discrepa mucho de las otras es que el fondo no es uniforme, y ahí más vale
  * avisar que recortar mal en silencio.
  *
- * @returns {{color: THREE.Color, uniforme: boolean} | null}
+ * @returns {{color: THREE.Color, uniforme: boolean, valido: boolean} | null}
  */
 function detectarCroma(video) {
   const lienzo = document.createElement('canvas')
@@ -78,9 +91,12 @@ function detectarCroma(video) {
 
     // Sin conversión de espacio: los valores del lienzo y los de la textura
     // viven en el mismo espacio, que es justo lo que permite compararlos.
+    const gris = (media[0] + media[1] + media[2]) / 3
+    const saturacion = Math.hypot(media[0] - gris, media[1] - gris, media[2] - gris)
     return {
       color: new THREE.Color(media[0], media[1], media[2]),
       uniforme: dispersion < 0.08,
+      valido: saturacion >= SATURACION_MIN,
     }
   } catch {
     /*
@@ -125,36 +141,9 @@ const FRAGMENT = `
   uniform float umbral;
   uniform float suavizado;
   uniform float opacidad;
-  uniform float aparicion;
-  uniform float proporcion;
-  uniform vec3 colorBorde;
   varying vec2 vUv;
 
-  // Ruido de valor barato: solo sirve para que el borde del disolvido no
-  // sea un círculo perfecto
-  float azar(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
-  float ruido(vec2 p) {
-    vec2 i = floor(p), f = fract(p);
-    f = f * f * (3.0 - 2.0 * f);
-    return mix(mix(azar(i), azar(i + vec2(1, 0)), f.x),
-               mix(azar(i + vec2(0, 1)), azar(i + vec2(1, 1)), f.x), f.y);
-  }
-
   void main() {
-    /*
-      Materialización (ver evocacion.js): el sujeto se forma desde un punto
-      algo por debajo del centro —donde suele tener los pies— hacia afuera.
-      Con aparicion = 1 este bloque no descarta nada y el video se ve entero.
-    */
-    float borde = 0.0;
-    if (aparicion < 1.0) {
-      vec2 q = (vUv - vec2(0.5, 0.4)) * vec2(1.0, proporcion);
-      float campo = length(q) / (0.5 * proporcion) * 0.75 + ruido(vUv * 9.0) * 0.25;
-      float frente = aparicion * 1.1;
-      if (campo > frente) discard;
-      borde = 1.0 - smoothstep(0.0, 0.07, frente - campo);
-    }
-
     vec4 color = texture2D(mapa, vUv);
 
     /*
@@ -215,29 +204,23 @@ const FRAGMENT = `
       }
     }
 
-    // El frente del disolvido brilla del color de la tinta encendida
-    rgb = mix(rgb, colorBorde * 1.6, borde * 0.85);
-
     gl_FragColor = vec4(rgb, alfa * opacidad);
 
   }
 `
 
-/**
- * Crea el elemento <video> y su plano, y lo cuelga del ancla del target.
- *
- * @param {object} config
- * @param {string} config.videoUrl
- * @param {boolean} [config.croma] - Recortar el fondo por color. Con false el
- *   video se muestra completo, dentro de su rectángulo.
- * @param {number} [config.escala] - Ancho del plano en unidades del target,
- *   donde 1 es el ancho del tatuaje.
- * @param {THREE.Group} anchorGroup
- * @returns {Promise<object>} handle de la capa
- */
-export function cargarVideo(config, anchorGroup) {
-  const { videoUrl, croma = true, escala = 1 } = config
+/*
+  Si el rastreo se pierde menos que esto, al recuperarlo el video CONTINÚA en
+  vez de volver al inicio. El tatuaje de la huella rastrea al 16% y parpadea:
+  reiniciar en cada parpadeo repetiría la intro sin fin.
+*/
+const GRACIA_PERDIDA_MS = 1500
 
+/**
+ * Abre un <video> y espera a que tenga un cuadro decodificado.
+ * @returns {Promise<{video: HTMLVideoElement, textura: THREE.VideoTexture, croma: THREE.Color|null, url: string}>}
+ */
+function abrirVideo(url, { bucle, croma }) {
   return new Promise((resolve, reject) => {
     const video = document.createElement('video')
     /*
@@ -246,14 +229,13 @@ export function cargarVideo(config, anchorGroup) {
       Supabase Storage, que es otro dominio.
     */
     video.crossOrigin = 'anonymous'
-    video.loop = true
+    video.loop = bucle
     video.muted = true          // requisito para autoreproducir en móvil
     video.playsInline = true    // sin esto, iOS lo abre a pantalla completa
     video.preload = 'auto'
-    video.src = videoUrl
+    video.src = url
 
-    const alFallar = () => reject(new Error(`No se pudo cargar el video: ${videoUrl}`))
-    video.addEventListener('error', alFallar, { once: true })
+    video.addEventListener('error', () => reject(new Error(`No se pudo cargar el video: ${url}`)), { once: true })
 
     /*
       Se espera a 'loadeddata' y NO a 'loadedmetadata'.
@@ -261,82 +243,166 @@ export function cargarVideo(config, anchorGroup) {
       En loadedmetadata ya se conocen las medidas del video, pero todavía NO hay
       ningún cuadro decodificado: dibujarlo en un lienzo devuelve negro. Medido:
       [0,0,0] en loadedmetadata contra [100,180,78] con un cuadro real.
-
-      El efecto de detectar negro es engañoso, porque no falla de golpe — el
-      fondo verde queda a media opacidad en vez de desaparecer, y se lee como
-      "el recorte no jala y además se ve oscuro", que parecen dos problemas
-      distintos y llevan a buscar en el lugar equivocado.
     */
     video.addEventListener('loadeddata', () => {
-      const proporcion = video.videoWidth / video.videoHeight || 1
-      const textura = new THREE.VideoTexture(video)
       /*
         La textura se deja SIN declarar espacio de color, a propósito.
 
         Este proyecto corre Three 0.151 con ColorManagement desactivado y
         outputEncoding lineal: el renderizador no convierte nada. Marcar la
         textura como sRGB hace que la GPU la linealice al leerla, y entonces
-        pasan dos cosas a la vez — el muestreo queda oscuro, y deja de coincidir
-        con el color de fondo medido en sRGB, así que el recorte no recorta.
-        Ambos síntomas se vieron juntos y despistan, porque parecen dos fallas.
-
-        Sin declararlo, todo vive en el espacio nativo del video: se compara
-        contra el color medido y se escribe tal cual.
+        el muestreo queda oscuro y deja de coincidir con el color de fondo
+        medido, así que el recorte no recorta.
       */
+      const textura = new THREE.VideoTexture(video)
+      const pieza = { video, textura, croma: null, url }
 
-      const detectado = croma ? detectarCroma(video) : null
-      if (detectado && !detectado.uniforme) {
-        console.warn(
-          '[videoLayer] El fondo del video no es uniforme; el recorte va a dejar manchas:',
-          videoUrl
-        )
+      if (croma) {
+        const detectado = detectarCroma(video)
+        if (detectado?.valido) {
+          pieza.croma = detectado.color
+          if (!detectado.uniforme) {
+            console.warn('[videoLayer] El fondo del video no es uniforme; el recorte va a dejar manchas:', url)
+          }
+        } else {
+          /*
+            Visto en Android: 'loadeddata' llegó sin cuadro decodificado, la
+            medición salió negra y el recorte quedó apagado — pantalla verde
+            completa. Se vuelve a medir con el video ya corriendo, y mientras
+            tanto se usa el respaldo.
+          */
+          console.warn('[videoLayer] El primer cuadro no trae un croma legible; se vuelve a medir al reproducir:', url)
+          video.addEventListener('playing', () => requestAnimationFrame(() => {
+            const nuevo = detectarCroma(video)
+            if (nuevo?.valido) {
+              pieza.croma = nuevo.color
+              pieza.alMedir?.()
+            } else {
+              console.warn('[videoLayer] Tampoco al reproducir se pudo medir el croma; queda el respaldo:', url)
+            }
+          }), { once: true })
+        }
       }
-
-      const material = croma
-        ? new THREE.ShaderMaterial({
-            uniforms: {
-              mapa: { value: textura },
-              croma: { value: detectado?.color ?? CROMA_POR_DEFECTO.clone() },
-              umbral: { value: UMBRAL },
-              suavizado: { value: SUAVIZADO },
-              opacidad: { value: 1 },
-              // 1 = visible entero; la evocación lo anima de 0 a 1
-              aparicion: { value: 1 },
-              proporcion: { value: 1 / proporcion },
-              colorBorde: { value: new THREE.Color(0x8b5cf6) },
-            },
-            vertexShader: VERTEX,
-            fragmentShader: FRAGMENT,
-            transparent: true,
-            // El plano se ve desde ambos lados: el tatuaje puede quedar de
-            // frente o volteado según cómo sostenga el teléfono quien mira.
-            side: THREE.DoubleSide,
-            // Sin profundidad: es una calcomanía sobre la piel, no un objeto
-            // que deba ocultarse detrás de nada.
-            depthWrite: false,
-          })
-        : new THREE.MeshBasicMaterial({ map: textura, side: THREE.DoubleSide, toneMapped: false })
-
-      const ancho = escala
-      const alto = escala / proporcion
-      const plano = new THREE.Mesh(new THREE.PlaneGeometry(ancho, alto), material)
-      // Ligeramente por delante del plano del target, para que no compita con
-      // él en el buffer de profundidad y parpadee
-      plano.position.z = 0.01
-      anchorGroup.add(plano)
-
-      resolve({
-        tipo: 'video',
-        video,
-        plano,
-        textura,
-        material,
-        // Las animaciones son del GLB; un video no las tiene. Se devuelve la
-        // lista vacía para que index.jsx no necesite distinguir el tipo.
-        animationNames: [],
-      })
+      resolve(pieza)
     }, { once: true })
   })
+}
+
+/**
+ * Crea el plano de video y lo cuelga del ancla del target.
+ *
+ * ── Intro + video principal ──
+ * Con `introUrl`, primero se reproduce UNA vez la intro —el video que nace del
+ * dibujo del tatuaje— y al terminar se pasa al principal, en bucle. Los dos
+ * deben medir lo mismo: comparten el plano, y el último cuadro de la intro es
+ * el primero del principal, así que el cambio no se nota (ver
+ * worker/componer-inicio.js).
+ *
+ * @param {object} config
+ * @param {string} config.videoUrl - Video principal, en bucle
+ * @param {string} [config.introUrl] - Se reproduce una vez antes del principal
+ * @param {boolean} [config.croma] - Recortar el fondo por color. Con false el
+ *   video se muestra completo, dentro de su rectángulo.
+ * @param {number} [config.escala] - Ancho del plano en unidades del target,
+ *   donde 1 es el ancho del tatuaje.
+ * @param {THREE.Group} anchorGroup
+ * @returns {Promise<object>} handle de la capa
+ */
+export async function cargarVideo(config, anchorGroup) {
+  const { videoUrl, introUrl = null, croma = true, escala = 1 } = config
+
+  const [principal, intro] = await Promise.all([
+    abrirVideo(videoUrl, { bucle: true, croma }),
+    /*
+      Si la intro falla, se muestra el principal solo: la intro es un
+      adorno, el recuerdo es el producto.
+    */
+    introUrl
+      ? abrirVideo(introUrl, { bucle: false, croma }).catch((err) => {
+          console.error('[videoLayer] Sin intro, se muestra solo el video principal:', err.message)
+          return null
+        })
+      : null,
+  ])
+
+  const { video } = principal
+  const proporcion = video.videoWidth / video.videoHeight || 1
+  if (intro && intro.video.videoWidth * video.videoHeight !== video.videoWidth * intro.video.videoHeight) {
+    console.warn(
+      `[videoLayer] La intro (${intro.video.videoWidth}x${intro.video.videoHeight}) no tiene la proporción del ` +
+      `principal (${video.videoWidth}x${video.videoHeight}); se va a deformar al compartir el plano.`
+    )
+  }
+
+  const primera = intro ?? principal
+  const material = croma
+    ? new THREE.ShaderMaterial({
+        uniforms: {
+          mapa: { value: primera.textura },
+          croma: { value: (primera.croma ?? CROMA_POR_DEFECTO).clone() },
+          umbral: { value: UMBRAL },
+          suavizado: { value: SUAVIZADO },
+          opacidad: { value: 1 },
+        },
+        vertexShader: VERTEX,
+        fragmentShader: FRAGMENT,
+        transparent: true,
+        // El plano se ve desde ambos lados: el tatuaje puede quedar de
+        // frente o volteado según cómo sostenga el teléfono quien mira.
+        side: THREE.DoubleSide,
+        // Sin profundidad: es una calcomanía sobre la piel, no un objeto
+        // que deba ocultarse detrás de nada.
+        depthWrite: false,
+      })
+    : new THREE.MeshBasicMaterial({ map: primera.textura, side: THREE.DoubleSide, toneMapped: false })
+
+  const plano = new THREE.Mesh(new THREE.PlaneGeometry(escala, escala / proporcion), material)
+  // Ligeramente por delante del plano del target, para que no compita con
+  // él en el buffer de profundidad y parpadee
+  plano.position.z = 0.01
+  anchorGroup.add(plano)
+
+  const capa = {
+    tipo: 'video',
+    plano,
+    material,
+    principal,
+    intro,
+    actual: primera,
+    perdidoDesde: null,
+    // Las animaciones son del GLB; un video no las tiene. Se devuelve la
+    // lista vacía para que index.jsx no necesite distinguir el tipo.
+    animationNames: [],
+  }
+
+  // Cada pieza trae su propio verde: el generador no repite el tono exacto
+  // entre un video y otro, así que al cambiar de pieza cambia también el croma
+  for (const pieza of [principal, intro]) {
+    if (pieza) pieza.alMedir = () => { if (capa.actual === pieza) mostrarPieza(capa, pieza) }
+  }
+
+  if (intro) {
+    intro.video.addEventListener('ended', () => {
+      mostrarPieza(capa, principal)
+      principal.video.currentTime = 0
+      principal.video.play().catch(() => {})
+    })
+  }
+
+  return capa
+}
+
+/** Pone una pieza (intro o principal) en el plano, con su color de fondo. */
+function mostrarPieza(capa, pieza) {
+  capa.actual = pieza
+  const u = capa.material.uniforms
+  if (u) {
+    u.mapa.value = pieza.textura
+    if (pieza.croma) u.croma.value.copy(pieza.croma)
+  } else {
+    capa.material.map = pieza.textura
+    capa.material.needsUpdate = true
+  }
 }
 
 /**
@@ -346,43 +412,46 @@ export function cargarVideo(config, anchorGroup) {
  * tatuaje, la animación va por la mitad o ya terminó. Además gasta batería
  * decodificando cuadros que nadie ve.
  */
-export function alternarVideo(capa, visible, { reiniciar = true } = {}) {
+export function alternarVideo(capa, visible) {
   if (capa?.tipo !== 'video') return
-  if (visible) {
-    // Se reinicia al aparecer: quien apunta al tatuaje debe ver la pieza
-    // desde el principio, no desde donde se había quedado. La excepción es un
-    // parpadeo del rastreo, que la evocación distingue y pide continuar.
-    if (reiniciar) capa.video.currentTime = 0
-    // play() devuelve una promesa que el navegador rechaza si bloquea la
-    // autoreproducción. Se ignora: el video queda en el primer cuadro, que es
-    // preferible a un error en consola que no le sirve a nadie.
-    capa.video.play().catch(() => {})
-  } else {
-    capa.video.pause()
+
+  if (!visible) {
+    capa.actual.video.pause()
+    capa.perdidoDesde = performance.now()
+    return
   }
+
+  const parpadeo = capa.perdidoDesde !== null && performance.now() - capa.perdidoDesde < GRACIA_PERDIDA_MS
+  capa.perdidoDesde = null
+
+  if (!parpadeo) {
+    // Aparición nueva: quien apunta al tatuaje debe ver la pieza desde el
+    // principio, y si hay intro, el video vuelve a nacer del tatuaje
+    capa.actual.video.pause()
+    mostrarPieza(capa, capa.intro ?? capa.principal)
+    capa.actual.video.currentTime = 0
+  }
+  // play() devuelve una promesa que el navegador rechaza si bloquea la
+  // autoreproducción. Se ignora: el video queda en el primer cuadro, que es
+  // preferible a un error en consola que no le sirve a nadie.
+  capa.actual.video.play().catch(() => {})
 }
 
-/**
- * Progreso 0..1 de la materialización. Sin croma no hay sombreador propio, así
- * que el video sin recorte solo crece (lo hace la evocación) sin disolverse.
- */
-export function formarVideo(capa, p) {
-  const u = capa?.material?.uniforms?.aparicion
-  if (u) u.value = p
-}
-
-/** Libera el video y su textura. */
+/** Libera los videos y sus texturas. */
 export function liberarVideo(capa) {
   if (capa?.tipo !== 'video') return
-  capa.video.pause()
-  capa.video.removeAttribute('src')
-  /*
-    load() tras quitar el src es lo que de verdad corta la descarga y libera el
-    decodificador. Sin esa llamada el navegador puede seguir bajando el archivo
-    aunque el elemento ya no esté en uso.
-  */
-  capa.video.load()
-  capa.textura?.dispose()
+  for (const pieza of [capa.principal, capa.intro]) {
+    if (!pieza) continue
+    pieza.video.pause()
+    pieza.video.removeAttribute('src')
+    /*
+      load() tras quitar el src es lo que de verdad corta la descarga y libera
+      el decodificador. Sin esa llamada el navegador puede seguir bajando el
+      archivo aunque el elemento ya no esté en uso.
+    */
+    pieza.video.load()
+    pieza.textura.dispose()
+  }
   capa.material?.dispose()
   capa.plano?.geometry?.dispose()
   capa.plano?.parent?.remove(capa.plano)

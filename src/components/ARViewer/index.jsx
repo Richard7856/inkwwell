@@ -2,7 +2,6 @@ import { useRef, useState, useEffect, useCallback } from 'react'
 import { useMindAR } from './useMindAR.js'
 import { useThreeScene } from './useThreeScene.js'
 import { loadTarget } from './targetLoader.js'
-import { leerImagenesDeTarget } from './evocacion.js'
 import { t } from '../../lib/i18n.js'
 
 /**
@@ -102,19 +101,12 @@ export default function ARViewer({ tattooId = null, demo = null }) {
 
         // Pasamos renderer/scene/camera — MindAR NO renderiza internamente,
         // useThreeScene corre el loop RAF con renderer.render() por frame
-        /*
-          ?evocacion=0 apaga el efecto de salida del tatuaje. Sirve para grabar
-          el antes y el después sobre la misma piel, y como interruptor si en
-          algún teléfono el efecto resulta pesado.
-        */
-        const conEvocacion = new URLSearchParams(window.location.search).get('evocacion') !== '0'
         await threeScene.loadModels(
           anchors.map((a) => a.group),
           urls.targets,
           mindar.renderer,
           mindar.scene,
-          mindar.camera,
-          { imagenes: conEvocacion ? leerImagenesDeTarget(mindar) : [] }
+          mindar.camera
         )
 
         if (cancelled) { threeScene.cleanup(); mindAR.stop(); return }

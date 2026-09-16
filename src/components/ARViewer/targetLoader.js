@@ -93,6 +93,30 @@ const DEMO_ZERO_CONCHA = {
   ],
 }
 
+/*
+  Zero NACIENDO del tatuaje: la intro arranca con el dibujo exacto de la
+  huella —extraído de la misma foto que se compiló en el .mind— y termina en
+  el primer cuadro del video de la concha, que sigue en bucle.
+
+  ── Por qué escala 1 ──
+  El lienzo de los dos videos es 768x1364 con la foto a todo lo ancho y
+  centrada (worker/componer-inicio.js). Con escala 1 el plano mide
+  exactamente el ancho del tatuaje, así que el dibujo del cuadro 0 cae encima
+  del tatuaje real sin más ajuste.
+*/
+const DEMO_ZERO_NACE = {
+  mindUrl: DEMO_ZERO.mindUrl,
+  targets: [
+    {
+      introUrl: '/video/zero-nace.mp4',
+      videoUrl: '/video/zero-concha.mp4',
+      escala: 1,
+      label: 'Zero',
+    },
+    { glbUrl: '/models/Fenix.glb', label: 'Esqueleto' },
+  ],
+}
+
 /**
  * @param {object} params
  * @param {string|null} params.tattooId - UUID de un tatuaje concreto
@@ -104,6 +128,7 @@ export async function loadTarget({ tattooId = null, demo = null } = {}) {
   if (demo === 'marcador') return DEMO_MARCADOR
   if (demo === 'zero') return DEMO_ZERO
   if (demo === 'zero-concha') return DEMO_ZERO_CONCHA
+  if (demo === 'zero-nace') return DEMO_ZERO_NACE
 
   if (!tattooId) {
     throw new Error('No se indicó qué tatuaje escanear')
