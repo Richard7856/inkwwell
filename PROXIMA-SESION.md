@@ -1,6 +1,6 @@
 # Dónde retomar
 
-> **Actualizado el 17 de septiembre de 2026.**
+> **Actualizado el 17 de septiembre de 2026 (tarde).**
 >
 > Si vienes de otra máquina, primero `SETUP.md`. El contexto del sprint está en
 > `SHIPATON.md`; el porqué de cada decisión técnica, en `DECISIONS.md`.
@@ -11,9 +11,10 @@
 
 ## ⚠️ Lo primero: la fecha ya se venció
 
-**La ventana quedó cerrada el 16 sep: se comparte la landing HOY, la lista
-cierra el jueves 18, se lanza el viernes 19.** Los pasos concretos, en orden y
-con tiempos, están en **`LANZAMIENTO.md`** — ese archivo es la guía operativa.
+**Ventana vigente (movida el 17 sep): la landing se comparte el viernes 18, la
+lista cierra el domingo 20, se lanza el lunes 21.** Richard la recorrió para
+tener días de prueba en vez de horas. Los pasos, en orden y con tiempos, están
+en **`LANZAMIENTO.md`** — ese archivo es la guía operativa.
 
 **Pero la fecha no es el problema.** La v3 publicada **no puede cobrar** —la
 llave de RevenueCat se horneó vacía y no hay pantalla de compra—, así que la
@@ -159,8 +160,8 @@ Lenguaje: **"tu primer video"**, no "tu primer tatuaje" — no vendemos tatuajes
 
 ## Decisiones CERRADAS en la sesión del 16 sep
 
-- **Ventana del lanzamiento:** comparte el 16, la lista cierra el 18, se lanza
-  el 19. Guía operativa en `LANZAMIENTO.md`.
+- **Ventana del lanzamiento:** landing el viernes 18, lista cierra el domingo
+  20, lanzamiento el lunes 21 (movida el 17 sep). Guía en `LANZAMIENTO.md`.
 - **Interruptor de degradación: construido.** Ver `DECISIONS.md` [2026-09-16].
   Ya no es una propuesta. Incluye el caso de llave revocada (401/403).
 - **Oferta de la lista: 50% de descuento en el primer video** (Richard, 16 sep,

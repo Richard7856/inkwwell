@@ -66,9 +66,16 @@ const VIDEO_ES_GRABACION = true
 /*
   ── Las fechas del lanzamiento, en un solo lugar ──
 
-  Van aquí arriba y no repartidas por la copy porque esta fecha YA se movió una
-  vez (del 17 al 19) y se puede volver a mover: la revisión de Play tarda cerca
-  de un día y no se puede apurar.
+  Van aquí arriba y no repartidas por la copy porque esta fecha YA se movió dos
+  veces (17 → 19 → 21) y se puede volver a mover: la revisión de Play tarda
+  cerca de un día y no se puede apurar.
+
+  ── Cuidado con el día de la semana ──
+  Estuvo publicado "viernes 19" y "jueves 18", y los dos estaban mal: el 19 de
+  septiembre de 2026 es SÁBADO y el 18 es VIERNES. Nadie lo notó porque el día
+  se escribe a mano en la copy mientras la fecha real vive en las constantes de
+  abajo. Al cambiarlas, verifica el día contra un calendario — un producto que
+  se equivoca en qué día es no inspira confianza para cuidar un recuerdo.
 
   Cambiarlas es barato y hay que saberlo: la landing se sirve desde Vercel, así
   que corregir una fecha es un despliegue de segundos. NO exige compilar el APK
@@ -78,8 +85,8 @@ const VIDEO_ES_GRABACION = true
   texto sin huso se interpreta distinto según el navegador y la cuenta regresiva
   saldría corrida un día para alguien en otro país.
 */
-const CIERRE_OFERTA = new Date('2026-09-18T23:59:59-06:00')
-const APERTURA = new Date('2026-09-19T00:00:00-06:00')
+const CIERRE_OFERTA = new Date('2026-09-20T23:59:59-06:00')
+const APERTURA = new Date('2026-09-21T00:00:00-06:00')
 
 /*
   Tres estados, y el orden importa: primero se pregunta si ya abrimos.
@@ -143,9 +150,9 @@ const ES = {
 
   // Fecha en el héroe: hoy no aparece por ningún lado, y una landing que pide
   // el correo sin decir para cuándo pide un cheque en blanco.
-  abreEl: 'Abrimos el viernes 19 de septiembre',
+  abreEl: 'Abrimos el lunes 21 de septiembre',
   yaAbrimos: 'Ya estamos abiertos',
-  ofertaVigente: 'La lista cierra el jueves 18 de septiembre.',
+  ofertaVigente: 'La lista cierra el domingo 20 de septiembre.',
   ofertaCerrada: 'La lista ya cerró, pero te avisamos en cuanto abramos.',
 
   cta: 'Avísame cuando abra',
@@ -234,9 +241,9 @@ const EN = {
     ['Registered once, changed whenever', 'You already have the tattoo. What we add is the layer living on top, and that one you can change as many times as you like without registering anything again.'],
   ],
 
-  abreEl: 'We open Friday, September 19',
+  abreEl: 'We open Monday, September 21',
   yaAbrimos: 'We’re open',
-  ofertaVigente: 'The list closes Thursday, September 18.',
+  ofertaVigente: 'The list closes Sunday, September 20.',
   ofertaCerrada: 'The list has closed, but we’ll still tell you when we open.',
 
   cta: 'Tell me when it opens',

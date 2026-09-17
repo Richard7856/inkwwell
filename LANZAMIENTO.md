@@ -1,12 +1,18 @@
 # Guía de lanzamiento — lo que tiene que hacer Richard
 
-> **Ventana decidida el 16 de septiembre de 2026.**
+> **Ventana movida el 17 de septiembre de 2026.** Antes era 16→18→19; Richard
+> la recorrió para tener días de prueba en vez de horas.
 >
 > | | |
 > |---|---|
-> | **Hoy 16** | Se comparte la landing. Empieza la cuenta de dos días |
-> | **Jueves 18** | Cierra la lista de espera |
-> | **Viernes 19** | **Lanzamiento.** La v4 tiene que estar PUBLICADA, no entregada |
+> | **Jueves 17** | Se termina todo lo que bloquea el bundle |
+> | **Viernes 18** | Se comparte la landing. Abre la lista |
+> | **Sábado 19 – domingo 20** | Días de prueba reales. La lista cierra el domingo |
+> | **Lunes 21** | **Lanzamiento.** La v4 tiene que estar PUBLICADA, no entregada |
+>
+> ⚠️ Estuvo publicado "viernes 19" y "jueves 18" y los dos días de la semana
+> estaban mal: el 19 de 2026 es **sábado** y el 18 es **viernes**. Si vuelves a
+> mover la fecha, verifica el día contra un calendario.
 >
 > Para el estado técnico y las decisiones abiertas, `PROXIMA-SESION.md`.
 > Para el porqué de cada decisión, `DECISIONS.md`.
@@ -15,9 +21,11 @@
 
 ## Lo que hay que entender antes de empezar
 
-**La revisión de Play tarda cerca de un día y no se puede apurar.** Si la v4 se
-entrega el 18 por la noche, el 19 no hay lanzamiento. Todo lo de abajo está
-ordenado para que **el bundle salga hoy**.
+**La revisión de Play tarda cerca de un día y no se puede apurar.** Con el
+lanzamiento el lunes 21 hay margen de sobra —entregando el jueves o el viernes
+quedan dos o tres días de colchón—, que es justo lo que la ventana anterior no
+daba. Aun así el bundle sale hoy: el margen es para PROBAR, no para empezar
+tarde.
 
 **La v3 que está publicada no puede cobrar.** La llave de RevenueCat se horneó
 vacía y no hay pantalla de compra. Eso significa que la facturación —la métrica
