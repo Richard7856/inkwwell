@@ -943,3 +943,27 @@ El fondo del video generado quedó plano ([96,199,76] en 0.5, 3 y 5.5 s).
 **Sin controles, con un respaldo.** Una barra de reproducción encima de la piel ensucia justo lo que se quiere enseñar, y con 9 segundos en bucle no hay nada que adelantar. Pero si el arranque automático falla —ahorro de datos, una política más estricta— el visitante se quedaría viendo una imagen fija sin manera de reproducirla. Por eso se vigila la promesa de `play()`: si se rechaza, vuelven los controles.
 
 **Verificado en navegador** (sirviendo un webm con el mismo nombre, porque el Chromium del entorno de pruebas no decodifica H.264): al cargar la página el video existe y está **pausado en 0**; tras desplazarse hasta él queda reproduciendo, con `loop` y `muted` activos y sin controles.
+
+## [2026-09-17] Railway sugería las variables del frontend, que no sirven en el worker
+**Context:** Al configurar Railway, su pantalla de "Suggested Variables" ofreció siete variables `VITE_*` —`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_COMPILER_URL`, `VITE_REVENUECAT_ANDROID_KEY`, `VITE_PUBLIC_URL`, `VITE_VIDEO_DEMO`, `VITE_VIDEO_POSTER`— porque escanea **todo el repositorio** y el frontend vive en la raíz.
+
+**Ninguna sirve en el worker.** Las `VITE_*` las hornea Vite al compilar, y quien compila el frontend es Vercel. En un contenedor de Node no hacen nada. Comprobado con `grep` sobre `worker/*.js`: el worker lee exactamente siete variables y **ninguna empieza con `VITE_`** — `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `HIGGSFIELD_KEY_ID`, `HIGGSFIELD_KEY_SECRET`, `HIGGSFIELD_ENDPOINT`, `HIGGSFIELD_DURACION` y `PORT` (esta la inyecta Railway).
+
+**Y los valores sugeridos son marcadores de posición.** Railway los leyó de `.env.example`: proponía `https://<tu-proyecto>.supabase.co` y `<tu-anon-key>` como si fueran credenciales. Aceptarlas habría llenado Railway de basura y —lo caro— dejado la impresión de que el worker ya estaba configurado, cuando `/generar` seguiría respondiendo 503.
+
+**Decision:** en Railway van solo las cuatro que importan (`SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `HIGGSFIELD_KEY_ID`, `HIGGSFIELD_KEY_SECRET`) y se rechaza la sugerencia completa. Queda anotado porque la pantalla es convincente y el error es silencioso.
+
+## [2026-09-17] `meshy-cli.js`: fotos → GLB por el API, como borrador de la automatización
+**Context:** Richard pagó Meshy y quiere probar a Zero en 3D. Se le propuso hacerlo en la web de Meshy —más rápido y sin llaves— y respondió que prefiere el API **porque el objetivo es automatizarlo**: que un cliente suba fotos y le salga su modelo sin que nadie toque un panel. Tiene razón en que hacerlo a mano contesta "¿se ve bien?" pero no contesta "¿se puede construir?".
+
+**Decision:** un CLI que corre en la máquina de Richard, donde ya viven la llave y las fotos, y que es el borrador de lo que después se mueve al worker. Se eligió así porque **este contenedor no tiene ni tendrá secretos**: no hay `.env`, y mandar una llave por el chat la dejaría escrita en el historial.
+
+**Las fotos van en base64, no hospedadas.** El API acepta `data:image/jpeg;base64,…` además de URLs públicas. Eso evita montar un bucket público solo para que Meshy lea la foto de la mascota de alguien — una foto que no tiene por qué ser pública nunca. Importa para el producto, no solo para la prueba.
+
+**Una imagen y varias son endpoints distintos**, no el mismo con un arreglo: `/openapi/v1/image-to-3d` contra `/openapi/v1/multi-image-to-3d`. El segundo es el que gana precisión geométrica con vistas de varios ángulos, que es exactamente por qué se piden cuatro tomas.
+
+**No rigea por omisión.** El esqueleto de Meshy es humanoide y sus 678 animaciones son de bípedo (sus vistas previas cuelgan de `/preview/biped/`). Un perro rigeado como persona sale deforme, y sería una lástima descartar una malla buena por un rig malo. `--rig` existe para probarlo aparte.
+
+**Presupuesto de tamaño, medido contra la app.** Los modelos que ya carga pesan de 0.6 a 1.8 MB, y el AR los baja antes de mostrar nada: un GLB de 10 MB no es "más bonito", son segundos de pantalla vacía sobre datos móviles justo cuando el usuario decide si esto funciona. El CLI avisa arriba de 4 MB y sugiere bajar los polígonos. Por lo mismo, `enable_pbr: false` y textura a 2k: los mapas extra no los aprovecha la escena y 4k no se ve en un antebrazo.
+
+**Verificado contra el API real** con una llave falsa: lee las fotos, las codifica, elige el endpoint multi-imagen con dos imágenes, llega a Meshy y recibe un `401 Invalid API key` que el CLI explica. Lo que falta por comprobar necesita la llave de Richard: si los créditos del API son los mismos de la suscripción web —su documentación no lo aclara, y este proyecto ya se quemó dos veces con esa confusión en Higgsfield— y la calidad de la malla con pelaje largo negro.
