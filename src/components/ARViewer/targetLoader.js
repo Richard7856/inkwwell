@@ -126,6 +126,20 @@ const DEMO_ZERO_NACE = {
   humanoides ("Pose estimation failed" con un perro). Sirve para comparar en
   piel el 3D quieto contra el video.
 */
+/*
+  Zero realista: la misma prueba, pero desde la FOTO real recortada y con
+  `texture_prompt` describiendo las marcas que la foto no muestra (patas
+  traseras blancas, punta de cola blanca, panza rosa). Salió mucho más fiel
+  que desde la caricatura. 30 + 5 créditos, 19 MB → 387 KB.
+*/
+const DEMO_ZERO_REALISTA = {
+  mindUrl: DEMO_ZERO.mindUrl,
+  targets: [
+    { glbUrl: '/models/zero-realista.glb', label: 'Zero' },
+    { glbUrl: '/models/Fenix.glb', label: 'Esqueleto' },
+  ],
+}
+
 const DEMO_ZERO_3D = {
   mindUrl: DEMO_ZERO.mindUrl,
   targets: [
@@ -147,6 +161,7 @@ export async function loadTarget({ tattooId = null, demo = null } = {}) {
   if (demo === 'zero-concha') return DEMO_ZERO_CONCHA
   if (demo === 'zero-nace') return DEMO_ZERO_NACE
   if (demo === 'zero-3d') return DEMO_ZERO_3D
+  if (demo === 'zero-realista') return DEMO_ZERO_REALISTA
 
   if (!tattooId) {
     throw new Error('No se indicó qué tatuaje escanear')

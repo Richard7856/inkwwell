@@ -1019,3 +1019,21 @@ Saldo: 1,115 → 1,080. Los rechazos de rigging no cobran.
 **Decision:** el modelo queda como `public/models/zero-meshy.glb` con `demo=zero-3d` (sobre la huella), para comparar en piel el 3D quieto contra el video. No cambia la estrategia: el video sigue siendo el producto del concurso.
 
 **Risks/Limitations:** `target_polycount` no se respeta en imagen a 3D; siempre hará falta remesh (+5) o compresión propia. El modelo pesaba 15 MB sin comprimir: el pipeline del motor de negocio necesita `gltf-transform` sí o sí.
+
+## [2026-09-17] Zero realista en 3D: desde la foto real, no desde una vista inventada
+**Context:** Zero falleció y solo existen dos fotos de frente. Richard notó que el 3D de caricatura inventó una franja blanca en la cabeza y no tenía lo que Zero sí tenía: punta de cola blanca y peluda, patas traseras blancas, panza rosa.
+
+**Intentos para "inventar bien" lo que la foto no muestra:**
+| Intento | Costo | Resultado |
+|---|---|---|
+| popcorn: cuerpo completo con las marcas descritas | $0.09 | Ilustración de un perro genérico; patas traseras cafés, hocico blanco |
+| soul/reference: foto de cuerpo completo | **$0.188** (1080p cuesta el doble) | Ignoró "cuerpo completo", copió el encuadre y **sacó otro perro** de pelo corto |
+| **Meshy desde la foto real recortada + `texture_prompt`** | 30 + 5 créditos | **Reconocible como Zero**: cara, pelo áspero, pecho blanco-grisáceo, punta de cola blanca, cabeza sin franja |
+
+**Lección:** con una sola foto de frente, un generador de imágenes inventa un perro distinto en cada intento. Es mejor dejar que el reconstructor 3D parta de la foto real y guiar solo la textura con texto. `texture_prompt` sí se respeta en parte en `image-to-3d` (la punta de la cola salió), pero **no** pintó las patas traseras blancas.
+
+**Recorte con transparencia** (Vision de macOS, fondo alfa) en vez de sobre verde: el reconstructor no hereda el color del fondo.
+
+**Resultado:** `public/models/zero-realista.glb` (19 MB → 387 KB), `demo=zero-realista`. Saldo de Meshy 1,080 → 1,045.
+
+**Pendiente si se quiere más fiel:** Retexture de Meshy (10 créditos) con el mismo texto sobre este modelo, para las patas traseras. Y sigue sin animación: el rig de cuadrúpedos (solo caminar) existe únicamente en el panel web.

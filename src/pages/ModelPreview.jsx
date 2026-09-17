@@ -31,6 +31,7 @@ const MODELS = [
   { label: 'Malamute', url: '/models/alaskan_malamute_dog.glb' },
   { label: 'Fénix', url: '/models/Fenix.glb' },
   { label: 'Zero (Meshy)', url: '/models/zero-meshy.glb' },
+  { label: 'Zero realista', url: '/models/zero-realista.glb' },
   { label: 'Dr. Simi', url: '/models/farmacias_similares.glb' },
 ]
 
