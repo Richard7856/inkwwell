@@ -1057,15 +1057,14 @@ Saldo: 1,115 → 1,080. Los rechazos de rigging no cobran.
 
 **La cola hay que rehacerla, y la solución obvia es la mala.** La copia por cercanía acierta donde las dos anatomías coinciden y falla en la cola: la del shiba se enrosca sobre el lomo, la de Zero sale recta. Repartirla a lo largo de la cadena de siete huesos —que suena correcto— la convierte en una **cuchilla plana**, porque los huesos 4 a 7 viven encima del lomo y hacer girar un vértice alrededor de un punto lejano lo manda a volar. Colgar toda la cola del **primer** hueso sale bien: el brazo de palanca es corto y la cola conserva su forma.
 
-**El alcance real, medido: solo el reposo de pie sale limpio.** Se renderizaron las cinco animaciones sobre Zero y se compararon contra el donante:
-- `standing` — **limpia**. Es la que se exporta.
-- `sitting` — el tren trasero colapsa en una losa negra al plegarse.
-- `rollover` — la malla se desgarra; poses extremas amplifican cualquier error de peso.
-- `shake` — sale mal, **pero el defecto es del shiba original**: el donante produce la misma losa. No es de la transferencia.
-- `play_dead` — limpia en el donante, no probada sobre Zero.
+**Lo que decide el resultado es la POSE de la malla de entrada, no el método.** Primero se probó con `zero-optimizado.glb` —la malla original de Meshy, con la cabeza levantada y girada— y solo `standing` salía limpia: con `sitting` el tren trasero colapsaba en una losa negra y `rollover` desgarraba la malla. La conclusión que se sacó de ahí, *"esto solo sirve para un reposo de pie"*, **era falsa**.
 
-**Entonces la transferencia automática no sustituye a Blender, lo acota.** Da un perro de pie correcto sin tocar nada; todo lo que doble mucho una pata necesita pesos pintados a mano. Eso es trabajo de Blender, y `scripts/blender-diagnostico.py` existe para poder hacerlo sobre el archivo local de Richard sin tener el archivo: lo pega en la pestaña Scripting, lo corre y manda el informe.
+Con `zero-parado.glb` —la malla que la otra sesión generó **en pose de pie a propósito para rigear**— salen limpias `standing`, `sitting` y `play_dead`, que es sentarse, echarse y volver a levantarse. La misma tubería, sin tocar una línea. Una malla en pose neutra hace que la copia de pesos acierte; una con la cabeza echada hacia atrás la hace fallar en cuanto algo dobla.
 
-**Resultado:** `public/models/zero-animado.glb`, 1.97 MB con Draco (sin Draco, 4.64 MB — el visor ya monta `DRACOLoader` porque el shiba viene comprimido). Cada animación extra pesa ~0.5 MB. Visible en `/preview?model=/models/zero-animado.glb`.
+`shake` sigue saliendo mal, **pero el defecto es del shiba original**: el donante produce la misma losa. No es de la transferencia, y por eso no se exporta.
+
+**Entonces la transferencia no sustituye a Blender, pero cubre más de lo que parecía.** Lo que sí necesita Blender es lo que ninguna de las cinco animaciones tiene: un ciclo de caminar o correr. Para trabajar sobre el archivo local de Richard sin tener el archivo está `scripts/blender-diagnostico.py`: se pega en la pestaña Scripting, se corre y devuelve un informe —pesos huérfanos, huesos que no arrastran nada, texturas sin empotrar, qué huesos mueve cada acción— con el que se puede escribir el arreglo a ciegas.
+
+**Resultado:** `public/models/zero-animado.glb`, 1.97 MB con Draco, con tres animaciones. Solo con `standing` son 1.04 MB, dentro del rango de lo que la app ya carga (0.6 a 1.8 MB); cada animación extra pesa ~0.5 MB. Visible en `/preview?model=/models/zero-animado.glb`.
 
 **Lo que esto destapó y no es técnico:** los dos modelos de perro del repo son **CC-BY-4.0** y **nadie acredita a sus autores en ninguna parte**. Están desde el 16 de septiembre y la licencia viaja dentro del `.glb`, en `asset.extras`. El uso comercial está permitido; sin crédito visible, no. Ver `brand/3d/CREDITOS.md`. Y ninguno de los dos trae un ciclo de correr — que es literalmente lo que promete la landing.
