@@ -130,6 +130,22 @@ const FALLOS_DE_CUENTA = {
   model_disabled: `El modelo ${'${ENDPOINT}'} está deshabilitado. Corre modelos.js para ver alternativas.`,
 }
 
+/*
+  Un 401/403 que no trae ninguno de los `detail` de arriba es llave inválida,
+  revocada o sin permiso para esta ruta. Es tan "culpa nuestra" como quedarse
+  sin saldo —el usuario no puede hacer nada— pero la tabla no lo cubría, así
+  que caía en el camino genérico y el interruptor de degradación NO se apagaba:
+  cada usuario repetía el mismo choque hasta que alguien mirara los registros.
+  Pasa de verdad al rotar las llaves y dejar Railway con la vieja.
+
+  Va por status y no por `detail` a propósito: el texto de un error de
+  autenticación no es estable y no conviene depender de él.
+*/
+const STATUS_DE_CUENTA = {
+  401: 'credenciales_invalidas',
+  403: 'sin_permiso',
+}
+
 function cabeceras() {
   if (!higgsfieldConfigurado) {
     const e = new Error('Faltan HIGGSFIELD_KEY_ID o HIGGSFIELD_KEY_SECRET en el entorno del worker')
@@ -164,6 +180,17 @@ export async function enviar({ prompt, imageUrl }) {
     if (nuestro) {
       const e = new Error(nuestro.replace('${ENDPOINT}', ENDPOINT))
       e.esDeCuenta = true   // para el registro: revisar la cuenta, no la foto
+      e.detalle = detalle   // crudo, para que disponibilidad.js sepa cuál fue
+      throw e
+    }
+    const porStatus = STATUS_DE_CUENTA[res.status]
+    if (porStatus) {
+      const e = new Error(
+        `Las llaves de Higgsfield no sirven para ${ENDPOINT} (HTTP ${res.status}` +
+        `${detalle ? `: ${detalle}` : ''}). Revisa HIGGSFIELD_KEY_ID y HIGGSFIELD_KEY_SECRET.`,
+      )
+      e.esDeCuenta = true
+      e.detalle = porStatus
       throw e
     }
     // `detail` es donde la API pone el motivo; sin él, al menos el status

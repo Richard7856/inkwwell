@@ -1,13 +1,18 @@
 # Sprint Shipaton 2026
 
-> Documento operativo del sprint. Para el contexto general del producto ver
-> `CLAUDE.md`; para el historial de decisiones técnicas, `DECISIONS.md`.
+> Documento operativo del sprint. Para el historial de decisiones técnicas ver
+> `DECISIONS.md`; para dónde retomar, `PROXIMA-SESION.md`.
+>
+> ⚠️ `CLAUDE.md` (el contexto general del producto) vive en la carpeta **padre**,
+> fuera del repo. Una sesión en la nube solo clona el repo y por tanto **no
+> puede leerlo**. Está pendiente moverlo aquí adentro — ver `PROXIMA-SESION.md`.
 
-## Lanzamiento público: 17 de septiembre
+## Lanzamiento público: 18-19 de septiembre
 
 **Publicada ≠ lanzada.** La v3 está en Play desde el 8 sep (requisito del
-concurso, cumplido el día 2). El **lanzamiento** —anunciar y empujar— es el
-**17 de septiembre**, decidido por Richard:
+concurso, cumplido el día 2). El **lanzamiento** —anunciar y empujar— se fijó
+primero el **17 de septiembre** y se movió al **18-19** el 16 de septiembre.
+Las razones del 17 siguen valiendo para el 18-19:
 
 - Después de la **quincena del 15**, cuando la gente tiene dinero.
 - **No el 15-16**: son el Grito y la Independencia. Hay dinero y tiempo libre,
@@ -16,13 +21,23 @@ concurso, cumplido el día 2). El **lanzamiento** —anunciar y empujar— es el
   aparte dinero. Es deliberada.
 - **Los estudios se registran desde ya**: no esperan a la quincena.
 
-Consecuencia dura: **la v4 tiene que estar publicada antes del 17.**
+Consecuencia dura: **la v4 tiene que estar publicada antes del anuncio.**
 
-> **Al 16 de septiembre la fecha ya no es alcanzable.** La v4 sigue en
-> `versionCode` 3, sin compilar, y la revisión de Play tarda ~1 día. Higgsfield
-> ya tiene saldo y la generación está probada, pero falta la `service_role` para
-> el camino del worker. **Recomendación: mover al 19-20**, que conserva la
-> quincena. Sin decisión de Richard desde el 15. Ver `PROXIMA-SESION.md`.
+> **Decidido el 16 de septiembre: se comparte la landing el 16, la lista cierra
+> el 18, se lanza el 19.** El 17 dejó de ser posible — la v4 no existía esa
+> mañana y la revisión de Play tarda cerca de un día. (Otra sesión recomendó
+> 19-20 el mismo día; la decisión de Richard fue 18-19 y es la que manda.)
+>
+> **Pero la fecha del anuncio no es lo que urge.** La v3 no puede cobrar, así
+> que la facturación por RevenueCat —la métrica que pondera el premio— está en
+> cero hasta que la v4 esté publicada. La v4 entra a revisión lo antes posible;
+> el anuncio va después.
+>
+> **Al 17 de septiembre**, `versionCode` sigue en 3. Higgsfield ya tiene saldo y
+> la generación quedó probada de punta a punta contra la API (240 s, fondo verde
+> plano), pero **falta la `service_role`** para el camino del worker, que es el
+> que cobra el crédito y guarda el video. Ver `LANZAMIENTO.md` para los pasos y
+> `PROXIMA-SESION.md` para el estado.
 
 ## Meta
 

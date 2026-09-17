@@ -21,6 +21,7 @@ import cors from 'cors'
 import { compileTattooImage } from './compiler.js'
 import { analyzeTattooImage } from './analyzer.js'
 import { iniciarGeneracion, reanudarPendientes } from './generacion.js'
+import { estadoGeneracion } from './disponibilidad.js'
 
 const app = express()
 
@@ -47,9 +48,26 @@ const upload = multer({
   },
 })
 
-// Health check — usado por Railway y para verificar que ngrok está activo
+/*
+  /health — sondeo de vida para Railway Y, desde la v4, estado del generador.
+
+  Se cuelga de aquí en vez de crear una ruta nueva porque un APK viejo que
+  consulte este mismo /health recibe el campo extra y lo ignora, y un APK nuevo
+  contra un worker viejo no ve el campo y asume que sí se puede generar (ver
+  `disponibilidadGeneracion` en el cliente: ante la duda, ofrecer). Ninguna de
+  las dos combinaciones se rompe.
+
+  `generacion.motivo` es un CÓDIGO, nunca una frase: lo que redacta el worker no
+  pasa por el diccionario del cliente y llegaría sin traducir a un teléfono en
+  inglés.
+*/
 app.get('/health', (_, res) => {
-  res.json({ status: 'ok', service: 'inkar-worker', timestamp: new Date().toISOString() })
+  res.json({
+    status: 'ok',
+    service: 'inkar-worker',
+    timestamp: new Date().toISOString(),
+    generacion: estadoGeneracion(),
+  })
 })
 
 // POST /compile — endpoint principal
@@ -233,7 +251,7 @@ app.post('/compile-stream', upload.single('image'), async (req, res) => {
   Cabecera:    Authorization: Bearer <jwt de Supabase>
   Errores:     { error, codigo } con codigo ∈ sin_sesion | sin_creditos |
                tatuaje_invalido | foto_invalida | historia_invalida |
-               no_configurado | proveedor | desconocido
+               no_configurado | no_disponible | proveedor | desconocido
 */
 app.post('/generar', async (req, res) => {
   try {

@@ -100,7 +100,7 @@ El veredicto lo determina la métrica MÁS DÉBIL, no el promedio: un target con
 - Rate limiting: los endpoints están abiertos sin auth. Aceptable en Phase 1, no en producción.
 
 ## [2026-09-07] Multi-tatuaje: un perfil, varios tatuajes en una sesión
-**Context:** El escaneo requería un link por tatuaje (`?tattoo=<uuid>`), atajo de Phase 1 que contradecía el Flujo B del CLAUDE.md ("MindAR reconoce la imagen → consulta Supabase") y mataba la viralidad: para ver un tatuaje había que recibir su link específico.
+**Context:** El escaneo requería un link por tatuaje (`?tattoo=<uuid>`), atajo de Phase 1 que contradecía el Flujo B del `CLAUDE.md` (que vive en la carpeta padre, fuera del repo) ("MindAR reconoce la imagen → consulta Supabase") y mataba la viralidad: para ver un tatuaje había que recibir su link específico.
 
 **Decision:** Un `.mind` contiene varios image targets, uno por tatuaje de la persona. Cada target tiene su ancla y su modelo 3D. Un solo link por PERSONA, no por tatuaje.
 
@@ -589,6 +589,98 @@ O sea, ese tatuaje está en el extremo bajo de lo ACEPTABLE, y con poca luz se c
 
 **Verificado en navegador, en los dos idiomas:** la política renderiza con la vigencia nueva, con Higgsfield en la lista de terceros y con las entradas de la foto del recuerdo y de los créditos.
 
+## [2026-09-16] Interruptor de degradación: la app deja de ofrecer el video cuando no se puede generar
+**Context:** El generador puede estar caído por tres motivos distintos y la app no distinguía ninguno: faltan llaves en Railway (hoy mismo, `/generar` responde 503 `no_configurado` en producción), la cuenta de Higgsfield se quedó sin saldo, o el modelo configurado dejó de estar habilitado en el plan. En los tres casos "Anima tu recuerdo" se ofrecía igual: el usuario subía la foto del recuerdo, escribía su historia, y chocaba al final. El crédito vuelve —el worker reembolsa con cerrojo— pero el esfuerzo no, y la impresión que queda es que el producto no sirve.
+
+**El problema que casi se resuelve mal:** la propuesta original era un interruptor contra quedarse sin saldo. Pero un interruptor por configuración **no detecta saldo**: las llaves siguen presentes con la cuenta vacía. Y sondear el saldo es imposible — está registrado como trampa: la API de Higgsfield valida el cuerpo del pedido ANTES de revisar créditos, así que una cuenta vacía responde igual que una llena a cualquier sondeo que no sea una generación real. `modelos.js` prometía detectarlo y era falso.
+
+**Decision:** no predecir, **reaccionar**. El único informe fiable sobre la cuenta es un envío de verdad, y `higgsfield.js` ya separaba "es culpa de nuestra cuenta" (`esDeCuenta`: `not_enough_credits`, `model_not_found`, `model_disabled`) de "esta petición estuvo mal". `worker/disponibilidad.js` recuerda ese fallo y apaga el producto; un envío aceptado lo enciende de vuelta. El primer usuario choca y recupera su crédito; los siguientes ven una pantalla honesta en lugar de la misma pared.
+
+**Por qué el fallo caduca a los 15 minutos:** recargar Higgsfield no reinicia el worker ni avisa a nadie. Sin caducidad, el producto seguiría escondido después de recargar hasta el siguiente despliegue. Pasado el enfriamiento se vuelve a ofrecer y el siguiente envío real decide.
+
+**Por qué en memoria y no en la base:** es una señal operativa de segundos, no un dato del negocio. Reiniciar el worker la borra, y eso es correcto: un despliegue suele ser justamente lo que cambió la configuración.
+
+**Por qué el estado viaja por `/health` y no por una ruta nueva:** las dos combinaciones de versiones sobreviven. Un APK viejo contra el worker nuevo recibe el campo extra y lo ignora; un APK nuevo contra un worker viejo no ve el campo y asume que sí se puede generar. `generacion.motivo` es un **código**, nunca una frase: lo que redacta el worker no pasa por el diccionario del cliente y llegaría sin traducir a un teléfono en inglés.
+
+**Ante la duda, se ofrece.** El sondeo del cliente tiene 4 s de límite y falla abierto: una red móvil que parpadea no es evidencia de que el generador esté mal, y esconder lo que se vende por eso cuesta más que el error que se quiere evitar. Solo se apaga cuando el worker lo afirma. El guardia real está en el worker —rechaza antes de tocar el crédito—, así que apagarlo en la pantalla es cortesía, no seguridad.
+
+**Por qué la tarjeta se queda visible, apagada, en vez de desaparecer:** esconderla dejaría el catálogo como si fuera la oferta completa y el usuario aprendería que InkAR es "modelos 3D gratis", sin saber que se perdió de algo. Se conserva el título, se quita el botón y se dice que vuelve pronto. El motivo NO se le explica: "el proveedor no tiene saldo" es un problema nuestro contado como si fuera suyo. Eso va a los registros del worker, donde ya se grita `⚠️ REVISAR LA CUENTA DE HIGGSFIELD`. Cuando el recuerdo está apagado, el destacado pasa al catálogo — la regla de `Tarjeta` es que solo una cosa por pantalla pide atención.
+
+**Nuevo código de error `no_disponible`**, distinto de `no_configurado`: el primero es "la cuenta falló hace poco", el segundo "faltan variables". La pantalla los trata igual (volver a la elección con la tarjeta apagada) pero los registros no.
+
+**Verificado contra las rutas reales**, worker levantado en local: sin llaves, `/health` reporta `no_configurado` y `/generar` sigue devolviendo 503 con el mismo código que antes (compatible hacia atrás); con llaves, `/health` reporta disponible y `/generar` pasa el guardia y cae en la validación normal. El circuito se probó aparte en 13 casos: apagado por cada motivo de cuenta, encendido por envío aceptado, indiferencia ante fallos del usuario, y caducidad del enfriamiento.
+
+**Limitación conocida:** `BASE` de Higgsfield es una constante, así que el camino completo —envío real rechazado por saldo → circuito apagado— no se puede ejercitar sin la API de verdad. Se probaron por separado las dos mitades que se tocan en ese punto.
+
+## [2026-09-16] Una llave revocada no apagaba el interruptor
+**Context:** Al ejercitar el camino de Higgsfield con llaves inválidas apareció un hueco en la clasificación recién construida. `FALLOS_DE_CUENTA` reconocía `not_enough_credits`, `model_not_found` y `model_disabled` —los tres por su `detail`— pero un **401/403 de autenticación** no traía ninguno de esos textos, así que caía en el camino genérico: `esDeCuenta` quedaba en `false`, el interruptor de degradación **no se apagaba**, y cada usuario repetía el mismo choque hasta que alguien mirara los registros.
+
+**Cuándo pasa de verdad:** al rotar las llaves de Higgsfield y dejar Railway con la vieja. Es el escenario más probable de toda la lista, porque es el único que se provoca haciendo algo bien (rotar credenciales).
+
+**Decision:** un 401 o 403 que no traiga un `detail` conocido se clasifica como fallo de cuenta, con motivo `credenciales`. Va **por status y no por `detail`** a propósito: el texto de un error de autenticación no es estable entre versiones de una API y no conviene depender de él.
+
+**Por qué `credenciales` y no `no_configurado`:** `no_configurado` significa "faltan las variables" y se arregla poniéndolas; aquí están puestas y no sirven. La app trata los dos igual —apaga la tarjeta— pero los registros y `/health` los distinguen, que es donde se depura.
+
+**Verificado sin red**, sustituyendo `fetch`: 401 y 403 genéricos se clasifican como de cuenta y apagan el interruptor con motivo `credenciales`; 403 `not_enough_credits` y 404 `model_not_found` siguen clasificándose como antes; 422 y 500 **no** apagan nada, que es lo correcto — un cuerpo mal formado o un tropiezo del proveedor no son problema de la cuenta.
+
+## [2026-09-16] `generar-cli.js`: ejercitar Higgsfield sin Supabase, sin app y sin gastar por accidente
+**Context:** La generación está construida desde el 9 de septiembre y nunca se ha ejecutado. Todo lo que hay entre `enviar` y el video descargado está escrito contra el `openapi.json`, no contra una corrida real. Probarlo por la app exige worker + Supabase + JWT + crédito + tatuaje: cinco cosas que pueden fallar antes de llegar a la que importa.
+
+**Decision:** un CLI que corre solo la mitad de Higgsfield —`enviar`, `esperar`, descargar— con las mismas funciones del worker, sin tocar Supabase ni reservar créditos. Si el perfil del cuerpo está mal para el endpoint configurado, se ve aquí en segundos.
+
+**Por qué por omisión no gasta:** un video cuesta ~$0.28 reales. El modo por omisión comprueba llaves, modelo, costo estimado y estado del interruptor sin enviar nada; gastar exige escribir `--generar`. Un script de pruebas que cobra por correrse se corre menos.
+
+**Lo que el CLI aclara a propósito:** el interruptor que muestra es la copia en memoria de ESE proceso, no el del worker en Railway; y cuando sale `no_configurado` dice cuál mitad falta, porque `estadoGeneracion()` también exige Supabase y el script no la necesita. Sin esas dos notas, se sale de ahí con una conclusión equivocada.
+
+## [2026-09-16] La landing dice para cuándo, y vuelve a invitar al final
+**Context:** La landing recogía correos sin decir nunca cuándo abría, y el único formulario estaba arriba — antes de las cuatro secciones que de verdad venden. Quien leía la página entera llegaba convencido al pie y no tenía dónde apuntarse: tenía que subir a buscar el formulario, y eso no lo hace casi nadie. Con una ventana de dos días (16 → 18, lanzamiento el 19), las dos cosas costaban conversiones que no se recuperan.
+
+**La fecha, en el héroe.** Pedir el correo sin decir para cuándo es pedir un cheque en blanco, y la fecha es justamente lo que vuelve urgente apuntarse. La oferta va en la misma píldora y no en un banner aparte: "abrimos el 19, apúntate antes del 18" es una sola frase, y separarla haría que se leyeran como dos avisos que compiten.
+
+**Las fechas viven en dos constantes al principio del archivo**, no repartidas por la copy. Esta fecha ya se movió una vez —del 17 al 19— y la revisión de Play puede moverla otra. Importa saber que corregirla es barato: **la landing se sirve desde Vercel, así que cambiar una fecha es un despliegue de segundos**, no un build del APK ni otra revisión. Con huso horario explícito (UTC-6): sin él, `new Date()` de un texto sin huso se interpreta distinto según el navegador y la cuenta saldría corrida un día para alguien en otro país.
+
+**Tres estados y no dos.** El intermedio —oferta cerrada, todavía no abrimos— dura **un segundo** con las fechas de hoy, y aun así se construyó: es la red para el caso que sí puede pasar. Si Play tarda y hay que mover la apertura al 22, la página deja de prometer una oferta vencida **sin dejar de recoger correos**, cambiando una sola constante. Cerrar la lista entera en vez de cerrar solo la oferta habría tirado los correos de esos días.
+
+**La oferta de la lista ya estaba decidida, y no por nosotros.** La landing publicada prometía "créditos de lanzamiento sin costo". La propuesta de "50% de descuento en el primer tatuaje" era **peor que lo ya prometido** —y encima el primer crédito a $12.50 ya es el precio de todos, así que no daba nada exclusivo—. Se conserva la promesa y se vuelve concreta: **"tu primer video va por nuestra cuenta. Sin tarjeta."** De paso corrige el idioma: decía "animar tu primer tatuaje" y no vendemos tatuajes.
+
+**"Entras antes que el público general" se retira.** Con la lista cerrando el 18 y la apertura el 19, entrar "antes" no significaba nada. Se reemplaza por algo verdadero y comprobable: "te escribimos el día que abrimos, antes de que lo anunciemos en público".
+
+**La segunda invitación va ANTES de estudios, no después.** El 9 de septiembre se corrigió que el formulario de arriba interceptara a los tatuadores y les diera una promesa en vez de su código; ponerla después de la caja de estudios repetiría el error al revés, dejando la última palabra de la página en un formulario que no es para ellos. Por la misma razón respeta la regla: si el visitante eligió "tengo estudio", ahí **no** se le pide el correo — se le señala su alta.
+
+**Los estudios se quedan solo con el cupo, sin fecha.** Lo construido son los primeros 20, permanente (`cupo_fundadores()` = 20). Se evaluó sumarle fecha límite y se descartó: el cupo es la restricción real y está en el código; una fecha además habría sido una urgencia inventada encima de una verdadera.
+
+**`source` distingue cuál formulario convirtió** (`landing` contra `landing-final`). La segunda invitación es una apuesta —que quien lee la página entera se convence más que quien ve el formulario antes de entender el producto— y sin la etiqueta no habría forma de saber en dos días si acertó. El costo de averiguarlo es una palabra: `select source, count(*) from waitlist group by source;`
+
+**Verificado en navegador a 390 px, en los dos idiomas**, con el reloj falseado para recorrer los tres estados: oferta vigente, oferta cerrada y ya abiertos. Sin desborde horizontal, sin errores de consola propios (solo Google Fonts, que el proxy TLS del entorno de pruebas rechaza), y las tres formas de la página en su lugar: lista arriba, lista al final, alta de estudio.
+
+
+## [2026-09-16, misma tarde] La oferta de la lista pasa a 50% de descuento
+**Context:** Richard decidió, antes de compartir la landing, que la lista de espera lleve **50% de descuento en el primer video** en lugar de "va por nuestra cuenta". Revierte lo que se había escrito horas antes en este mismo archivo; la entrada anterior se conserva porque registró el razonamiento del momento y borrarla haría ilegible el historial.
+
+**Un argumento a favor que no se había visto:** "gratis" no estaba construido. Exigía crear un código promocional topado antes del viernes —`codigos_promo` existe pero ese código no—, y era trabajo nuevo en una ventana de dos días. **El 50% ya está construido y ya va en la v4**: es el SKU `creditos_primero`, con su regla en `ha_comprado()` (migración 008). La decisión elimina una dependencia del lanzamiento en vez de agregarla.
+
+**El problema que sí hay, y cómo se redactó alrededor:** `creditos_primero` se le ofrece a **cualquiera que nunca haya comprado**, no solo a quien esté en la lista. Así que el descuento es real pero **no es exclusivo de la lista**. Redactarlo como consecuencia de apuntarse —"apúntate y llévate el 50%"— prometería una exclusividad que el producto no aplica, y el primero que compre sin haberse apuntado lo descubre; además, presentar como descuento exclusivo lo que es el precio de todos es exactamente la clase de afirmación que PROFECO trata como descuento falso.
+
+**Decision:** enunciar los dos hechos por separado, ambos verdaderos, sin inventar la relación entre ellos: **"La lista cierra el jueves 18. Tu primer video, con 50% de descuento."** Conserva la urgencia (la lista sí cierra), conserva el descuento (sí es la mitad) y no afirma que uno cause el otro.
+
+**Se dice "video" y no "tatuaje"** aunque la instrucción decía "su primer tatuaje": InkAR no vende tatuajes, y prometer descuento en uno en la página pública generaría gente esperando un precio en un estudio. Es la regla de lenguaje que ya estaba registrada.
+
+**Si se quiere que sea exclusivo de verdad**, hay una sola forma: restringir `creditos_primero` a quien esté en `waitlist`. Es un cambio de reglas de negocio, no de copy, y sube el precio de entrada de $12.50 a $25 para todo el que llegue sin apuntarse — probablemente malo para la conversión del día del lanzamiento. No se hizo; queda anotado como decisión abierta.
+
+**Verificado en navegador a 390 px, en los dos idiomas**, en la píldora del héroe y en la caja de beneficios.
+
+## [2026-09-16] El video de la landing sale de un archivo del repo, y declara qué es
+**Context:** El hueco del video en la landing dependía de `VITE_VIDEO_DEMO`, una variable de entorno. Subir el archivo no bastaba: había que ir a Vercel, configurar la variable y redesplegar. Tres pasos y tres lugares donde equivocarse, en una ventana de dos días.
+
+**Decision:** el video sale por omisión de `public/media/demo.mp4`. Se deja el archivo, se commitea, aparece. La variable de entorno sigue funcionando y gana si está puesta, para un video alojado fuera del repo.
+
+**La regla que motivaba lo anterior se conserva, por otra vía.** Un reproductor roto en la primera pantalla hace más daño que no tener video: sugiere que el producto tampoco funciona. Antes eso se evitaba no dibujando la sección sin variable; ahora se dibuja y **`onError` la retira entera** si el archivo no está. Verificado en navegador en los dos sentidos: sin archivo la sección no existe (cero elementos `<video>`); con archivo aparece en su lugar, entre "¿Qué es InkAR?" y el formulario.
+
+**`VIDEO_ES_GRABACION`: hay que declarar qué se está enseñando.** No es un detalle de copy, decide el rótulo impreso debajo. Ya pasó una vez —se publicó un dragón fotorrealista generado con IA y hubo que retirarlo— porque enseñar algo que el motor no produce pone al producto en deuda desde el primer día. Y al revés cuenta igual: rotular "representación del concepto" una grabación real tira a la basura lo único que de verdad convence.
+
+**Por qué esto importa ahora:** `zero-nace.mp4` y `zero-concha.mp4` están en el repo y es tentador ponerlos aquí. **Son la capa de contenido** —lo que se proyecta encima del tatuaje—, no el producto funcionando. Sueltos muestran una animación bonita; no muestran que la app reconozca un tatuaje ni que el contenido se pegue a la piel y la siga. Lo que vende InkAR es el mecanismo, y el mecanismo solo se ve en una grabación de la cámara sobre piel real. Si alguno de esos archivos se usa aquí, `VIDEO_ES_GRABACION` va en `false`.
+
+**`?demo=zero-nace` no es un video y no se puede enlazar desde la landing.** Es la experiencia AR: exige apuntar la cámara al tatuaje real de la huella de Zero. Un visitante que haga clic ve una pantalla de cámara y nada más — peor que no poner nada. Sirve para enseñar en persona, no para una página pública.
 ## [2026-09-16] La primera generación real: funcionó, y el croma también
 **Context:** El motor de video se construyó el 9 sep y nunca se había ejecutado — cero generaciones en la base. Con la API recargada se corrió la primera de punta a punta contra Higgsfield (sin pasar por el worker todavía: falta la `service_role`).
 

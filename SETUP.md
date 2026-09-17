@@ -140,6 +140,28 @@ lea `CLAUDE.md`) y pídele que lea `inkwell-ar/PROXIMA-SESION.md`. Ese archivo
 existe justo para esto: una conversación no viaja entre máquinas, los documentos
 sí.
 
-**Lo que no sirve para este proyecto:** una sesión en la nube (claude.ai/code)
-contra el repo de GitHub. Puede editar código, pero no tiene `.env` ni la llave
-de firma, así que no puede probar el worker ni compilar el AAB.
+### Qué puede y qué no puede una sesión en la nube
+
+Una sesión en la nube (claude.ai/code) clona **solo el repo**. Eso acota lo que
+puede hacer, pero menos de lo que parece:
+
+| Sí puede | No puede |
+|---|---|
+| Editar código, correr `eslint` y `npm run build` | **Compilar el AAB**: la llave de firma (`~/inkar-release.jks`) no está en el repo |
+| **Levantar el worker** y probar sus rutas (ver abajo) | Usar secretos reales: no hay `.env` ni `worker/.env` |
+| Consultar Supabase y producción por sus APIs | Probar la compra por Play ni el AR con cámara |
+
+**Arranca sin `CLAUDE.md`**, que vive en la carpeta padre y no se clona. Hasta
+que se mueva al repo, una sesión en la nube empieza sin el contexto general del
+producto — dáselo tú, o pídele que se apoye en `PROXIMA-SESION.md`,
+`SHIPATON.md` y `DECISIONS.md`, que sí están dentro.
+
+**Dos trampas del entorno en la nube**, ambas por `canvas` (nativo, vía
+`mind-ar`):
+
+1. `npm ci` a secas instala **sin devDependencies** — la compilación de `canvas`
+   falla y aborta el paso, sin decir que se saltó nada. Usa
+   `npm ci --include=dev --ignore-scripts`.
+2. Para levantar el worker sí hace falta `canvas` de verdad:
+   `apt-get update && apt-get install -y libpango1.0-dev libjpeg-dev libgif-dev`
+   y luego, en `worker/`, `npm rebuild canvas`.

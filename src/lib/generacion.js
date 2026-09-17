@@ -18,11 +18,89 @@ import { COMPILER_URL, COMMON_HEADERS } from './compiler.js'
 
 /** Error de generación ya interpretado, para que la pantalla diga qué hacer */
 export class ErrorGeneracion extends Error {
-  /** @param {'sin_creditos'|'sin_sesion'|'no_configurado'|'tatuaje_invalido'|'desconocido'} codigo */
+  /** @param {'sin_creditos'|'sin_sesion'|'no_configurado'|'no_disponible'|'tatuaje_invalido'|'desconocido'} codigo */
   constructor(codigo, message) {
     super(message)
     this.codigo = codigo
   }
+}
+
+/*
+  ── Disponibilidad: por qué se pregunta antes de ofrecer ──
+
+  "Anima tu recuerdo" es lo que se vende y lo que cuesta un crédito. Si el
+  generador está caído —sin saldo en Higgsfield, llaves ausentes en Railway, el
+  modelo deshabilitado— ofrecerlo igual manda al usuario a subir una foto y
+  escribir su historia para chocar con un error al final. El crédito se le
+  devuelve (el worker reembolsa), pero el esfuerzo no.
+
+  ── Por qué ante la duda se OFRECE ──
+  El sondeo puede fallar por la red del usuario, no por el generador. Esconder
+  el producto por un parpadeo de 4G sería peor que el error que se quiere
+  evitar: se pierde una venta por algo que probablemente funcionaba. Solo se
+  esconde cuando el worker lo dice explícitamente. Y como el guardia real está
+  en el worker, esconderlo aquí es cortesía, no seguridad: un cliente viejo que
+  no pregunte sigue recibiendo su 503 y su reembolso.
+
+  ── Por qué se recuerda un rato ──
+  Se consulta al llegar a la elección, que es un paso por el que se pasa varias
+  veces al activar varios tatuajes. Un minuto de memoria evita repetir el
+  sondeo sin ocultar un cambio real por mucho tiempo.
+*/
+
+const VIGENCIA_MS = 60 * 1000
+const ESPERA_MS = 4000
+
+let recordado = null // { valor, cuando }
+
+/**
+ * ¿Se puede generar video ahora? Consulta `/health` del worker.
+ *
+ * @param {{ forzar?: boolean }} [opciones]
+ * @returns {Promise<{ disponible: boolean, motivo: 'ok'|'no_configurado'|'sin_saldo'|'modelo'|'credenciales'|'desconocido' }>}
+ */
+export async function disponibilidadGeneracion({ forzar = false } = {}) {
+  const ofrecer = { disponible: true, motivo: 'desconocido' }
+  if (!COMPILER_URL) return { disponible: false, motivo: 'no_configurado' }
+
+  if (!forzar && recordado && Date.now() - recordado.cuando < VIGENCIA_MS) {
+    return recordado.valor
+  }
+
+  // Sin tiempo límite, una red que no responde dejaría la pantalla esperando
+  // por una consulta que es opcional. Pasados 4 s se ofrece y ya.
+  const corte = new AbortController()
+  const reloj = setTimeout(() => corte.abort(), ESPERA_MS)
+
+  try {
+    const res = await fetch(`${COMPILER_URL}/health`, {
+      headers: COMMON_HEADERS,
+      signal: corte.signal,
+    })
+    if (!res.ok) return ofrecer
+
+    const cuerpo = await res.json()
+    // Worker anterior a la v4: no conoce el campo. Se ofrece, como siempre se hizo.
+    if (!cuerpo?.generacion || typeof cuerpo.generacion.disponible !== 'boolean') return ofrecer
+
+    const valor = {
+      disponible: cuerpo.generacion.disponible,
+      motivo: cuerpo.generacion.motivo ?? 'desconocido',
+    }
+    recordado = { valor, cuando: Date.now() }
+    return valor
+  } catch {
+    // Red caída, CORS, tiempo agotado: no es evidencia de que el generador esté
+    // mal, así que no se esconde el producto. Tampoco se recuerda este no-dato.
+    return ofrecer
+  } finally {
+    clearTimeout(reloj)
+  }
+}
+
+/** Olvida lo recordado — tras una compra o al reintentar a mano. */
+export function olvidarDisponibilidad() {
+  recordado = null
 }
 
 /**

@@ -1,6 +1,6 @@
 # Dónde retomar
 
-> **Actualizado el 16 de septiembre de 2026, al cerrar la sesión.**
+> **Actualizado el 17 de septiembre de 2026.**
 >
 > Si vienes de otra máquina, primero `SETUP.md`. El contexto del sprint está en
 > `SHIPATON.md`; el porqué de cada decisión técnica, en `DECISIONS.md`.
@@ -11,34 +11,33 @@
 
 ## ⚠️ Lo primero: la fecha ya se venció
 
-**El lanzamiento estaba puesto para el 17 de septiembre. Es mañana, y la v4 no
-existe** — sigue en `versionCode` 3, sin compilar ni entregar. La revisión de
-Play tarda cerca de un día, así que el 17 ya no es alcanzable con el producto
-completo.
+**La ventana quedó cerrada el 16 sep: se comparte la landing HOY, la lista
+cierra el jueves 18, se lanza el viernes 19.** Los pasos concretos, en orden y
+con tiempos, están en **`LANZAMIENTO.md`** — ese archivo es la guía operativa.
 
-**Hay una decisión de Richard pendiente desde el 15 y no ha respondido.** No
-darla por tomada. Las opciones que quedan:
-
-- **Mover el lanzamiento al 19-20.** La quincena sigue en el bolsillo y da
-  margen real. Es lo recomendado.
-- **Lanzar el 17 con la v3**, que no puede cobrar ni generar. Sería lanzar un
-  producto distinto al que anuncia la landing.
-
-El cierre del concurso es el **30 de septiembre**, así que aún hay espacio —
-pero cada día sin cobrar es un día que no cuenta para la métrica del premio.
+**Pero la fecha no es el problema.** La v3 publicada **no puede cobrar** —la
+llave de RevenueCat se horneó vacía y no hay pantalla de compra—, así que la
+métrica que pondera el concurso (facturación por RevenueCat) está en **cero y
+ahí se queda hasta que la v4 esté publicada**. Cada día sin v4 es un día de
+facturación imposible contra el 30 de septiembre. La v4 debe entrar a revisión
+lo antes físicamente posible; el anuncio puede ir después.
 
 ---
 
-## El estado real, verificado el 16 sep
+## El estado real, verificado el 16 sep (no supuesto)
 
 | | |
 |---|---|
-| App en Play | ✅ v3 desde el 8 sep · `versionCode` 3 |
-| inkar.app | ✅ 200 |
-| Worker `/health` + analizador | ✅ vivo |
-| Worker `/generar` | ⚠️ **503** — Railway no tiene las llaves de generación |
-| Higgsfield Cloud | ✅ **con saldo**, generación probada y funcionando |
-| `SUPABASE_SERVICE_ROLE_KEY` | ❌ **falta** — es lo único que bloquea probar el worker |
+| App en Play | ✅ v3 publicada desde el 8 sep — **no puede cobrar** |
+| `versionCode` | ⚠️ sigue en **3**. La v4 no existe |
+| inkar.app | ✅ 200 (redirige a `www.inkar.app`) |
+| Worker `/health` | ✅ 200, analizador vivo |
+| Worker `/generar` | ⚠️ **503 `no_configurado`** — Railway no tiene las llaves de generación |
+| `SUPABASE_SERVICE_ROLE_KEY` | ❌ **falta. Es lo único que bloquea probar el worker** |
+| Llaves de Higgsfield | ✅ válidas |
+| Saldo en Higgsfield Cloud | ✅ **con saldo desde el 16 sep** |
+| Generación contra la API | ✅ **probada: 240 s, 768x768, fondo verde plano medido** |
+| Generación por el camino del worker | ❌ **nunca** — reserva de crédito, Storage y reembolso sin ejecutar |
 | Repo | ✅ todo commiteado y empujado |
 
 **La base sigue en cero.** Nada del núcleo se ha ejercitado por el camino de la
@@ -114,90 +113,91 @@ movimiento lento.
 
 ## Lo primero, en orden
 
-1. **Decidir la fecha de lanzamiento.** Bloquea todo lo demás.
-2. **`SUPABASE_SERVICE_ROLE_KEY`** en `worker/.env`. Es lo único que impide
-   probar el worker completo.
-3. **Probar el camino por el WORKER** — la generación contra Higgsfield ya está
-   verificada; falta lo que la rodea: reserva de crédito con cerrojo, copia a
-   nuestro Storage, asignación al tatuaje y reembolso ante fallo. Se corre en
-   local con el JWT de la cuenta del revisor, sin teléfono.
-4. **Productos en Play** y Offering en RevenueCat.
-5. **Compilar v4** (`versionCode` 4), verificar con grep que la llave de
+1. **Recargar Higgsfield Cloud** y poner `SUPABASE_SERVICE_ROLE_KEY` en
+   `worker/.env` y en Railway.
+2. **Probar la generación de punta a punta en local** — sin teléfono: worker +
+   JWT real de la cuenta del revisor + su crédito. Es la primera vez que se
+   ejecutaría. **Confirma además que el interruptor de degradación se enciende
+   de vuelta** al aceptarse el primer envío.
+3. **Productos en Play** y Offering en RevenueCat.
+4. **Compilar v4** (`versionCode` 4), verificar con grep que la llave de
    RevenueCat quedó horneada, entregar a Play.
-6. **Probar en el teléfono** lo único que lo exige: la compra por Play.
+5. **Probar en el teléfono** lo único que exige teléfono: la compra por Play y
+   la generación desde la app.
 
----
-
-## Esperando de Richard
-
-| | |
-|---|---|
-| **Decidir la fecha de lanzamiento** | Pendiente desde el 15 sep |
-| **`SUPABASE_SERVICE_ROLE_KEY`** | Settings → API → service_role (NO la anon) |
-| **Las 4 variables en Railway** | `/generar` responde 503. Ver `worker/DEPLOY.md` |
-| **Grabar el video del tatuaje** | Con `demo=zero-concha`, para la landing |
-| **Una foto REAL de Zero** | Desbloquea la prueba de realismo |
-| **Productos en Play** | `creditos_primero`, `creditos_1`, `creditos_3`, `creditos_5` → Monetizar con Play → Productos → **Productos únicos** |
-| **Offering en RevenueCat** | Sin ella `getOfferings()` devuelve vacío sin error |
-| **Pegar la ficha nueva** | `brand/textos-ficha.md`, dos idiomas |
-| **Corregir la declaración de datos** | "Fotos" pasa a **compartido** (Higgsfield es tercero real) + **historial de compras** |
-| **Verificación de identidad de desarrollador** | ⚠️ Vence el **30 sep**. Si no, Google retira la app |
-| **Respaldo de la llave de firma** | ⬜ `~/inkar-release.jks` existe en una sola máquina. Ver `SETUP.md` |
-| **Compartir la landing** | La lista tiene 1 persona porque no se ha movido |
+> **El paso 4 no depende del 1 ni del 2.** Las llaves de Higgsfield y la
+> `service_role` viven en el worker, no en el APK: se pueden arreglar mientras
+> Play revisa. Y desde el 16 sep, si el generador no está listo, la app **no
+> ofrece** "Anima tu recuerdo" en vez de mandar al usuario a chocar. Esperar a
+> tener todo resuelto antes de compilar cuesta días de revisión que no se
+> recuperan.
 
 ---
 
 ## Decisiones ABIERTAS — no darlas por tomadas
 
-**1. La fecha de lanzamiento.** Ver arriba.
+**1. Publicar el precio en la landing.** Sigue sin publicarse, y es deliberado:
+el mensaje que instala es "el primero va por nuestra cuenta"; la conversación
+del dinero va después de que vean el producto. Revisar después del lanzamiento,
+con datos de conversión.
 
-**2. La oferta de la lista de espera.** Richard propuso "50% en el primer
-tatuaje" para quien se registre. Problema: **el primer crédito a $12.50 ya es el
-precio de todos**, así que a la lista no le daría nada, y presentar el precio
-normal como descuento exclusivo se lee como descuento inventado. Propuesta:
-**primer video gratis para la lista**, por código promocional topado
-(`codigos_promo.usos_max` ya existe).
+**2. Si el 50% debe ser exclusivo de la lista.** La landing ofrece 50% de
+descuento en el primer video. **Ya está construido** —el SKU `creditos_primero`,
+regla en `ha_comprado()`, migración 008— pero se le ofrece a cualquiera que
+nunca haya comprado, no solo a quien se apuntó. Por eso la copy enuncia los dos
+hechos por separado y no dice "apúntate y llévate el 50%": sería prometer una
+exclusividad que el producto no aplica.
 
-**3. La comisión de estudios fundadores.** Richard propuso "30% por un año". Lo
-construido es **los primeros 20, permanente** (`cupo_fundadores()` = 20). Se
-recomendó conservarlo: "primeros 20" urge y "un año" no, y al mes 13 habría que
-bajarle la comisión a alguien con quien se construyó un año de relación.
-Propuesta intermedia: **"30% para los primeros 20 que entren antes del
-lanzamiento", permanente.**
-
-**4. Publicar el precio en la landing.** El costo ya se conoce, así que se puede
-decidir. Recomendación: el mensaje que instala es "el primero va por nuestra
-cuenta"; el dinero se habla después de que vean el producto.
-
-**5. Cambios propuestos a la landing:** la fecha en el héroe —hoy no aparece por
-ningún lado—, la oferta de la lista, la fecha límite de estudios, y **una
-segunda invitación al final**: el formulario está arriba, y al terminar las
-cuatro secciones que de verdad venden no hay dónde apuntarse.
-
-**6. Ajustar el texto de la espera.** Las generaciones tardaron entre **115 y
-240 segundos** y `GeneracionStatus` promete "de 1 a 3 minutos". Se queda corto
-justo en la primera impresión. Propuesta: **"de 2 a 5 minutos"**.
-
-**7. Subir la duración por defecto a 10 s.** `HIGGSFIELD_DURACION` está en 6. Los
-10 s dan un arco de acción completo y salen más baratos por segundo.
-
-**8. Interruptor de degradación:** que la app deje de ofrecer "Anima tu
-recuerdo" cuando el generador no está disponible. Seguro contra quedarse sin
-saldo en plena semana del concurso.
+Para volverlo exclusivo de verdad hay una sola vía: restringir `creditos_primero`
+a quien esté en `waitlist`. Es cambio de reglas de negocio, no de copy, y sube el
+precio de entrada de $12.50 a $25 para todo el que llegue sin apuntarse — malo
+para la conversión del día del lanzamiento. Sin decidir.
 
 Lenguaje: **"tu primer video"**, no "tu primer tatuaje" — no vendemos tatuajes.
 
 ---
 
-## Listo — NO rehacer
+## Decisiones CERRADAS en la sesión del 16 sep
 
-- **v3 publicada en Play** (8 sep). Cuenta de servicio de Google Cloud validada.
-- **RevenueCat**: proyecto INKAR, credenciales validadas, llave pública de
-  Android en `.env` y horneada en el bundle.
-- **Analizador vivo en Railway**, conectado a la activación (migración 007).
-- **Generación de video**: worker `/generar`, tabla `generaciones`, reserva con
-  cerrojo, reembolso automático y reanudación tras reinicio (migración 009).
-  **La parte de Higgsfield está probada**; lo que la rodea, no.
+- **Ventana del lanzamiento:** comparte el 16, la lista cierra el 18, se lanza
+  el 19. Guía operativa en `LANZAMIENTO.md`.
+- **Interruptor de degradación: construido.** Ver `DECISIONS.md` [2026-09-16].
+  Ya no es una propuesta. Incluye el caso de llave revocada (401/403).
+- **Oferta de la lista: 50% de descuento en el primer video** (Richard, 16 sep,
+  antes de compartir). Ventaja que no se había visto: ya está construido
+  (`creditos_primero`), mientras que "gratis" exigía crear un código promocional
+  antes del viernes. Ver `DECISIONS.md` para cómo se redactó sin prometer una
+  exclusividad que el producto no aplica.
+- **Estudios fundadores:** se quedan con el cupo de 20, permanente, **sin fecha
+  límite**. El cupo es la restricción real; una fecha habría sido urgencia
+  inventada encima de una verdadera.
+- **Landing:** fecha en el héroe, oferta con vencimiento y segunda invitación al
+  final. Construido y verificado en navegador.
+
+---
+
+## Bloqueado por Richard
+
+> **Los pasos en orden, con tiempos y comandos, están en `LANZAMIENTO.md`.**
+> Esta tabla es el índice.
+
+| | |
+|---|---|
+| **Recargar Higgsfield Cloud** | ~$10 USD. Es una cuenta distinta del plan Plus |
+| **`SUPABASE_SERVICE_ROLE_KEY`** | Settings → API → service_role (NO la anon). Va en `worker/.env` y en Railway |
+| **Las 4 variables de generación en Railway** | `/generar` responde 503 hoy. Detalle en `worker/DEPLOY.md` |
+| **Productos en Play** | `creditos_primero`, `creditos_1`, `creditos_3`, `creditos_5`. Menú: Monetizar con Play → Productos → **Productos únicos** |
+| **Offering en RevenueCat** | Sin ella `getOfferings()` devuelve vacío sin error |
+| **Pegar la ficha nueva** | `brand/textos-ficha.md`, los dos idiomas |
+| **Corregir la declaración de datos en Play** | "Fotos" pasa a **compartido** (Higgsfield es tercero real) y se agrega **historial de compras** |
+| **Verificación de identidad de desarrollador** | ⚠️ Vence el **30 sep**, el mismo día que el concurso. Si no, Google retira la app — y con ella la entrega. **No es trámite, es riesgo existencial: hacerlo esta semana** |
+| **Respaldo de la llave de firma** | ⬜ `~/inkar-release.jks` existe en una sola máquina. Ver `SETUP.md` |
+| **Compartir la landing** | La lista tiene 1 persona porque no se ha movido |
+| **Borrar la rama muerta de agosto** | `claude/retomar-proyecto-contexto-u3o686`. Una sesión en la nube no puede (403 del proxy). Ver abajo |
+| **Meter `CLAUDE.md` al repo** | Vive en la carpeta padre, fuera del repo. Las sesiones en la nube (Claude Code web) solo clonan el repo, así que **arrancan sin el contexto general del producto** y con referencias rotas. Ver abajo |
+
+---
+
 - **`worker/modelos.js`**: disponibilidad **y costo real** de cada modelo, gratis.
 - **Flujo de compra**, canje de códigos, primer crédito a mitad de precio,
   estudios con atribución permanente (migración 008). `SHIPATON` = 1 crédito,
@@ -212,15 +212,37 @@ Lenguaje: **"tu primer video"**, no "tu primer tatuaje" — no vendemos tatuajes
 
 ---
 
+## Ramas: una sola línea viva
+
+`main` y la rama de trabajo de cada sesión apuntan al mismo commit. No hay
+nada que reconciliar y **nunca se ha abierto un PR**: las sesiones commitean en
+su rama y eso es main.
+
+**Rama muerta, no la mergees:** `claude/retomar-proyecto-contexto-u3o686`
+(10 ago 2026, punta `ef2d231`) es un intento anterior con **historia
+independiente** —otra raíz, sin ancestro común—, paquete `com.inkwell.ar`, sin
+worker, sin analizador, sin créditos y sin generación de video. Mergearla
+borraría ~11.500 líneas del proyecto vivo.
+
+**Sigue existiendo en el remoto.** Se intentó borrar el 16 sep desde una sesión
+en la nube y el proxy lo rechazó con 403: ese entorno no puede borrar
+referencias. **Bórrala tú** desde GitHub → Branches, o desde tu máquina con
+`git push origin --delete claude/retomar-proyecto-contexto-u3o686`. Si alguna
+vez hiciera falta recuperarla, la punta es `ef2d231` y se restaura con
+`git push origin ef2d231:refs/heads/rescate-agosto`.
+
+---
+
 ## Trampas registradas, para no repetirlas
 
 - **El catálogo documentado de Higgsfield NO es el que tu plan habilita.**
   Seedance da 404 y Veo 503 aunque estén en el spec. Antes de cambiar
   `HIGGSFIELD_ENDPOINT`: `cd worker && node --env-file=.env modelos.js`.
 - **`modelos.js` NO detecta si hay saldo.** La API valida el cuerpo antes de
-  revisar créditos, así que una cuenta vacía también sale "disponible".
-- **`POST /estimate<ruta>` da el costo en USD sin generar nada.** No está en el
-  `openapi.json`; está en la página de billing. Usarlo siempre antes de gastar.
+  revisar créditos, así que una cuenta vacía también sale "disponible". Solo un
+  envío real lo confirma (`403 not_enough_credits`). Una versión anterior del
+  script prometía detectarlo y era falso. Por eso el interruptor de degradación
+  **reacciona a un envío fallido** en vez de sondear.
 - **Los perfiles de modelo se escriben desde `openapi.json`, no desde un
   resumen.** La primera versión salió de un resumen y quedó mal.
 - **Higgsfield Cloud (API) y el plan Plus del panel son cuentas distintas.**
@@ -248,3 +270,9 @@ Lenguaje: **"tu primer video"**, no "tu primer tatuaje" — no vendemos tatuajes
 - Los textos que redacta el **worker** no pasan por el diccionario del cliente.
 - **Las capturas del navegador emulado muestran franjas negras** a los lados: es
   el capturador, no la app. Medir el ancho con JS antes de "arreglar" nada.
+- **En una sesión en la nube, `npm ci` instala sin devDependencies** porque
+  `canvas` (nativo, vía `mind-ar`) falla al compilar y aborta el paso. Se
+  resuelve con `npm ci --include=dev --ignore-scripts`. Para levantar el
+  **worker** sí hace falta canvas de verdad:
+  `apt-get update && apt-get install -y libpango1.0-dev libjpeg-dev libgif-dev`
+  y luego `npm rebuild canvas`.

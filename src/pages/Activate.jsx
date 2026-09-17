@@ -10,7 +10,13 @@ import { uploadTattooImage, uploadMindFile, uploadRecuerdo } from '../lib/storag
 import { createTattoo } from '../lib/supabase.js'
 import { compileMindFile } from '../lib/compiler.js'
 import { obtenerSaldo } from '../lib/creditos.js'
-import { solicitarGeneracion, esperarGeneracion, ErrorGeneracion } from '../lib/generacion.js'
+import {
+  solicitarGeneracion,
+  esperarGeneracion,
+  ErrorGeneracion,
+  disponibilidadGeneracion,
+  olvidarDisponibilidad,
+} from '../lib/generacion.js'
 import { useAuth } from '../hooks/useAuth.js'
 import { ensureProfile } from '../lib/profile.js'
 import { aplicarCodigoPendiente, recordarCodigoPendiente, leerCodigoPendiente } from '../lib/estudios.js'
@@ -69,6 +75,7 @@ export default function Activate() {
   // después de crearlo, y el estado de React no se actualiza hasta el siguiente render
   const tattooIdRef = useRef(null)
   const [saldo, setSaldo] = useState(null) // créditos disponibles; null = sin leer
+  const [puedeGenerar, setPuedeGenerar] = useState(true) // false solo si el worker lo dijo
   const [genEstado, setGenEstado] = useState('subiendo')
   const [genError, setGenError] = useState(null)
   const [error, setError] = useState('')
@@ -118,14 +125,25 @@ export default function Activate() {
     return () => { clearInterval(id); setElapsed(0) }
   }, [step])
 
-  // El saldo se lee al llegar a la elección, que es donde se decide gastarlo.
-  // Leerlo antes lo dejaría viejo si el usuario compró a media activación.
+  /*
+    El saldo se lee al llegar a la elección, que es donde se decide gastarlo.
+    Leerlo antes lo dejaría viejo si el usuario compró a media activación.
+
+    La disponibilidad del generador se consulta en el mismo punto y por la misma
+    razón: es donde se ofrece gastar el crédito. No bloquea la pantalla —
+    `disponibilidadGeneracion` tiene tiempo límite y ante cualquier duda
+    responde que sí— así que el estado arranca en `true` y solo baja si el
+    worker lo afirma.
+  */
   useEffect(() => {
     if (step !== 'eleccion') return
     let vigente = true
     obtenerSaldo()
       .then((s) => { if (vigente) setSaldo(s) })
       .catch((err) => { console.error('[activate] saldo:', err); if (vigente) setSaldo(null) })
+    disponibilidadGeneracion()
+      .then((d) => { if (vigente) setPuedeGenerar(d.disponible) })
+      .catch(() => { if (vigente) setPuedeGenerar(true) })
     return () => { vigente = false }
   }, [step])
 
@@ -254,6 +272,24 @@ export default function Activate() {
       if (err instanceof ErrorGeneracion && err.codigo === 'sin_creditos') {
         setError(t('No tienes créditos suficientes. Compra uno y vuelve a intentar.'))
         setStep('eleccion')
+      } else if (
+        err instanceof ErrorGeneracion &&
+        (err.codigo === 'no_disponible' || err.codigo === 'no_configurado')
+      ) {
+        /*
+          El worker acaba de decir que no se puede generar. Es la evidencia más
+          fresca que existe, así que se olvida lo recordado y se vuelve a la
+          elección, donde la tarjeta ya se muestra apagada.
+
+          El mensaje se redacta AQUÍ y no se reenvía el del worker: los textos
+          del worker no pasan por el diccionario y llegarían en español a un
+          teléfono en inglés. Y no se le cobró nada: la reserva ni siquiera
+          ocurrió, porque el guardia rechaza antes de tocar el crédito.
+        */
+        olvidarDisponibilidad()
+        setPuedeGenerar(false)
+        setError(t('No se pueden crear videos en este momento. No se te cobró ningún crédito.'))
+        setStep('eleccion')
       } else {
         setError(err.message)
         setStep('recuerdo')
@@ -362,6 +398,7 @@ export default function Activate() {
           />
           <EleccionContenido
             saldo={saldo}
+            generacionDisponible={puedeGenerar}
             onRecuerdo={() => { setError(''); setStep('recuerdo') }}
             onCatalogo={() => { setError(''); setStep('design') }}
           />

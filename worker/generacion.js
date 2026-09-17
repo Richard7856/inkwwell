@@ -26,6 +26,12 @@
 import * as db from './supabase-admin.js'
 import * as hf from './higgsfield.js'
 import { ErrorGeneracion } from './supabase-admin.js'
+import {
+  estadoGeneracion,
+  registrarFalloDeCuenta,
+  registrarEnvioAceptado,
+  MOTIVOS,
+} from './disponibilidad.js'
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
@@ -64,10 +70,19 @@ function validar({ tattooId, fotoUrl, historia }) {
  * @returns {Promise<{ generacionId: string, saldo: number }>}
  */
 export async function iniciarGeneracion({ authorization, ...cuerpo }) {
-  if (!db.supabaseConfigurado || !hf.higgsfieldConfigurado) {
+  /*
+    Se rechaza antes de tocar la base o de crear la fila. Además de las llaves
+    ausentes, esto cubre el caso en que la cuenta de Higgsfield ya falló hace
+    poco: sin el guardia, cada usuario repetiría el mismo choque —reserva,
+    envío, rechazo, reembolso— por un problema que ya conocemos.
+  */
+  const disponibilidad = estadoGeneracion()
+  if (!disponibilidad.disponible) {
     throw new ErrorGeneracion(
-      'no_configurado',
-      'El worker no tiene configuradas las llaves de Supabase o de Higgsfield',
+      disponibilidad.motivo === MOTIVOS.NO_CONFIGURADO ? 'no_configurado' : 'no_disponible',
+      disponibilidad.motivo === MOTIVOS.NO_CONFIGURADO
+        ? 'El worker no tiene configuradas las llaves de Supabase o de Higgsfield'
+        : 'La generación no está disponible en este momento. No se te cobró ningún crédito.',
       503,
     )
   }
@@ -101,6 +116,8 @@ export async function iniciarGeneracion({ authorization, ...cuerpo }) {
     */
     if (err.esDeCuenta) {
       console.error(`${etiqueta} ⚠️ REVISAR LA CUENTA DE HIGGSFIELD: ${err.message}`)
+      // Deja de ofrecerse el producto: el siguiente usuario no repite el choque
+      registrarFalloDeCuenta(err.detalle)
     } else {
       console.error(`${etiqueta} Higgsfield rechazó el envío:`, err.message)
     }
@@ -114,6 +131,9 @@ export async function iniciarGeneracion({ authorization, ...cuerpo }) {
       502,
     )
   }
+
+  // Higgsfield aceptó: es la única prueba de que la cuenta está sana
+  registrarEnvioAceptado()
 
   await db.actualizarGeneracion(generacionId, { request_id: requestId, estado: 'pendiente' })
   console.log(`${etiqueta} enviada · ${hf.ENDPOINT} · request ${requestId}`)
