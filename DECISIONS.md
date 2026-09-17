@@ -851,3 +851,19 @@ El fondo del video generado quedó plano ([96,199,76] en 0.5, 3 y 5.5 s).
 - El video salió de **10.1 s** aunque el perfil pide 6 (las intros con `end_image_url` sí salieron de 5.9 s). La API no devuelve los parámetros recibidos: **revisar en el billing de Higgsfield si se cobró $0.28 o $0.47.**
 - `tattoo-images/pruebas/zero-real-*.jpg` **no es una foto real**: es la ilustración de popcorn. El video salió en caricatura. El realismo sigue sin probar.
 - Las variables siguen sin estar en Railway: en producción `/generar` sigue en 503.
+
+## [2026-09-16] Con una foto real sale video realista — pero hay que quitarle el fondo antes
+**Context:** Richard compartió una foto real de Zero (celular, 1074x1909, fondo de un cuarto desenfocado). Era la prueba de realismo pendiente desde el 16 sep.
+
+**Hallazgo que cambia el pipeline:** `image-to-video` arranca DESDE la foto, así que conserva su fondo. Las pruebas anteriores salían sobre verde porque la entrada ya era una ilustración sobre verde. Con una foto real de cliente, el fondo del cuarto llegaría al video y el croma no tendría nada que recortar. **El worker necesita quitar el fondo y poner la foto sobre el verde antes de enviarla.**
+
+**Lo que se hizo en la prueba:** recorte con Vision de macOS (`VNGenerateForegroundInstanceMaskRequest`, local y gratis), sujeto sobre `[95,196,77]`, escalado al 68% del ancho de un lienzo 768x1364 con margen (la foto cortaba orejas y patas en el borde). Generado por el worker completo, con la cuenta del revisor: lista en 151 s, 10.1 s de video.
+
+**Resultado:** realista y reconocible como Zero (pelaje, manchas, gesto). Fondo plano ([83-90, 202-204, 66-73] en todo el video). Defectos, todos del prompt: el pan salió enorme y sin costra de concha, el perro se echa sobre él pero no llega a comérselo, y la cara se oscurece en algunos cuadros.
+
+**Decision pendiente para producción:** Vision solo existe en macOS; el worker corre en Linux (Railway). Opciones:
+- `rembg` (Python, MIT, modelo u2net ~170 MB en la imagen de Docker): gratis por uso, sube el tamaño y el arranque del contenedor.
+- Un servicio externo (remove.bg y similares): simple, pero otro proveedor, otra llave y otro costo por foto.
+- `@imgly/background-removal-node`: corre en Node, **pero su licencia es AGPL**, lo que obligaría a publicar el código del worker. Descartado.
+
+**Risks/Limitations:** una foto con varios sujetos (dos perros, una persona con el perro) devuelve varias instancias; la prueba tomó todas. Hay que decidir si se toma la mayor o se pide al usuario una foto con uno solo.
