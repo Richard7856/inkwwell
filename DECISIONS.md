@@ -1048,3 +1048,24 @@ Saldo: 1,115 → 1,080. Los rechazos de rigging no cobran.
 **Resultado:** `~/Downloads/zero-parado-para-meshy.glb` (12 MB, para subir al panel) y `public/models/zero-parado.glb` (389 KB, en `/preview`). Saldo de Meshy 1,045 → 1,001. Las generaciones hechas por API no aparecen necesariamente en el panel; por eso se entrega el archivo.
 
 **Siguiente paso (manual, en el panel):** Auto Rigging → Perro Cuadrúpedo → caminar → exportar GLB con animación. Esa es la única animación de cuadrúpedo que existe hoy.
+## [2026-09-17] El esqueleto para el 3D ya estaba en el repo: el del shiba
+**Context:** Meshy devuelve una malla excelente de Zero y un rig inservible —el suyo es humanoide y sus 678 animaciones son de bípedo—. La pregunta era cómo arreglar ese esqueleto. La respuesta fue no arreglarlo.
+
+**`public/models/shiba_negro.glb` trae un esqueleto de cuadrúpedo de verdad:** 191 huesos con hombro/codo/muñeca adelante, cadera/rodilla/tobillo atrás y siete de cola, más cinco animaciones de perro. Y no es un archivo cualquiera del repo: **es el que la app ya carga en AR** (`src/components/ARViewer/targetLoader.js:33`). Que Zero salga con ese esqueleto significa que el visor ya lo reproduce — sin riesgo de rendimiento que averiguar, porque los 191 huesos ya corren en el teléfono.
+
+**Decision: copiar los pesos del donante en vez de rigear.** `scripts/rigear-mascota.py` alinea las dos mallas, copia los pesos por cercanía de superficie (`POLYINTERP_NEAREST`) y amarra la malla al esqueleto del donante. Pintar pesos a mano sobre 22 655 vértices es el trabajo caro; el donante ya los tiene bien pintados.
+
+**La cola hay que rehacerla, y la solución obvia es la mala.** La copia por cercanía acierta donde las dos anatomías coinciden y falla en la cola: la del shiba se enrosca sobre el lomo, la de Zero sale recta. Repartirla a lo largo de la cadena de siete huesos —que suena correcto— la convierte en una **cuchilla plana**, porque los huesos 4 a 7 viven encima del lomo y hacer girar un vértice alrededor de un punto lejano lo manda a volar. Colgar toda la cola del **primer** hueso sale bien: el brazo de palanca es corto y la cola conserva su forma.
+
+**El alcance real, medido: solo el reposo de pie sale limpio.** Se renderizaron las cinco animaciones sobre Zero y se compararon contra el donante:
+- `standing` — **limpia**. Es la que se exporta.
+- `sitting` — el tren trasero colapsa en una losa negra al plegarse.
+- `rollover` — la malla se desgarra; poses extremas amplifican cualquier error de peso.
+- `shake` — sale mal, **pero el defecto es del shiba original**: el donante produce la misma losa. No es de la transferencia.
+- `play_dead` — limpia en el donante, no probada sobre Zero.
+
+**Entonces la transferencia automática no sustituye a Blender, lo acota.** Da un perro de pie correcto sin tocar nada; todo lo que doble mucho una pata necesita pesos pintados a mano. Eso es trabajo de Blender, y `scripts/blender-diagnostico.py` existe para poder hacerlo sobre el archivo local de Richard sin tener el archivo: lo pega en la pestaña Scripting, lo corre y manda el informe.
+
+**Resultado:** `public/models/zero-animado.glb`, 1.97 MB con Draco (sin Draco, 4.64 MB — el visor ya monta `DRACOLoader` porque el shiba viene comprimido). Cada animación extra pesa ~0.5 MB. Visible en `/preview?model=/models/zero-animado.glb`.
+
+**Lo que esto destapó y no es técnico:** los dos modelos de perro del repo son **CC-BY-4.0** y **nadie acredita a sus autores en ninguna parte**. Están desde el 16 de septiembre y la licencia viaja dentro del `.glb`, en `asset.extras`. El uso comercial está permitido; sin crédito visible, no. Ver `brand/3d/CREDITOS.md`. Y ninguno de los dos trae un ciclo de correr — que es literalmente lo que promete la landing.

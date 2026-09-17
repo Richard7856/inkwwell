@@ -27,6 +27,8 @@ import { cargarVideo, alternarVideo, liberarVideo } from '../components/ARViewer
  */
 
 const MODELS = [
+  // Zero rigeado con el esqueleto del shiba — ver scripts/rigear-mascota.py
+  { label: 'Zero (3D)', url: '/models/zero-animado.glb' },
   { label: 'Shiba negro', url: '/models/shiba_negro.glb' },
   { label: 'Malamute', url: '/models/alaskan_malamute_dog.glb' },
   { label: 'Fénix', url: '/models/Fenix.glb' },
