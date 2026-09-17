@@ -13,8 +13,11 @@
  *   POST /compile-stream → compila + mide calidad, con progreso por SSE (el que usa la app)
  *   POST /analyze        → solo métricas de calidad, para el banco de pruebas por CLI
  *   POST /generar        → foto + historia → video en el tatuaje (Higgsfield), JSON + JWT
+ *   POST /generar-3d     → fotos de una mascota → modelo GLB (Meshy). EN PRUEBAS
+ *   GET  /generar-3d/:id → avance y URL del GLB. EN PRUEBAS
  */
 
+import { timingSafeEqual } from 'node:crypto'
 import express from 'express'
 import multer from 'multer'
 import cors from 'cors'
@@ -22,6 +25,7 @@ import { compileTattooImage } from './compiler.js'
 import { analyzeTattooImage } from './analyzer.js'
 import { iniciarGeneracion, reanudarPendientes } from './generacion.js'
 import { estadoGeneracion } from './disponibilidad.js'
+import * as meshy from './meshy.js'
 
 const app = express()
 
@@ -267,10 +271,103 @@ app.post('/generar', async (req, res) => {
   }
 })
 
-// Manejador de errores de multer (archivo muy grande, formato inválido)
+/*
+  ═══ 3D, EN PRUEBAS ═══════════════════════════════════════════════════════
+
+  Fotos de una mascota → modelo GLB, por Meshy. Existe para responder una
+  pregunta de producto —¿el 3D se ve mejor en el brazo que el video plano, y se
+  puede automatizar?— no para servir clientes todavía. Por eso no hay tabla, ni
+  cobro de créditos, ni asignación a un tatuaje: nada de eso se construye hasta
+  saber si el resultado vale la pena.
+
+  ── Por qué va detrás de un token y falla cerrada ──
+  La URL de este worker viaja en el bundle público: está a la vista de
+  cualquiera que abra las herramientas del navegador. Una ruta abierta que
+  dispara generaciones de pago es una factura esperando a que alguien la
+  encuentre. Si `MESHY_ADMIN_TOKEN` no está puesto, la ruta responde 503 y no
+  genera nada — se prefiere inservible a costosa.
+
+  Es un token de administración a propósito, no el JWT de Supabase: esto no es
+  una función de usuario, es una herramienta para Richard y para mí.
+*/
+const TOKEN_3D = process.env.MESHY_ADMIN_TOKEN
+
+function autorizado3D(req) {
+  if (!TOKEN_3D) return { ok: false, status: 503, error: 'Ruta deshabilitada: falta MESHY_ADMIN_TOKEN en el worker' }
+  const dado = (req.headers.authorization || '').replace(/^Bearer\s+/i, '')
+  /*
+    Comparación de largo constante. Es exagerado para una ruta de pruebas, pero
+    cuesta tres líneas y evita que el token se pueda adivinar carácter por
+    carácter midiendo cuánto tarda la respuesta.
+  */
+  const a = Buffer.from(dado)
+  const b = Buffer.from(TOKEN_3D)
+  const igual = a.length === b.length && timingSafeEqual(a, b)
+  if (!igual) return { ok: false, status: 401, error: 'Token inválido' }
+  return { ok: true }
+}
+
+app.post('/generar-3d', upload.array('fotos', 4), async (req, res) => {
+  const permiso = autorizado3D(req)
+  if (!permiso.ok) return res.status(permiso.status).json({ error: permiso.error })
+
+  try {
+    /*
+      Se aceptan las fotos de dos maneras porque sirven a dos momentos:
+      archivos sueltos es lo cómodo para probar desde una terminal, y URLs es
+      la forma que tendría en el producto, donde la app ya subió la foto a
+      Storage antes de pedir nada.
+    */
+    const deArchivos = (req.files ?? []).map(
+      (f) => `data:${f.mimetype};base64,${f.buffer.toString('base64')}`,
+    )
+    const deUrls = Array.isArray(req.body?.fotos)
+      ? req.body.fotos
+      : typeof req.body?.fotos === 'string'
+        ? [req.body.fotos]
+        : []
+    const imagenes = [...deArchivos, ...deUrls]
+
+    const { tarea, ruta } = await meshy.crear({
+      imagenes,
+      poligonos: Number(req.body?.poligonos) || undefined,
+      rig: req.body?.rig === 'true' || req.body?.rig === true,
+    })
+    console.log(`[3d] tarea ${tarea} · ${imagenes.length} imagen(es) · ${ruta}`)
+    res.status(202).json({ tarea, ruta, imagenes: imagenes.length })
+  } catch (err) {
+    const status = Number.isInteger(err.status) ? err.status : 500
+    if (status >= 500) console.error('[3d] Error:', err.message)
+    res.status(status).json({ error: err.message, codigo: err.codigo ?? 'desconocido' })
+  }
+})
+
+app.get('/generar-3d/:tarea', async (req, res) => {
+  const permiso = autorizado3D(req)
+  if (!permiso.ok) return res.status(permiso.status).json({ error: permiso.error })
+
+  try {
+    res.json(await meshy.estado(req.params.tarea, req.query.ruta || null))
+  } catch (err) {
+    const status = Number.isInteger(err.status) ? err.status : 500
+    res.status(status).json({ error: err.message, codigo: err.codigo ?? 'desconocido' })
+  }
+})
+
+/*
+  Manejador de errores de multer (archivo muy grande, demasiados, formato malo).
+
+  Va DESPUÉS de todas las rutas: en Express el middleware de error solo cubre lo
+  que se registró antes que él. Estuvo arriba y por eso las rutas de 3D
+  contestaban con un volcado de pila en HTML —con rutas internas del servidor a
+  la vista— en vez de un error limpio.
+*/
 app.use((err, req, res, _next) => {
   if (err.code === 'LIMIT_FILE_SIZE') {
     return res.status(413).json({ error: 'Imagen muy grande. Máximo 10MB.' })
+  }
+  if (err.code === 'LIMIT_UNEXPECTED_FILE') {
+    return res.status(400).json({ error: 'Demasiados archivos. Meshy acepta hasta 4 fotos.', codigo: 'demasiadas_imagenes' })
   }
   res.status(400).json({ error: err.message })
 })

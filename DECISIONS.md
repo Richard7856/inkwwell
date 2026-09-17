@@ -982,3 +982,18 @@ El fondo del video generado quedó plano ([96,199,76] en 0.5, 3 y 5.5 s).
 **Alternativa evaluada y descartada por ahora: subir a Node 22.** Es lo correcto de fondo y el Dockerfile está diseñado para soportarlo —la etapa `builder` tiene el toolchain completo, así que si no hay precompilado de `canvas` compila desde fuente—. Pero arrastra dos cosas que con el worker caído y lanzamiento el lunes no convenían: un cambio de base de Debian (la etapa final instala nombres de paquete de bookworm como `libgif7` y `libjpeg62-turbo`) y un recompilado nativo. **El arreglo tenía que ser el de menor superficie.** Queda anotado como pendiente sano para después del lanzamiento.
 
 **Verificado simulando la imagen de producción** (Node 22 con el global borrado): antes, el mismo caso lanzaba el error; después, el worker arranca completo y `/health` responde 200 con `generacion.disponible: true`. Se confirmó de paso que `reanudarPendientes` no tumba el arranque cuando la llave es inválida — solo avisa.
+
+## [2026-09-17] `/generar-3d`: la prueba de 3D como ruta del worker, no como script
+**Context:** Richard quiere que yo pueda disparar las generaciones 3D sin ver su llave de Meshy. Un CLI local no sirve para eso —la llave y las fotos viven en su máquina— así que el camino es una ruta en el worker: la llave se queda en Railway, yo llamo por HTTPS y nunca la toco. Es además la forma que tendría la automatización real.
+
+**Alcance deliberadamente corto.** No hay tabla, ni cobro de créditos, ni asignación a un tatuaje. Existe para responder una pregunta de producto —¿el 3D se ve mejor en el brazo que el video plano, y se puede automatizar?— y nada de la maquinaria de producto se construye hasta saber si el resultado vale la pena. Lo que se vende hoy sigue siendo el video.
+
+**Va detrás de un token y falla cerrada.** La URL del worker viaja en el bundle público, a la vista de cualquiera que abra las herramientas del navegador: una ruta abierta que dispara generaciones de pago es una factura esperando a que alguien la encuentre. Si `MESHY_ADMIN_TOKEN` no está puesto, la ruta responde 503 sin generar nada — **se prefiere inservible a costosa**. Es un token de administración y no el JWT de Supabase a propósito: esto no es una función de usuario.
+
+**Acepta las fotos de dos formas** porque sirven a dos momentos: archivos sueltos (multipart) es lo cómodo para probar desde una terminal, y URLs es la forma que tendría en el producto, donde la app ya subió la foto a Storage antes de pedir nada.
+
+**Defecto encontrado al probar, que existía desde antes.** Con cinco fotos la ruta devolvía **500 con un volcado de pila en HTML y rutas internas del servidor a la vista**. La causa no era el 3D: el manejador de errores de multer estaba registrado **antes** de las rutas, y en Express el middleware de error solo cubre lo que se registró antes que él. Se movió al final —que es donde debe ir— y se le agregó `LIMIT_UNEXPECTED_FILE`. Ahora responde 400 con un mensaje que dice qué pasó. `/compile` sigue comportándose igual, verificado.
+
+**El CLI y la ruta comparten `meshy.js`**, para que no existan dos versiones del cliente que se desincronicen — el mismo error que ya se cometió con los textos de la ficha de Play.
+
+**Verificado con el worker levantado:** sin `MESHY_ADMIN_TOKEN` ambas rutas responden 503; con token equivocado, 401; con token bueno y sin fotos, 400 `sin_imagenes`; con cinco fotos, 400 `demasiadas_imagenes`; y con dos fotos reales llega hasta el API de Meshy y devuelve `credenciales` porque la llave de prueba era falsa. Falta lo que solo puede comprobar la llave real.

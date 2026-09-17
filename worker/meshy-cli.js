@@ -30,8 +30,7 @@
 
 import { readFileSync, writeFileSync, statSync } from 'node:fs'
 import { extname, basename } from 'node:path'
-
-const BASE = 'https://api.meshy.ai'
+import * as meshy from './meshy.js'
 
 const C = {
   reset: '\x1b[0m', bold: '\x1b[1m', dim: '\x1b[2m',
@@ -46,9 +45,8 @@ const valor = (n, pordef) => {
 }
 const fotos = args.filter((a) => /\.(jpe?g|png|webp)$/i.test(a))
 
-const LLAVE = process.env.MESHY_API_KEY
 const SALIDA = valor('--salida', 'modelo.glb')
-const POLIGONOS = Number(valor('--poligonos', 24000))
+const POLIGONOS = Number(valor('--poligonos', meshy.POLIGONOS_POR_OMISION))
 const RIG = bandera('--rig')
 
 /*
@@ -70,27 +68,20 @@ function ayuda(msg) {
   process.exit(1)
 }
 
-if (!LLAVE) ayuda('Falta MESHY_API_KEY en el entorno.')
+if (!meshy.meshyConfigurado) ayuda('Falta MESHY_API_KEY en el entorno.')
 if (fotos.length === 0) ayuda('No se indicó ninguna foto.')
 if (fotos.length > 4) ayuda(`Meshy acepta hasta 4 imágenes; se pasaron ${fotos.length}.`)
 
-const cabeceras = { Authorization: `Bearer ${LLAVE}`, 'Content-Type': 'application/json' }
+console.log(`\n${C.bold}Fotos → 3D · Meshy${C.reset}`)
+console.log(`${C.dim}No toca Supabase ni Higgsfield. Solo necesita MESHY_API_KEY.${C.reset}\n`)
 
 /** Lee una foto y la vuelve data URI, que es lo que el API acepta sin hospedar. */
 function aDataUri(ruta) {
   const ext = extname(ruta).toLowerCase()
   const tipo = ext === '.png' ? 'image/png' : ext === '.webp' ? 'image/webp' : 'image/jpeg'
   const bytes = readFileSync(ruta)
-  /*
-    El cuerpo entero viaja en un POST. Una foto de celular moderna ronda 3-5 MB,
-    y en base64 crece ~33%: cuatro fotos pueden acercarse a 25 MB de JSON. Se
-    avisa en vez de fallar callando, porque el error del otro lado no dice esto.
-  */
   return { uri: `data:${tipo};base64,${bytes.toString('base64')}`, mb: bytes.length / 1024 / 1024 }
 }
-
-console.log(`\n${C.bold}Fotos → 3D · Meshy${C.reset}`)
-console.log(`${C.dim}No toca Supabase ni Higgsfield. Solo necesita MESHY_API_KEY.${C.reset}\n`)
 
 const imagenes = []
 let pesoTotal = 0
@@ -106,50 +97,18 @@ if (pesoTotal > 15) {
   console.log(`  ${C.yellow}aviso:${C.reset} ${pesoTotal.toFixed(1)} MB de fotos; en base64 el envío ronda ${(pesoTotal * 1.33).toFixed(0)} MB`)
 }
 
-/*
-  Con una sola imagen se usa el endpoint sencillo; con varias, el multi-imagen.
-  No son el mismo endpoint con un arreglo: son rutas distintas del API, y el
-  multi-imagen es el que gana precisión geométrica con vistas de varios ángulos
-  — que es exactamente por qué se piden cuatro tomas.
-*/
-const multi = imagenes.length > 1
-const ruta = multi ? '/openapi/v1/multi-image-to-3d' : '/openapi/v1/image-to-3d'
+console.log(`\n${C.bold}Enviando…${C.reset}`)
 
-const cuerpo = {
-  ...(multi ? { image_urls: imagenes } : { image_url: imagenes[0] }),
-  should_texture: true,
-  enable_pbr: false,          // mapas extra que la escena de la app no aprovecha
-  texture_resolution: '2k',   // 4k/8k engordan el GLB sin verse en un antebrazo
-  should_remesh: true,
-  topology: 'triangle',
-  target_polycount: POLIGONOS,
-  ai_model: 'latest',
-  ...(RIG ? { enable_rigging: true } : {}),
-}
-
-console.log(`\n${C.bold}Enviando…${C.reset} ${C.dim}${ruta}${C.reset}`)
-
-const envio = await fetch(`${BASE}${ruta}`, {
-  method: 'POST', headers: cabeceras, body: JSON.stringify(cuerpo),
-})
-const jsonEnvio = await envio.json().catch(() => null)
-
-if (!envio.ok) {
-  console.error(`\n${C.red}Meshy rechazó el envío (HTTP ${envio.status}):${C.reset} ${JSON.stringify(jsonEnvio)}`)
-  if (envio.status === 402) {
-    console.error(`${C.dim}402 es falta de créditos. Revisa en tu panel que los créditos de API sean`)
-    console.error(`los mismos de la suscripción web — su documentación no lo aclara, y este`)
-    console.error(`proyecto ya se quemó dos veces con esa confusión en Higgsfield.${C.reset}`)
+let tarea, ruta
+try {
+  ;({ tarea, ruta } = await meshy.crear({ imagenes, poligonos: POLIGONOS, rig: RIG }))
+} catch (err) {
+  console.error(`\n${C.red}${err.message}${C.reset}`)
+  if (err.codigo === 'sin_creditos') {
+    console.error(`${C.dim}Revisa en tu panel que los créditos del API sean los mismos de la`)
+    console.error(`suscripción web: su documentación no lo aclara, y este proyecto ya se`)
+    console.error(`quemó dos veces con esa confusión en Higgsfield.${C.reset}`)
   }
-  if (envio.status === 401) {
-    console.error(`${C.dim}401 es la llave. Revisa MESHY_API_KEY.${C.reset}`)
-  }
-  process.exit(1)
-}
-
-const tarea = jsonEnvio?.result ?? jsonEnvio?.id
-if (!tarea) {
-  console.error(`\n${C.red}Meshy aceptó pero no devolvió id de tarea:${C.reset} ${JSON.stringify(jsonEnvio)}`)
   process.exit(1)
 }
 console.log(`  ${C.green}aceptada${C.reset}  tarea ${tarea}`)
@@ -161,21 +120,20 @@ let final = null
 
 while (Date.now() - inicio < 20 * 60 * 1000) {
   await new Promise((r) => setTimeout(r, 5000))
-  let estado
+  let e
   try {
-    const res = await fetch(`${BASE}${ruta}/${tarea}`, { headers: cabeceras })
-    estado = await res.json()
+    e = await meshy.estado(tarea, ruta)
   } catch (err) {
     // Un tropiezo de red no cancela la espera: la tarea sigue viva del otro lado
     console.warn(`  ${C.dim}sondeo falló, se reintenta: ${err.message}${C.reset}`)
     continue
   }
-  if (estado.progress !== ultimo) {
-    ultimo = estado.progress ?? 0
+  if (e.avance !== ultimo) {
+    ultimo = e.avance
     const barra = '█'.repeat(Math.round(ultimo / 4)).padEnd(25, '·')
-    process.stdout.write(`\r  ${barra} ${String(ultimo).padStart(3)}%  ${estado.status}   `)
+    process.stdout.write(`\r  ${barra} ${String(ultimo).padStart(3)}%  ${e.estado}   `)
   }
-  if (['SUCCEEDED', 'FAILED', 'CANCELED'].includes(estado.status)) { final = estado; break }
+  if (['SUCCEEDED', 'FAILED', 'CANCELED'].includes(e.estado)) { final = e; break }
 }
 console.log()
 
@@ -183,14 +141,14 @@ if (!final) {
   console.error(`\n${C.red}Sin respuesta terminal en 20 minutos.${C.reset} La tarea ${tarea} puede seguir viva.`)
   process.exit(1)
 }
-if (final.status !== 'SUCCEEDED') {
-  console.error(`\n${C.red}Terminó en ${final.status}:${C.reset} ${final.task_error?.message ?? '(sin detalle)'}`)
+if (final.estado !== 'SUCCEEDED') {
+  console.error(`\n${C.red}Terminó en ${final.estado}:${C.reset} ${final.error ?? '(sin detalle)'}`)
   process.exit(1)
 }
 
-const urlGlb = final.model_urls?.glb
+const urlGlb = final.glb
 if (!urlGlb) {
-  console.error(`\n${C.red}Terminó bien pero no vino GLB.${C.reset} Formatos: ${Object.keys(final.model_urls ?? {}).join(', ')}`)
+  console.error(`\n${C.red}Terminó bien pero no vino GLB.${C.reset}`)
   process.exit(1)
 }
 
@@ -206,7 +164,7 @@ const segundos = ((Date.now() - inicio) / 1000).toFixed(0)
 
 console.log(`\n${C.green}${C.bold}Listo en ${segundos}s${C.reset}`)
 console.log(`  archivo   ${SALIDA}  ${mb.toFixed(2)} MB`)
-if (final.thumbnail_url) console.log(`  vista     ${final.thumbnail_url}`)
+if (final.miniatura) console.log(`  vista     ${final.miniatura}`)
 
 if (mb > LIMITE_MB) {
   console.log(`\n${C.yellow}Pesa más de ${LIMITE_MB} MB.${C.reset} Los modelos que ya carga la app van de 0.6 a 1.8 MB.`)
