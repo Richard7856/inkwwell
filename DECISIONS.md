@@ -826,3 +826,18 @@ Probado en la página de simulación con el video corrido a propósito (1.5% del
 **Cómo probar AR sin teléfono (queda como herramienta):** abrir cualquier ruta del sitio, reemplazar `navigator.mediaDevices.getUserMedia` por `canvas.captureStream()` de un lienzo que dibuja la foto compilada, y navegar a `/scan` con `history.pushState` + `popstate`. Ojo: si el panel del navegador queda oculto, el lienzo deja de dibujar y la "cámara" se ve negra; no es la app.
 
 **Risks/Limitations:** no se reprodujo en el teléfono; es la causa que encaja con lo observado en escritorio.
+
+## [2026-09-17] El charco verde bajo las patas: lo dibuja el generador, no lo deja pasar el croma
+**Context:** En la grabación de Richard del 16 sep aparece un charco verde oscuro bajo las patas del perro, sobre la piel. Medido: RGB(24,63,29), verde saturado; cero píxeles verdes en el cuadro de control (tatuaje quieto) y hasta 280 en el pico, presente desde que el sujeto emerge hasta el final. Se grabó a las 18:49 contra el build desplegado a las 18:37, o sea el actual — no era un despliegue viejo.
+
+**El primer diagnóstico fue equivocado y hay que dejarlo escrito.** Se atribuyó a un fallo del recorte de croma. Al abrir el video de intro CRUDO, antes de cualquier recorte, el charco ya está ahí: **lo pintó Hailuo**, como sombra de contacto, con el mismo verde del fondo pero oscurecido.
+
+**Por qué el recorte no lo quita, y por qué hace bien.** `videoLayer` compara en crominancia con el brillo descontado, a propósito: así un neutro (el pelaje negro, el pecho blanco) queda siempre a distancia 1.0 y permanece opaco sin importar qué tan apagado salga el fondo. El efecto secundario es que **un verde oscurecido también se aleja**: reproduciendo la fórmula sobre el cuadro real, el fondo al 50% de brillo mide 0.50 y el fondo al 30% mide 0.70, contra un umbral de 0.45 — los dos quedan opacos. La sombra no es "fondo" para el criterio actual, y el criterio es el correcto: distinguir "verde oscurecido" de "negro" es exactamente la ambigüedad que el umbral relativo existe para evitar.
+
+**Decision: se ataca en el prompt, no en el sombreador.** Se añade `no shadows cast on the background` y `subject does not touch the ground` a `promptDe()`, en el worker. **No requiere recompilar el APK ni otra revisión de Play** — el prompt vive del lado del servidor. Corrige una afirmación previa de esta misma sesión que decía lo contrario.
+
+**Lo que más duele del hallazgo:** la instrucción ya estaba comprobada. La prueba de la órbita de cámara del 16 sep (registrada arriba) dice textualmente "Se pidió explícitamente `no shadows cast on the background` en el prompt, y el modelo lo respetó", y concluye que esa es la restricción a conservar **en cada prompt**. Nunca llegó a `promptDe()`. Un hallazgo documentado y no aplicado vale lo mismo que no haberlo hecho.
+
+**Alternativa evaluada y NO aplicada:** un recorte invariante al brillo —normalizar la crominancia de cada píxel por su propia luminancia antes de comparar—. Se probó sobre el cuadro real: llevaría el fondo oscurecido a distancia 0.00 a cualquier brillo, dejando negro, blanco, gris, naranja y café del sujeto intactos en 1.00. Funciona. No se aplica ahora por tres razones: el prompt ataca la causa y el sombreador solo el síntoma; el sombreador sí va dentro del APK y por tanto cuesta una revisión de Play; y otra sesión está editando `videoLayer.js` en este momento. Queda como defensa en profundidad para cuando haya margen, con la fórmula ya validada.
+
+**Lo que este arreglo NO cambia:** `zero-nace.mp4` y `zero-concha.mp4` ya están generados con la sombra dentro, así que el video de la landing la conserva. Solo las generaciones nuevas salen limpias.

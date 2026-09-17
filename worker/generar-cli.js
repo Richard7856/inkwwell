@@ -58,7 +58,8 @@ const HISTORIA = valor('--historia', 'slow gentle zoom, soft light')
 function promptDe(historia) {
   return (
     'Plain flat solid bright green screen background, uniform color, no other ' +
-    'background elements, no text. Subject centered, natural gentle motion. ' +
+    'background elements, no text, no shadows cast on the background, ' +
+    'subject does not touch the ground. Subject centered, natural gentle motion. ' +
     historia.trim()
   )
 }

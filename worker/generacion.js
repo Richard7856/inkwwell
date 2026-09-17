@@ -40,11 +40,30 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
   "fondo de croma". Y ninguno respeta el color exacto —se pidió #00FF00 y salió
   [105,195,80]— pero sí producen un fondo plano, que es lo que la capa de video
   necesita: ella MIDE el color real y recorta con ese. Ver videoLayer.js.
+
+  ── Por qué se prohíben las sombras, y por qué NO lo resuelve el croma ──
+  Sin esa línea el generador dibuja una sombra de contacto bajo el sujeto,
+  pintada con el MISMO verde pero oscurecido. El recorte no la quita, y hace
+  bien: su criterio es la crominancia con el brillo descontado, así que un
+  verde al 30% de brillo mide 0.70 de distancia contra un umbral de 0.45 y
+  queda opaco — igual que el pelaje negro, que es justo lo que no se debe
+  recortar. Sobre la piel esa sombra se lee como un charco verde bajo las
+  patas. Se vio en el video de Zero del 16 sep.
+
+  Por eso se ataca en el prompt y no en el sombreador: aquí no se genera, allá
+  habría que distinguir "verde oscurecido" de "negro", que es la misma
+  ambigüedad que el recorte relativo existe para evitar. Ya estaba comprobado
+  que el modelo respeta la instrucción (DECISIONS, 16 sep, prueba de la órbita
+  de cámara: desviación del fondo 1.2-1.4) — solo faltaba aplicarla aquí.
+
+  `subject does not touch the ground` cierra la puerta por el otro lado: sin
+  contacto no hay sombra de contacto que dibujar.
 */
 function promptDe(historia) {
   return (
     'Plain flat solid bright green screen background, uniform color, no other ' +
-    'background elements, no text. Subject centered, natural gentle motion. ' +
+    'background elements, no text, no shadows cast on the background, ' +
+    'subject does not touch the ground. Subject centered, natural gentle motion. ' +
     historia.trim()
   )
 }
