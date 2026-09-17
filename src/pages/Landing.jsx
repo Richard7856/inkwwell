@@ -109,7 +109,7 @@ const ES = {
 
   queEsTitulo: '¿Qué es InkAR?',
   queEs: [
-    'Una app que reconoce tu tatuaje con la cámara y le sobrepone contenido en 3D, anclado a tu piel y siguiendo tu movimiento.',
+    'Una app que reconoce tu tatuaje con la cámara y le pone encima un video tuyo, anclado a tu piel y siguiendo tu movimiento.',
     'No lo modifica ni lo tapa. El dibujo que ya llevas es lo que activa el contenido: funciona como un código QR, pero sin código a la vista.',
   ],
 
@@ -120,17 +120,17 @@ const ES = {
     'Da igual si tu tatuaje guarda una historia o simplemente te gustó cómo se veía. Lo que hacemos es quitarle la quietud.',
   ],
 
-  haciaTitulo: 'A dónde vamos',
-  hacia: 'Hoy eliges de un catálogo. Lo que estamos construyendo es que subas la foto de tu perro, o describas el dragón que traes en el brazo, y la app genere esa animación. La tuya, no una parecida.',
+  haciaTitulo: 'El video es tuyo, no de un catálogo',
+  hacia: 'Subes la foto de tu perro y cuentas qué quieres que pase. La app genera ese video y lo ancla a tu tatuaje: el tuyo, no uno parecido. Si solo quieres ver cómo se siente, hay modelos 3D gratis para probar sin pagar nada.',
 
   comoTitulo: 'Cómo funciona',
   pasos: [
     ['Registras tu tatuaje', 'Le tomas una foto desde la app. En segundos queda activado y no hay que repetirlo nunca.'],
-    ['Eliges qué aparece encima', 'Contenido 3D animado. Puedes cambiarlo después sin volver a registrar el tatuaje.'],
+    ['Subes tu recuerdo', 'Una foto y unas palabras: tu perro, esa persona, ese momento. La app genera el video. Puedes cambiarlo después sin volver a registrar el tatuaje.'],
     ['Cualquiera lo ve', 'Apunta su cámara a tu piel y aparece, siguiendo tu movimiento. Sin instalar nada, desde el navegador.'],
   ],
 
-  videoTitulo: 'La idea, en movimiento',
+  videoTitulo: 'Así se ve sobre la piel',
   videoTexto: 'Representación del concepto. No es una grabación de la app.',
   videoTextoReal: 'Grabado con un teléfono, sobre un tatuaje real.',
 
@@ -145,7 +145,7 @@ const ES = {
   // el correo sin decir para cuándo pide un cheque en blanco.
   abreEl: 'Abrimos el viernes 19 de septiembre',
   yaAbrimos: 'Ya estamos abiertos',
-  ofertaVigente: 'La lista cierra el jueves 18. Tu primer video, con 50% de descuento.',
+  ofertaVigente: 'La lista cierra el jueves 18 de septiembre.',
   ofertaCerrada: 'La lista ya cerró, pero te avisamos en cuanto abramos.',
 
   cta: 'Avísame cuando abra',
@@ -159,7 +159,7 @@ const ES = {
     persona: [
       '50% de descuento en tu primer video.',
       'Te escribimos el día que abrimos, antes de que lo anunciemos en público.',
-      'Nos dices qué te gustaría ver encima del tuyo y lo tomamos en cuenta para el catálogo.',
+      'Nos dices qué quieres animar y lo tomamos en cuenta.',
     ],
     artista: [
       'Entras al programa de estudios, que arranca con un grupo pequeño.',
@@ -202,7 +202,7 @@ const EN = {
 
   queEsTitulo: 'What is InkAR?',
   queEs: [
-    'An app that recognizes your tattoo through the camera and layers 3D content over it, anchored to your skin and following your movement.',
+    'An app that recognizes your tattoo through the camera and lays a video of yours over it, anchored to your skin and following your movement.',
     'It doesn’t alter it or cover it. The drawing you already carry is what triggers the content: it works like a QR code, without a code in sight.',
   ],
 
@@ -213,17 +213,17 @@ const EN = {
     'It doesn’t matter whether your tattoo holds a story or you just liked how it looked. What we do is take the stillness out of it.',
   ],
 
-  haciaTitulo: 'Where this is going',
-  hacia: 'Today you pick from a catalog. What we’re building is this: you upload a photo of your dog, or describe the dragon on your arm, and the app generates that animation. Yours, not one that resembles it.',
+  haciaTitulo: 'The video is yours, not a catalog’s',
+  hacia: 'You upload a photo of your dog and say what should happen. The app generates that video and anchors it to your tattoo: yours, not one that resembles it. If you just want to see how it feels, there are free 3D models to try without paying anything.',
 
   comoTitulo: 'How it works',
   pasos: [
     ['Register your tattoo', 'Photograph it from the app. It’s activated in seconds and you never do it again.'],
-    ['Choose what appears', 'Animated 3D content. You can change it later without registering the tattoo again.'],
+    ['Upload your memory', 'One photo and a few words: your dog, that person, that moment. The app generates the video. You can change it later without registering the tattoo again.'],
     ['Anyone can see it', 'They point a camera at your skin and it appears, following your movement. No install, straight from the browser.'],
   ],
 
-  videoTitulo: 'The idea, in motion',
+  videoTitulo: 'This is how it looks on skin',
   videoTexto: 'Concept illustration. Not a recording of the app.',
   videoTextoReal: 'Shot on a phone, over a real tattoo.',
 
@@ -236,7 +236,7 @@ const EN = {
 
   abreEl: 'We open Friday, September 19',
   yaAbrimos: 'We’re open',
-  ofertaVigente: 'The list closes Thursday the 18th. Your first video, 50% off.',
+  ofertaVigente: 'The list closes Thursday, September 18.',
   ofertaCerrada: 'The list has closed, but we’ll still tell you when we open.',
 
   cta: 'Tell me when it opens',
@@ -249,7 +249,7 @@ const EN = {
     persona: [
       '50% off your first video.',
       'We write to you the day we open, before we announce it publicly.',
-      'You tell us what you’d like to see over yours, and we factor it into the catalog.',
+      'You tell us what you’d like to animate and we take it into account.',
     ],
     artista: [
       'You join the studio program, starting with a small group.',
@@ -299,21 +299,16 @@ export default function Landing() {
   const cuando = momento()
 
   /*
-    `origen` distingue cuál de los dos formularios convirtió.
-
-    Vale la pena porque la segunda invitación es una apuesta: la hipótesis es
-    que quien lee la página entera se convence más que quien ve el formulario
-    antes de entender el producto. Sin esta etiqueta, en dos días no habría
-    forma de saber si acertó — y el costo de averiguarlo es una palabra.
-
-    Se lee con:  select source, count(*) from waitlist group by source;
+    Ya no se etiqueta el origen: hubo dos formularios durante unas horas y la
+    etiqueta servía para saber cuál convertía. Con uno solo la pregunta no
+    existe, y `inscribirEnLista` ya pone `source: 'landing'` por omisión.
   */
-  const enviar = async (e, origen = 'landing') => {
+  const enviar = async (e) => {
     e.preventDefault()
     setError('')
     setEstado('enviando')
     try {
-      const { yaEstaba: repetido } = await inscribirEnLista({ email, perfil, source: origen })
+      const { yaEstaba: repetido } = await inscribirEnLista({ email, perfil })
       setYaEstaba(repetido)
       setEstado('listo')
     } catch (err) {
@@ -419,110 +414,6 @@ export default function Landing() {
           </section>
         )}
 
-        {/* ── Formulario ── */}
-        <div className="mt-10">
-          {estado === 'listo' ? (
-            <div className="bg-realidad/[0.07] border border-realidad/40 rounded-2xl p-6 text-center">
-              <p className="text-xl font-semibold mb-2">{c.gracias}</p>
-              <p className="text-neutral-600 text-sm leading-relaxed">
-                {yaEstaba
-                  ? c.yaEstabas
-                  : c.graciasDetalle.replace('{email}', email.trim().toLowerCase())}
-              </p>
-            </div>
-          ) : (
-            <form onSubmit={enviar} className="flex flex-col gap-3">
-              {/* El correo se pide DESPUÉS de saber quién es: a un estudio se le
-                  pide abajo, junto con su nombre y su código, y pedírselo dos
-                  veces es la clase de detalle que hace dudar de un producto. */}
-              {perfil === 'persona' && (
-                <input
-                  type="email"
-                  inputMode="email"
-                  autoComplete="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder={t('tu@correo.com')}
-                  className="w-full py-4 px-4 rounded-2xl bg-white border border-black/15
-                             text-black placeholder-neutral-400 focus:outline-none focus:border-realidad"
-                />
-              )}
-
-              <p className="text-neutral-500 text-xs mt-1">{c.soy}</p>
-              <div className="grid grid-cols-1 gap-2">
-                <Opcion activo={perfil === 'persona'} onClick={() => setPerfil('persona')}>
-                  {c.persona}
-                </Opcion>
-                <Opcion activo={perfil === 'artista'} onClick={() => setPerfil('artista')}>
-                  {c.artista}
-                </Opcion>
-              </div>
-
-              {perfil === 'artista' && (
-                <p className="text-neutral-500 text-xs -mt-1">{c.artistaNota}</p>
-              )}
-
-              {/*
-                Los beneficios cambian con la selección.
-
-                Lo que le sirve a un tatuado (entrar antes, créditos) y lo que le
-                sirve a un estudio (programa, material, aparecer en su ciudad) no
-                se parecen. Mostrar una lista genérica obliga a cada uno a
-                ignorar la mitad, y la mitad ignorada es la que más pesa.
-              */}
-              <div className="bg-black/[0.03] border border-black/10 rounded-xl p-4">
-                <p className="text-[11px] uppercase tracking-wider text-neutral-500 mb-2">
-                  {c.beneficioTitulo[perfil]}
-                </p>
-                <ul className="text-neutral-700 text-sm leading-relaxed space-y-1.5">
-                  {c.beneficios[perfil].map((b) => (
-                    <li key={b} className="flex gap-2">
-                      <span className="text-realidad shrink-0">—</span>{b}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              {/*
-                Un estudio NO se apunta a la lista de espera: se registra abajo y
-                sale con su código funcionando en ese momento.
-
-                Este formulario nació el 7 de septiembre, cuando el programa de
-                estudios todavía no existía y lo único que se podía ofrecer era
-                "te avisamos". Desde que existe el alta real, dejar que un
-                tatuador terminara aquí lo interceptaba antes de llegar a lo
-                bueno y le daba una promesa en vez de una herramienta.
-
-                La elección se conserva porque los beneficios de arriba son lo
-                que lo convence; lo que cambia es a dónde lo lleva el botón.
-              */}
-              {perfil === 'artista' ? (
-                <a
-                  href="#estudios"
-                  className="w-full py-4 rounded-2xl bg-tinta text-white font-semibold
-                             text-center transition-opacity hover:opacity-85"
-                >
-                  {c.irAEstudios}
-                </a>
-              ) : (
-                <>
-                  <button
-                    type="submit"
-                    disabled={estado === 'enviando' || !email}
-                    className="w-full py-4 rounded-2xl bg-tinta text-white font-semibold
-                               disabled:opacity-30 transition-opacity hover:opacity-85"
-                  >
-                    {estado === 'enviando' ? c.enviando : c.cta}
-                  </button>
-                  <p className="text-neutral-500 text-xs text-center">{c.legalNota}</p>
-                </>
-              )}
-              {error && <p className="text-red-400 text-sm text-center">{error}</p>}
-            </form>
-          )}
-        </div>
-
         {/* ── La razón de la marca: por qué "segunda vida" ── */}
         <div className="relative">
           <Tinta src="/tinta/02-curvo.png"
@@ -570,73 +461,122 @@ export default function Landing() {
         </section>
 
         {/*
-          ── Segunda invitación ──
+          ── El único formulario, y va al final ──
 
-          El formulario de arriba aparece antes de que la mayoría entienda qué
-          es esto. Quien sí leyó las cuatro secciones que de verdad venden
-          —la tinta cobra vida, cómo funciona, a dónde vamos, por qué no es un
-          filtro— llegaba hasta aquí ya convencido y sin dónde apuntarse: tenía
-          que subir a buscar el formulario, y eso no lo hace casi nadie.
+          Antes había dos: uno arriba, antes de que nadie entendiera qué es
+          esto, y otro aquí. Richard pidió dejar uno solo y quitar el de
+          arriba, que es la decisión correcta por dónde cae: quien llega aquí
+          ya vio el video, entendió el mecanismo y leyó por qué no es un
+          filtro. El correo se pide con el derecho ganado, no de entrada.
 
-          Va ANTES de estudios y no después, a propósito. El 9 de septiembre se
-          corrigió que el formulario de arriba interceptara a los tatuadores y
-          les diera una promesa en vez de su código; ponerlo después de la caja
-          de estudios repetiría el error al revés, dejando la última palabra de
-          la página en un formulario que no es para ellos.
+          El costo asumido: quien se convence en los primeros diez segundos
+          tiene que bajar para apuntarse. Se compensa con la píldora del héroe,
+          que da la fecha desde arriba, y con una página que no es larga.
 
-          Por eso, además, respeta la misma regla: si eligió "tengo estudio",
-          aquí NO se le pide el correo — se le señala su alta, que es mejor
-          trato que apuntarse a una lista.
+          Este bloque absorbe TODO lo que hacía el de arriba —la pregunta de
+          quién eres, los beneficios por perfil y la salida a estudios—. Sin
+          eso, un tatuador se quedaría sin su camino: el selector es lo que
+          decide si el botón manda a la lista o a su alta real.
         */}
         <section className="mt-16 bg-white border border-black/10 rounded-2xl p-6 shadow-sm">
-          <h2 className="text-lg font-semibold">{c.segundaTitulo}</h2>
-
           {estado === 'listo' ? (
-            <p className="text-neutral-600 text-sm leading-relaxed mt-3">
-              {yaEstaba
-                ? c.yaEstabas
-                : c.graciasDetalle.replace('{email}', email.trim().toLowerCase())}
-            </p>
-          ) : perfil === 'artista' ? (
-            <>
-              <p className="text-neutral-600 text-sm leading-relaxed mt-3">{c.segundaEstudios}</p>
-              <a
-                href="#estudios"
-                className="mt-4 block w-full py-4 rounded-2xl bg-tinta text-white
-                           font-semibold text-center transition-opacity hover:opacity-85"
-              >
-                {c.irAEstudios}
-              </a>
-            </>
+            <div className="text-center">
+              <p className="text-xl font-semibold mb-2">{c.gracias}</p>
+              <p className="text-neutral-600 text-sm leading-relaxed">
+                {yaEstaba
+                  ? c.yaEstabas
+                  : c.graciasDetalle.replace('{email}', email.trim().toLowerCase())}
+              </p>
+            </div>
           ) : (
             <>
-              <p className="text-neutral-600 text-sm leading-relaxed mt-3">{c.segundaTexto}</p>
-              {cuando === 'oferta-vigente' && (
-                <p className="text-realidad text-sm font-medium mt-2">{c.ofertaVigente}</p>
-              )}
-              <form onSubmit={(e) => enviar(e, 'landing-final')} className="flex flex-col gap-3 mt-4">
-                <input
-                  type="email"
-                  inputMode="email"
-                  autoComplete="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder={t('tu@correo.com')}
-                  className="w-full py-4 px-4 rounded-2xl bg-white border border-black/15
-                             text-black placeholder-neutral-400 focus:outline-none focus:border-realidad"
-                />
-                <button
-                  type="submit"
-                  disabled={estado === 'enviando' || !email}
-                  className="w-full py-4 rounded-2xl bg-tinta text-white font-semibold
-                             disabled:opacity-30 transition-opacity hover:opacity-85"
-                >
-                  {estado === 'enviando' ? c.enviando : c.cta}
-                </button>
-                <p className="text-neutral-500 text-xs text-center">{c.legalNota}</p>
+              <h2 className="text-lg font-semibold">{c.segundaTitulo}</h2>
+              <p className="text-neutral-600 text-sm leading-relaxed mt-2 mb-4">{c.segundaTexto}</p>
+
+              <form onSubmit={enviar} className="flex flex-col gap-3">
+                {/* El correo se pide DESPUÉS de saber quién es: a un estudio se le
+                    pide abajo, junto con su nombre y su código, y pedírselo dos
+                    veces es la clase de detalle que hace dudar de un producto. */}
+                {perfil === 'persona' && (
+                  <input
+                    type="email"
+                    inputMode="email"
+                    autoComplete="email"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder={t('tu@correo.com')}
+                    className="w-full py-4 px-4 rounded-2xl bg-white border border-black/15
+                               text-black placeholder-neutral-400 focus:outline-none focus:border-realidad"
+                  />
+                )}
+
+                <p className="text-neutral-500 text-xs mt-1">{c.soy}</p>
+                <div className="grid grid-cols-1 gap-2">
+                  <Opcion activo={perfil === 'persona'} onClick={() => setPerfil('persona')}>
+                    {c.persona}
+                  </Opcion>
+                  <Opcion activo={perfil === 'artista'} onClick={() => setPerfil('artista')}>
+                    {c.artista}
+                  </Opcion>
+                </div>
+
+                {perfil === 'artista' && (
+                  <p className="text-neutral-500 text-xs -mt-1">{c.artistaNota}</p>
+                )}
+
+                {/*
+                  Los beneficios cambian con la selección.
+
+                  Lo que le sirve a un tatuado y lo que le sirve a un estudio no
+                  se parecen. Mostrar una lista genérica obliga a cada uno a
+                  ignorar la mitad, y la mitad ignorada es la que más pesa.
+
+                  Aquí vive la ÚNICA mención del 50%: la píldora del héroe da la
+                  fecha y el cierre, y el descuento se dice una sola vez, justo
+                  donde se decide dar el correo.
+                */}
+                <div className="bg-black/[0.03] border border-black/10 rounded-xl p-4">
+                  <p className="text-[11px] uppercase tracking-wider text-neutral-500 mb-2">
+                    {c.beneficioTitulo[perfil]}
+                  </p>
+                  <ul className="text-neutral-700 text-sm leading-relaxed space-y-1.5">
+                    {c.beneficios[perfil].map((b) => (
+                      <li key={b} className="flex gap-2">
+                        <span className="text-realidad shrink-0">—</span>{b}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                {/*
+                  Un estudio NO se apunta a la lista: se registra abajo y sale
+                  con su código funcionando en ese momento. Se conserva la
+                  elección porque los beneficios de arriba son lo que lo
+                  convence; lo que cambia es a dónde lo lleva el botón.
+                */}
+                {perfil === 'artista' ? (
+                  <a
+                    href="#estudios"
+                    className="w-full py-4 rounded-2xl bg-tinta text-white font-semibold
+                               text-center transition-opacity hover:opacity-85"
+                  >
+                    {c.irAEstudios}
+                  </a>
+                ) : (
+                  <>
+                    <button
+                      type="submit"
+                      disabled={estado === 'enviando' || !email}
+                      className="w-full py-4 rounded-2xl bg-tinta text-white font-semibold
+                                 disabled:opacity-30 transition-opacity hover:opacity-85"
+                    >
+                      {estado === 'enviando' ? c.enviando : c.cta}
+                    </button>
+                    <p className="text-neutral-500 text-xs text-center">{c.legalNota}</p>
+                  </>
+                )}
                 {error && <p className="text-red-400 text-sm text-center">{error}</p>}
-                <p className="text-neutral-500 text-xs text-center">{c.segundaEstudios}</p>
               </form>
             </>
           )}

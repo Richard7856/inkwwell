@@ -841,3 +841,23 @@ Probado en la página de simulación con el video corrido a propósito (1.5% del
 **Alternativa evaluada y NO aplicada:** un recorte invariante al brillo —normalizar la crominancia de cada píxel por su propia luminancia antes de comparar—. Se probó sobre el cuadro real: llevaría el fondo oscurecido a distancia 0.00 a cualquier brillo, dejando negro, blanco, gris, naranja y café del sujeto intactos en 1.00. Funciona. No se aplica ahora por tres razones: el prompt ataca la causa y el sombreador solo el síntoma; el sombreador sí va dentro del APK y por tanto cuesta una revisión de Play; y otra sesión está editando `videoLayer.js` en este momento. Queda como defensa en profundidad para cuando haya margen, con la fórmula ya validada.
 
 **Lo que este arreglo NO cambia:** `zero-nace.mp4` y `zero-concha.mp4` ya están generados con la sombra dentro, así que el video de la landing la conserva. Solo las generaciones nuevas salen limpias.
+
+## [2026-09-17] Un solo formulario, al final, y la copy deja de describir el producto anterior
+**Context:** Dos problemas que Richard señaló al ver la página publicada. El primero, repetición: había dos formularios —uno arriba, otro al final— y el 50% se mencionaba tres veces (píldora del héroe, caja de beneficios, y otra vez abajo). El segundo, más de fondo: **la copy seguía describiendo el producto anterior al giro a video.**
+
+**El formulario queda uno, y se quita el de arriba.** Es la decisión de Richard y cae bien por dónde queda: quien llega al final ya vio el video, entendió el mecanismo y leyó por qué no es un filtro; el correo se pide con el derecho ganado en vez de de entrada. El costo asumido —quien se convence en los primeros diez segundos tiene que bajar— se compensa con la píldora del héroe, que da la fecha desde arriba, y con una página que no es larga.
+
+**Lo que había que mover con él.** El formulario de abajo era una versión reducida: correo y botón. Al volverse el único tuvo que absorber **la pregunta de quién eres, los beneficios por perfil y la salida a estudios**. Sin eso un tatuador se habría quedado sin camino: el selector es lo que decide si el botón lleva a la lista de espera o a su alta real, y ese fue justamente el error que se corrigió el 9 de septiembre. Verificado en navegador: como persona hay un correo de lista; al elegir "soy tatuador" ese correo desaparece y solo queda el alta de estudio.
+
+**El 50% se dice una sola vez**, en la caja de beneficios, justo donde se decide dar el correo. La píldora del héroe se queda con lo que sí es información —la fecha de apertura y el cierre de la lista— y suelta el descuento.
+
+**La copy describía el producto de antes del giro.** Lo más grave: la sección "A dónde vamos" presentaba la generación de video como **"lo que estamos construyendo"**, justo debajo de un video que acaba de demostrarla funcionando. Eso no es solo texto viejo — subestima el producto delante de la prueba de que existe, y deja el catálogo como la oferta principal cuando es la manera gratuita de probar.
+
+Cambios, en los dos idiomas:
+- **"A dónde vamos"** → **"El video es tuyo, no de un catálogo"**, en presente: subes la foto, cuentas qué quieres que pase, la app genera ese video. El catálogo pasa a ser lo que es, la vía gratis para probar.
+- **"¿Qué es InkAR?"**: "le sobrepone contenido en 3D" → "le pone encima un video tuyo".
+- **Paso 2 de "Cómo funciona"**: "Eliges qué aparece encima · Contenido 3D animado" → "Subes tu recuerdo · Una foto y unas palabras: tu perro, esa persona, ese momento. La app genera el video."
+- **Título del video**: "La idea, en movimiento" → **"Así se ve sobre la piel"**. Ya no es una idea: es una grabación.
+- **Beneficio**: "lo tomamos en cuenta para el catálogo" → "nos dices qué quieres animar".
+
+**Se retira el etiquetado de origen** (`landing` contra `landing-final`). Existía para saber cuál de los dos formularios convertía; con uno solo la pregunta no existe.
