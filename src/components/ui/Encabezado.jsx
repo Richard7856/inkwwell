@@ -21,7 +21,7 @@ export default function Encabezado({ titulo, volver = '/app', accion = null }) {
       <Link
         to={volver}
         aria-label="Volver"
-        className="text-gray-500 hover:text-white transition-colors -ml-1 p-1"
+        className="text-gray-500 hover:text-tinta transition-colors -ml-1 p-1"
       >
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
              strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

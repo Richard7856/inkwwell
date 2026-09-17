@@ -25,16 +25,25 @@ import Boton from '../components/ui/Boton.jsx'
 export default function Home() {
   return (
     <div className="relative min-h-screen overflow-hidden flex flex-col items-center justify-center px-6 text-center">
-      {/* El mismo trazo de la landing, en tinta blanca sobre el fondo oscuro */}
+      {/*
+        Un solo trazo, chico y en la esquina superior, donde no hay texto.
+
+        La composición completa de dos trazos vive SOLO en la pantalla de carga:
+        dentro de la app los trazos grandes se cortaban contra los bordes y
+        pasaban por encima de los textos (pedido de Richard, 16 sep).
+      */}
       <Tinta
         src="/tinta/01-diagonal.png"
-        color="bg-white"
-        className="-top-24 -right-48 w-[560px] h-[380px] opacity-[0.07] rotate-[8deg]"
+        className="-top-[60px] -right-[120px] w-[300px] h-[200px] -scale-x-100 opacity-85"
       />
 
       <div className="relative flex flex-col items-center w-full max-w-xs">
-        <Logo alto={44} className="mb-5" />
-        <p className="text-gray-400 text-lg mb-10 leading-snug">
+        <Logo alto={48} />
+        <p className="mt-3 text-[10px] tracking-[0.34em] uppercase text-gray-700">
+          {t('Historias que siguen vivas')}
+        </p>
+        <span className="mt-5 mb-6 block h-[1.5px] w-8 bg-tinta" />
+        <p className="text-gray-600 text-base mb-10 leading-snug">
           {t('Tu tatuaje cobra vida en realidad aumentada')}
         </p>
 
@@ -49,26 +58,26 @@ export default function Home() {
 
         <p className="text-gray-500 text-sm mt-8">
           {t('¿Te compartieron un link de tatuaje?')}{' '}
-          <span className="text-gray-300">{t('Ábrelo directo desde tu celular.')}</span>
+          <span className="text-gray-700">{t('Ábrelo directo desde tu celular.')}</span>
         </p>
       </div>
 
-      <p className="text-gray-600 text-xs mt-12 max-w-xs leading-relaxed">
+      <p className="text-gray-500 text-xs mt-12 max-w-xs leading-relaxed">
         {t('Activa tu tatuaje una vez. Cualquier persona que apunte su cámara verá tu recuerdo cobrar vida.')}
       </p>
 
       {/* Identificador de build — permite confirmar de un vistazo qué versión
           corre el dispositivo. El APK se instala a mano y es fácil quedarse con
           uno viejo sin notarlo. Se inyecta en vite.config.js */}
-      <p className="text-gray-800 text-[10px] mt-6 font-mono">{__BUILD_ID__}</p>
+      <p className="text-gray-300 text-[10px] mt-6 font-mono">{__BUILD_ID__}</p>
 
       {/* Play exige que ambos caminos sean alcanzables DENTRO de la app, no solo
           por su dirección web. Aquí abajo porque son trámite, no producto. */}
-      <div className="flex gap-4 mt-4 text-[11px] text-gray-600">
-        <Link to="/privacidad" className="underline hover:text-gray-400 transition-colors">
+      <div className="flex gap-4 mt-4 text-[11px] text-gray-500">
+        <Link to="/privacidad" className="underline hover:text-gray-600 transition-colors">
           {t('Privacidad')}
         </Link>
-        <Link to="/eliminar-cuenta" className="underline hover:text-gray-400 transition-colors">
+        <Link to="/eliminar-cuenta" className="underline hover:text-gray-600 transition-colors">
           {t('Eliminar mi cuenta')}
         </Link>
         {/*
@@ -82,7 +91,7 @@ export default function Home() {
         <button
           type="button"
           onClick={() => setIdioma(getIdioma() === 'es' ? 'en' : 'es')}
-          className="underline hover:text-gray-400 transition-colors"
+          className="underline hover:text-gray-600 transition-colors"
         >
           {getIdioma() === 'es' ? 'English' : 'Español'}
         </button>

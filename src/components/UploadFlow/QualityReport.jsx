@@ -55,7 +55,7 @@ export default function QualityReport({ metrics, onRetake, onContinue }) {
                 ? t('Esta foto va a rastrear mal')
                 : t('Esta foto va a funcionar, pero justo')}
             </h2>
-            <p className={`text-sm mt-1 ${esMalo ? 'text-red-200/80' : 'text-amber-200/80'}`}>
+            <p className={`text-sm mt-1 ${esMalo ? 'text-red-900/80' : 'text-amber-700/80'}`}>
               {esMalo
                 ? t('El contenido va a costar que aparezca, y va a vibrar o despegarse al mover la cámara.')
                 : t('Va a funcionar con buena luz y la cámara cerca. Otra foto podría mejorarlo.')}
@@ -92,8 +92,8 @@ export default function QualityReport({ metrics, onRetake, onContinue }) {
       {verdict.reasons.length > 0 && (
         <ul className="mt-4 space-y-2">
           {verdict.reasons.map((razon, i) => (
-            <li key={i} className="text-sm text-gray-400 flex gap-2">
-              <span className="text-gray-600 shrink-0">·</span>
+            <li key={i} className="text-sm text-gray-600 flex gap-2">
+              <span className="text-gray-500 shrink-0">·</span>
               <span>{traducirRazon(razon, metrics)}</span>
             </li>
           ))}
@@ -101,14 +101,14 @@ export default function QualityReport({ metrics, onRetake, onContinue }) {
       )}
 
       {verdict.tips.length > 0 && (
-        <div className="mt-4 bg-white/5 border border-white/10 rounded-xl p-4">
+        <div className="mt-4 bg-tinta/[0.03] border border-tinta/10 rounded-xl p-4">
           <p className="text-xs uppercase tracking-wide text-gray-500 mb-2">
             {t('Cómo mejorarla')}
           </p>
           <ul className="space-y-2">
             {verdict.tips.map((tip, i) => (
-              <li key={i} className="text-sm text-gray-300 flex gap-2">
-                <span className="text-gray-600 shrink-0">→</span>
+              <li key={i} className="text-sm text-gray-700 flex gap-2">
+                <span className="text-gray-500 shrink-0">→</span>
                 <span>{traducirConsejo(tip)}</span>
               </li>
             ))}
@@ -209,21 +209,21 @@ function traducirConsejo(consejo) {
 }
 
 const COLOR_NIVEL = {
-  malo: 'text-red-400',
-  aceptable: 'text-amber-400',
-  bueno: 'text-emerald-400',
-  excelente: 'text-emerald-400',
+  malo: 'text-red-700',
+  aceptable: 'text-amber-700',
+  bueno: 'text-emerald-700',
+  excelente: 'text-emerald-700',
 }
 
 function Medida({ etiqueta, ayuda, valor, nivel, grid }) {
   return (
-    <div className="bg-white/5 border border-white/10 rounded-xl p-3 flex items-center gap-3">
+    <div className="bg-tinta/[0.03] border border-tinta/10 rounded-xl p-3 flex items-center gap-3">
       {grid && <MiniGrid celdas={grid} />}
       <div className="min-w-0 flex-1">
         <p className="text-sm font-medium">{etiqueta}</p>
         <p className="text-xs text-gray-500 mt-0.5">{ayuda}</p>
       </div>
-      <p className={`text-sm font-semibold shrink-0 ${COLOR_NIVEL[nivel] ?? 'text-gray-400'}`}>
+      <p className={`text-sm font-semibold shrink-0 ${COLOR_NIVEL[nivel] ?? 'text-gray-600'}`}>
         {valor}
       </p>
     </div>
@@ -244,7 +244,7 @@ function MiniGrid({ celdas }) {
       {celdas.map((n, i) => (
         <div
           key={i}
-          className="bg-white rounded-[1px]"
+          className="bg-tinta rounded-[1px]"
           // Opacidad relativa al máximo: lo que importa es el contraste entre
           // zonas, no el conteo absoluto, que cambia con el tamaño de la foto
           style={{ opacity: 0.12 + (n / max) * 0.88 }}

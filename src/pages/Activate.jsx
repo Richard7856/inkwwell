@@ -370,7 +370,7 @@ export default function Activate() {
       {step === 'uploading' && (
         <div className="text-center mt-12">
           <Spinner tam="lg" className="mx-auto mb-4" />
-          <p className="text-gray-400">{t('Subiendo foto...')}</p>
+          <p className="text-gray-600">{t('Subiendo foto...')}</p>
         </div>
       )}
 
@@ -415,7 +415,7 @@ export default function Activate() {
           <RecuerdoForm onEnviar={handleRecuerdo} />
           <button
             onClick={() => setStep('eleccion')}
-            className="w-full text-gray-500 text-sm py-3 mt-2 underline hover:text-white"
+            className="w-full text-gray-500 text-sm py-3 mt-2 underline hover:text-tinta"
           >
             {t('Volver')}
           </button>
@@ -453,12 +453,12 @@ export default function Activate() {
 
       {step === 'done' && (
         <div className="text-center mt-12">
-          <div className="w-16 h-16 bg-realidad/15 rounded-full flex items-center justify-center
-                          mx-auto mb-4 border border-realidad/50 text-realidad">
+          <div className="w-16 h-16 bg-tinta/5 rounded-full flex items-center justify-center
+                          mx-auto mb-4 border border-tinta text-tinta">
             <span className="text-2xl">✓</span>
           </div>
           <h2 className="text-xl font-semibold mb-2">{t('Tu tatuaje está activado')}</h2>
-          <p className="text-gray-400 mb-8 max-w-xs mx-auto">
+          <p className="text-gray-600 mb-8 max-w-xs mx-auto">
             {t('Cualquier persona puede apuntar su cámara a tu tatuaje y ver tu recuerdo cobrar vida.')}
           </p>
 
@@ -470,12 +470,12 @@ export default function Activate() {
           {/* Mostrar el link para que el usuario lo guarde / comparta */}
           <Tarjeta compacta className="max-w-xs mx-auto">
             <p className="text-gray-500 text-xs mb-2">{t('Tu link de escaneo:')}</p>
-            <p className="text-gray-300 text-xs font-mono break-all">
+            <p className="text-gray-700 text-xs font-mono break-all">
               {ligaDeTatuaje(tattooId)}
             </p>
             <button
               onClick={() => navigator.clipboard?.writeText(ligaDeTatuaje(tattooId))}
-              className="mt-3 text-xs text-gray-400 hover:text-white transition-colors underline"
+              className="mt-3 text-xs text-gray-600 hover:text-tinta transition-colors underline"
             >
               {t('Copiar link')}
             </button>
@@ -485,7 +485,7 @@ export default function Activate() {
 
       {error && (
         <div className="mt-4 bg-red-500/10 border border-red-500/20 rounded-xl p-4">
-          <p className="text-red-400 text-sm">{error}</p>
+          <p className="text-red-700 text-sm">{error}</p>
         </div>
       )}
     </div>
@@ -523,19 +523,19 @@ function StepIndicator({ current }) {
             w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold
             transition-colors duration-300
             ${i < currentIdx
-              ? 'bg-white text-black'
+              ? 'bg-tinta text-claridad'
               : i === currentIdx
-                ? 'bg-white/20 text-white border border-white/40'
-                : 'bg-white/5 text-gray-600'
+                ? 'bg-tinta/10 text-tinta border border-tinta/40'
+                : 'bg-tinta/[0.03] text-gray-500'
             }
           `}>
             {i < currentIdx ? '\u2713' : i + 1}
           </div>
-          <span className={`text-xs ${i <= currentIdx ? 'text-gray-300' : 'text-gray-600'}`}>
+          <span className={`text-xs ${i <= currentIdx ? 'text-gray-700' : 'text-gray-500'}`}>
             {s.label}
           </span>
           {i < steps.length - 1 && (
-            <div className={`w-8 h-px ${i < currentIdx ? 'bg-white/40' : 'bg-white/10'}`} />
+            <div className={`w-8 h-px ${i < currentIdx ? 'bg-tinta/20' : 'bg-tinta/5'}`} />
           )}
         </div>
       ))}
@@ -593,11 +593,11 @@ function CampoEstudio() {
         autoCapitalize="characters"
         autoCorrect="off"
         spellCheck={false}
-        className="w-full py-3 px-4 rounded-2xl bg-white/5 border border-white/10 text-center
-                   font-mono tracking-widest text-white placeholder-gray-600
-                   focus:outline-none focus:border-white/40"
+        className="w-full py-3 px-4 rounded-2xl bg-tinta/[0.03] border border-tinta/10 text-center
+                   font-mono tracking-widest text-tinta placeholder-gray-400
+                   focus:outline-none focus:border-tinta/60"
       />
-      <p className="text-xs text-gray-600 mt-2">{t('Así tu artista recibe crédito por tu tatuaje.')}</p>
+      <p className="text-xs text-gray-500 mt-2">{t('Así tu artista recibe crédito por tu tatuaje.')}</p>
     </div>
   )
 }

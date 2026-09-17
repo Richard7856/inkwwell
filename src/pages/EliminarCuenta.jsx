@@ -58,7 +58,7 @@ export default function EliminarCuenta() {
     return (
       <Marco>
         <h1 className="text-2xl font-bold mb-4">{t('Listo')}</h1>
-        <p className="text-gray-300 leading-relaxed mb-2">{resultado.mensaje}</p>
+        <p className="text-gray-700 leading-relaxed mb-2">{resultado.mensaje}</p>
         <p className="text-gray-500 text-sm mb-8">
           {t('Se eliminaron {tatuajes} tatuaje(s) y {archivos} archivo(s). Los links que hayas compartido dejaron de funcionar.',
              { tatuajes: resultado.tatuajes, archivos: resultado.archivos })}
@@ -72,7 +72,7 @@ export default function EliminarCuenta() {
     return (
       <Marco>
         <h1 className="text-2xl font-bold mb-3">{t('Eliminar mi cuenta')}</h1>
-        <p className="text-gray-400 text-sm leading-relaxed">
+        <p className="text-gray-600 text-sm leading-relaxed">
           {t('Para borrar tu cuenta necesitamos confirmar que el correo es tuyo. Te enviaremos un código de 6 dígitos.')}
         </p>
         <LoginGate
@@ -87,13 +87,13 @@ export default function EliminarCuenta() {
   return (
     <Marco>
       <h1 className="text-2xl font-bold mb-3">{t('Eliminar mi cuenta')}</h1>
-      <p className="text-gray-400 text-sm mb-6">
-        {t('Sesión activa como')} <span className="text-gray-200">{user?.email}</span>
+      <p className="text-gray-600 text-sm mb-6">
+        {t('Sesión activa como')} <span className="text-gray-800">{user?.email}</span>
       </p>
 
       <QueSeBorra />
 
-      <p className="text-gray-400 text-sm mt-8 mb-3">
+      <p className="text-gray-600 text-sm mt-8 mb-3">
         <Frase
           texto={t('Esto no se puede deshacer. Escribe {palabra} para confirmar.',
                    { palabra: '\u0000' })}
@@ -105,9 +105,9 @@ export default function EliminarCuenta() {
         value={confirmacion}
         onChange={(e) => setConfirmacion(e.target.value.toUpperCase())}
         placeholder={PALABRA}
-        className="w-full py-4 px-4 rounded-2xl bg-white/10 border border-white/10
-                   text-white text-center tracking-[0.3em] font-mono
-                   placeholder-gray-600 focus:outline-none focus:border-red-500/60"
+        className="w-full py-4 px-4 rounded-2xl bg-tinta/5 border border-tinta/10
+                   text-tinta text-center tracking-[0.3em] font-mono
+                   placeholder-gray-400 focus:outline-none focus:border-red-500/60"
       />
       <Boton
         variante="peligro"
@@ -118,7 +118,7 @@ export default function EliminarCuenta() {
         {estado === 'borrando' ? t('Borrando...') : t('Eliminar mi cuenta para siempre')}
       </Boton>
 
-      {error && <p className="text-red-400 text-sm mt-4">{error}</p>}
+      {error && <p className="text-red-700 text-sm mt-4">{error}</p>}
 
       <Boton to="/app" variante="enlace" className="block text-center mt-8">
         {t('Mejor no, volver al inicio')}
@@ -138,7 +138,7 @@ function Frase({ texto, resaltado }) {
   const [antes, despues] = texto.split('\u0000')
   return (
     <>
-      {antes}<b className="text-white">{resaltado}</b>{despues}
+      {antes}<b className="text-tinta">{resaltado}</b>{despues}
     </>
   )
 }
@@ -146,8 +146,8 @@ function Frase({ texto, resaltado }) {
 function QueSeBorra() {
   return (
     <Tarjeta className="mt-6">
-      <p className="text-gray-300 text-sm font-medium mb-2">{t('Qué se elimina')}</p>
-      <ul className="text-gray-400 text-sm leading-relaxed list-disc pl-5 space-y-1">
+      <p className="text-gray-700 text-sm font-medium mb-2">{t('Qué se elimina')}</p>
+      <ul className="text-gray-600 text-sm leading-relaxed list-disc pl-5 space-y-1">
         <li>{t('Las fotos de tus tatuajes')}</li>
         <li>{t('Los descriptores visuales generados a partir de ellas')}</li>
         <li>{t('Tu perfil y tu link compartible, que dejará de abrir')}</li>

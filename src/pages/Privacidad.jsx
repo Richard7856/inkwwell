@@ -192,7 +192,7 @@ export default function Privacidad() {
         {doc.secciones.map((s) => (
           <section key={s.titulo} className="mb-9">
             <h2 className="text-lg font-semibold mb-3">{s.titulo}</h2>
-            <div className="text-gray-400 text-sm leading-relaxed">
+            <div className="text-gray-600 text-sm leading-relaxed">
               {s.intro && <p className="mb-3">{s.intro}</p>}
               {s.parrafos?.map((p, i) => (
                 <p key={i} className={i > 0 ? 'mt-3' : undefined}><Texto valor={p} /></p>
@@ -201,7 +201,7 @@ export default function Privacidad() {
                 <ul className="space-y-3">
                   {s.lista.map(([titulo, detalle]) => (
                     <li key={titulo}>
-                      <span className="text-gray-200">{titulo}.</span> {detalle}
+                      <span className="text-gray-800">{titulo}.</span> {detalle}
                     </li>
                   ))}
                 </ul>
@@ -213,8 +213,8 @@ export default function Privacidad() {
           </section>
         ))}
 
-        <div className="border-t border-white/10 mt-12 pt-6 flex flex-col gap-3">
-          <Link to="/eliminar-cuenta" className="text-gray-400 text-sm underline">
+        <div className="border-t border-tinta/10 mt-12 pt-6 flex flex-col gap-3">
+          <Link to="/eliminar-cuenta" className="text-gray-600 text-sm underline">
             {t('Eliminar mi cuenta')}
           </Link>
           <Link to="/" className="text-gray-500 text-sm underline">
@@ -236,10 +236,10 @@ function Texto({ valor }) {
   const partes = valor.split(/(\*\*[^*]+\*\*|\{correo\})/g)
   return partes.map((parte, i) => {
     if (parte === '{correo}') {
-      return <a key={i} href={`mailto:${CONTACTO}`} className="text-white underline">{CONTACTO}</a>
+      return <a key={i} href={`mailto:${CONTACTO}`} className="text-tinta underline">{CONTACTO}</a>
     }
     if (parte.startsWith('**') && parte.endsWith('**')) {
-      return <b key={i} className="text-white">{parte.slice(2, -2)}</b>
+      return <b key={i} className="text-tinta">{parte.slice(2, -2)}</b>
     }
     return parte
   })

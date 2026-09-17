@@ -1,6 +1,6 @@
 import { t } from '../../lib/i18n.js'
 import Boton from '../ui/Boton.jsx'
-import Spinner from '../ui/Spinner.jsx'
+import PantallaCarga from '../ui/PantallaCarga.jsx'
 
 /**
  * Espera de la generación del video.
@@ -46,25 +46,35 @@ export default function GeneracionStatus({ estado, error = null, elapsedSeconds 
   }
   const { titulo, detalle } = TEXTOS[estado] ?? TEXTOS.en_proceso
 
+  /*
+    Mientras se espera, la pantalla de marca: es la espera más larga de la app
+    (2-3 minutos) y la que más se recuerda. Los fallos NO la usan: ahí importa
+    leer qué pasó y qué hacer, no la marca.
+  */
+  if (!fallo) {
+    return (
+      <PantallaCarga fija={false}>
+        <h2 className="text-base font-semibold mb-1">{titulo}</h2>
+        <p className="text-sm text-gray-600">{detalle}</p>
+        {estado !== 'agotado' && (
+          <p className="text-gray-500 text-xs font-mono mt-3 tabular-nums">
+            {Math.floor(elapsedSeconds / 60)}:{String(elapsedSeconds % 60).padStart(2, '0')}
+          </p>
+        )}
+      </PantallaCarga>
+    )
+  }
+
   return (
     <div className="text-center mt-8">
-      {!fallo && (
-        <Spinner tam="lg" className="mx-auto mb-5" />
-      )}
       <h2 className="text-xl font-semibold mb-2">{titulo}</h2>
-      <p className="text-gray-400 max-w-xs mx-auto">{detalle}</p>
+      <p className="text-gray-600 max-w-xs mx-auto">{detalle}</p>
 
-      {!fallo && estado !== 'agotado' && (
-        <p className="text-gray-600 text-sm font-mono mt-4 tabular-nums">
-          {Math.floor(elapsedSeconds / 60)}:{String(elapsedSeconds % 60).padStart(2, '0')}
-        </p>
+      {error && (
+        <p className="text-xs text-gray-500 font-mono mt-4 max-w-xs mx-auto break-words">{error}</p>
       )}
 
-      {fallo && error && (
-        <p className="text-xs text-gray-600 font-mono mt-4 max-w-xs mx-auto break-words">{error}</p>
-      )}
-
-      {fallo && onReintentar && (
+      {onReintentar && (
         <Boton onClick={onReintentar} className="mt-6 max-w-xs mx-auto">
           {t('Intentar de nuevo')}
         </Boton>

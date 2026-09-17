@@ -901,3 +901,22 @@ El fondo del video generado quedó plano ([96,199,76] en 0.5, 3 y 5.5 s).
 - `@imgly/background-removal-node`: corre en Node, **pero su licencia es AGPL**, lo que obligaría a publicar el código del worker. Descartado.
 
 **Risks/Limitations:** una foto con varios sujetos (dos perros, una persona con el perro) devuelve varias instancias; la prueba tomó todas. Hay que decidir si se toma la mayor o se pide al usuario una foto con uno solo.
+
+## [2026-09-16] La app pasa a papel y tinta; la composición de marca solo en la carga
+**Context:** Richard compartió como referencia una pieza de marca (papel, trazos de tinta en esquinas opuestas, logotipo negro, "HISTORIAS QUE SIGUEN VIVAS" espaciado, guion corto) y pidió que la pantalla de carga se viera así y que toda la app tuviera ese estilo. Al ver la primera versión pidió que los trazos grandes quedaran SOLO en la carga: dentro de la app se cortaban y pasaban por encima del texto.
+
+**Decision:**
+- **Tema claro por defecto** (`index.css`). El oscuro queda solo para el visor AR (`useTema('oscuro')` en `Scan`), por la misma razón de siempre: sobre la cámara, una interfaz clara lava el contraste.
+- **`PantallaCarga`**: la composición completa. Aparece al abrir (una copia en HTML y CSS en `index.html`, para que se vea antes de que cargue el JavaScript) y durante la generación del video. Los trazos se revelan con `clip-path` como una brocha, y el guion respira como indicador.
+- **Dentro de la app**, un solo trazo chico en la esquina superior del inicio, lejos del texto.
+- **Primitivos en blanco y negro**: primario = bloque de tinta en mayúsculas espaciadas; secundario = contorno; tarjeta destacada = contorno completo con sombra dura. El violeta queda para el visor AR y la landing (no se tocó: es trabajo de otra sesión).
+- **Splash nativo** regenerado con la misma composición en las 11 densidades, y fondo papel en el splash de Android 12+ (que solo muestra el ícono sobre un color).
+
+**Hallazgos:**
+- `tinta/03-esquina.png` trae la tinta **recortada en sus propios bordes**: usado cerca de la vista, deja un corte recto. Solo se usan 01 y 02, que están completos.
+- Retirar la carga con `transitionend` falla en una pestaña en segundo plano: la transición no corre y la pantalla se quedaba encima de la app. Se retira por temporizador.
+- El panel del navegador no repinta cuando la página está oculta: las capturas salían viejas y parecía que los cambios no aplicaban. La composición se diseñó fuera del navegador con ffmpeg, a 390x844.
+
+**Alternatives considered:** llevar los dos trazos grandes a todas las pantallas (primera versión): Richard la descartó por los cortes y porque tapaban texto.
+
+**Risks/Limitations:** el cambio de paleta fue un reemplazo sistemático sobre 14 archivos; las pantallas que solo se ven con sesión (perfil, créditos con saldo, reporte de calidad, generación en curso) no se revisaron visualmente. Llega al teléfono solo con la v4.

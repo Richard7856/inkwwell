@@ -46,7 +46,7 @@ const CATALOG = [
 export default function DesignPicker({ onDesignSelected }) {
   return (
     <div>
-      <p className="text-gray-400 mb-6">{t('Elige el diseño 3D para tu tatuaje')}</p>
+      <p className="text-gray-600 mb-6">{t('Elige el diseño 3D para tu tatuaje')}</p>
 
       <div className="grid gap-4">
         {CATALOG.map((design) => (
@@ -55,17 +55,17 @@ export default function DesignPicker({ onDesignSelected }) {
               <span className="text-3xl">{design.emoji}</span>
               <div>
                 <h3 className="font-semibold text-lg">{t(design.name)}</h3>
-                <p className="text-gray-400 text-sm mt-0.5">{t(design.description)}</p>
+                <p className="text-gray-600 text-sm mt-0.5">{t(design.description)}</p>
               </div>
             </div>
-            <span className="inline-block mt-3 text-xs bg-white/10 px-3 py-1 rounded-full text-gray-300">
+            <span className="inline-block mt-3 text-xs bg-tinta/5 px-3 py-1 rounded-full text-gray-700">
               {design.tier}
             </span>
           </Tarjeta>
         ))}
       </div>
 
-      <p className="text-gray-600 text-xs text-center mt-6">
+      <p className="text-gray-500 text-xs text-center mt-6">
         {t('Más diseños disponibles próximamente')}
       </p>
     </div>

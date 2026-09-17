@@ -49,7 +49,7 @@ export default function CompileStatus({
       {inkLayer ? (
         <div
           className="relative mx-auto mb-6 rounded-2xl overflow-hidden
-                     bg-gradient-to-b from-gray-900 to-black border border-white/10"
+                     bg-gradient-to-b from-gray-900 to-black border border-tinta/10"
           style={{ width: 220, height: 260 }}
         >
           {/* La tinta extraída, invertida a blanco para que resalte sobre el fondo
@@ -78,7 +78,7 @@ export default function CompileStatus({
 
           {/* Zona ya procesada, sutilmente resaltada */}
           <div
-            className="absolute left-0 right-0 top-0 pointer-events-none bg-white/5 transition-all duration-500 ease-out"
+            className="absolute left-0 right-0 top-0 pointer-events-none bg-tinta/[0.03] transition-all duration-500 ease-out"
             style={{ height: `${pct}%` }}
           />
         </div>
@@ -87,13 +87,13 @@ export default function CompileStatus({
       )}
 
       <h2 className="text-xl font-semibold mb-2">{title}</h2>
-      <p className="text-gray-400 text-sm mb-6">{detail}</p>
+      <p className="text-gray-600 text-sm mb-6">{detail}</p>
 
       {showBar && (
         <div className="max-w-xs mx-auto">
-          <div className="h-2 bg-white/10 rounded-full overflow-hidden">
+          <div className="h-2 bg-tinta/5 rounded-full overflow-hidden">
             <div
-              className="h-full bg-realidad rounded-full transition-all duration-300 ease-out"
+              className="h-full bg-tinta rounded-full transition-all duration-300 ease-out"
               style={{ width: `${pct}%` }}
             />
           </div>
@@ -107,7 +107,7 @@ export default function CompileStatus({
       {/* Aviso solo si tarda más de lo normal — evita que el usuario abandone
           creyendo que se trabó */}
       {showBar && elapsedSeconds > 45 && (
-        <p className="text-gray-600 text-xs mt-4 max-w-xs mx-auto">
+        <p className="text-gray-500 text-xs mt-4 max-w-xs mx-auto">
           {t('Está tardando más de lo normal. No cierres la app.')}
         </p>
       )}

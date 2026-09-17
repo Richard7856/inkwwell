@@ -1,6 +1,6 @@
 /**
- * Indicador de espera. El borde que gira lleva el acento: es lo único que se
- * mueve en la pantalla y por eso es donde la marca se nota sin estorbar.
+ * Indicador de espera: un arco de tinta sobre un anillo apenas visible. Para
+ * esperas largas (generar un video) va `PantallaCarga`, no esto.
  *
  * @param {'sm'|'md'|'lg'} [tam]
  */
@@ -10,7 +10,7 @@ export default function Spinner({ tam = 'md', className = '' }) {
     <div
       role="status"
       aria-label="Cargando"
-      className={`${tamano} border-white/15 border-t-realidad rounded-full animate-spin ${className}`}
+      className={`${tamano} border-tinta/10 border-t-tinta rounded-full animate-spin ${className}`}
     />
   )
 }

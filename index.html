@@ -23,15 +23,48 @@
     />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover" />
-    <!-- Debe coincidir con el fondo de <body> en index.css (#0a0a0a): si difieren,
-         la barra del sistema se ve como una franja de otro color sobre la app. -->
-    <meta name="theme-color" content="#0a0a0a" />
+    <!-- Debe coincidir con el fondo de <body> en index.css (claridad, #F7F7F7): si
+         difieren, la barra del sistema se ve como una franja de otro color. -->
+    <meta name="theme-color" content="#F7F7F7" />
     <meta name="description" content="InkAR — Tu tatuaje cobra vida en realidad aumentada" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <title>InkAR</title>
   </head>
-  <body class="bg-black text-white">
+  <body>
+    <!--
+      Pantalla de carga inicial — la misma composición que PantallaCarga.jsx,
+      en HTML y CSS a mano porque se tiene que ver ANTES de que cargue el
+      JavaScript (en el teléfono, el bundle con MindAR tarda un par de
+      segundos). main.jsx la desvanece al montar React.
+    -->
+    <div id="carga-inicial" aria-hidden="true">
+      <div class="ci-trazo ci-arriba trazo-entra"></div>
+      <div class="ci-trazo ci-abajo trazo-entra trazo-entra-tarde"></div>
+      <div class="ci-centro">
+        <img src="/logo-inkar.png" alt="" width="156" height="52" />
+        <p>Historias que siguen vivas</p>
+        <span class="linea-respira"></span>
+      </div>
+    </div>
+    <style>
+      #carga-inicial { position: fixed; inset: 0; z-index: 60; overflow: hidden;
+        background: #F7F7F7; display: flex; align-items: center; justify-content: center;
+        transition: opacity 400ms ease; }
+      #carga-inicial.sale { opacity: 0; pointer-events: none; }
+      .ci-trazo { position: absolute; width: 480px; height: 320px; background: #000;
+        -webkit-mask-size: contain; mask-size: contain;
+        -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; }
+      .ci-arriba { top: -140px; left: -120px;
+        -webkit-mask-image: url(/tinta/01-diagonal.png); mask-image: url(/tinta/01-diagonal.png); }
+      .ci-abajo { bottom: -86px; right: -260px; transform: rotate(180deg);
+        -webkit-mask-image: url(/tinta/02-curvo.png); mask-image: url(/tinta/02-curvo.png); }
+      .ci-centro { position: relative; display: flex; flex-direction: column; align-items: center; }
+      .ci-centro img { height: 52px; width: auto; }
+      .ci-centro p { margin: 12px 0 0; font: 400 10px/1.2 Inter, system-ui, sans-serif;
+        letter-spacing: .34em; text-transform: uppercase; color: #374151; }
+      .ci-centro span { display: block; margin-top: 20px; width: 32px; height: 1.5px; background: #000; }
+    </style>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>

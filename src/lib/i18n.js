@@ -79,6 +79,7 @@ export function t(es, params) {
 const EN = {
   // ── Inicio ──
   'Tu tatuaje cobra vida en realidad aumentada': 'Your tattoo comes alive in augmented reality',
+  'Historias que siguen vivas': 'Stories that stay alive',
   'Activar mi tatuaje': 'Activate my tattoo',
   '¿Te compartieron un link de tatuaje?': 'Got sent a tattoo link?',
   'Ábrelo directo desde tu celular.': 'Open it straight from your phone.',

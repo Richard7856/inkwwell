@@ -77,7 +77,7 @@ export default function Profile() {
         </div>
       ) : tatuajes.length === 0 ? (
         <div className="text-center mt-12">
-          <p className="text-gray-300 font-medium mb-2">{t('Todavía no activas ningún tatuaje')}</p>
+          <p className="text-gray-700 font-medium mb-2">{t('Todavía no activas ningún tatuaje')}</p>
           <p className="text-gray-500 text-sm mb-8 max-w-xs mx-auto leading-relaxed">
             {t('Activa uno y cualquier persona que apunte su cámara podrá ver tu recuerdo.')}
           </p>
@@ -102,7 +102,7 @@ export default function Profile() {
       )}
 
       {error && (
-        <p className="text-red-400 text-sm mt-4 text-center">{error}</p>
+        <p className="text-red-700 text-sm mt-4 text-center">{error}</p>
       )}
     </div>
   )
@@ -115,9 +115,9 @@ export default function Profile() {
   esperar o reintentar.
 */
 function estadoDe(tatuaje) {
-  if (tatuaje.video_url) return { texto: t('Tu recuerdo, listo'), color: 'text-realidad', probar: true }
-  if (tatuaje.glb_url) return { texto: t('Modelo del catálogo'), color: 'text-gray-400', probar: true }
-  return { texto: t('Esperando tu video'), color: 'text-amber-400', probar: false }
+  if (tatuaje.video_url) return { texto: t('Tu recuerdo, listo'), color: 'text-tinta', probar: true }
+  if (tatuaje.glb_url) return { texto: t('Modelo del catálogo'), color: 'text-gray-600', probar: true }
+  return { texto: t('Esperando tu video'), color: 'text-amber-700', probar: false }
 }
 
 function FilaTatuaje({ tatuaje, copiado, onCopiar }) {
@@ -129,11 +129,11 @@ function FilaTatuaje({ tatuaje, copiado, onCopiar }) {
         <img
           src={tatuaje.image_url}
           alt={t('Tu tatuaje')}
-          className="w-16 h-16 rounded-xl object-cover shrink-0 border border-white/10"
+          className="w-16 h-16 rounded-xl object-cover shrink-0 border border-tinta/10"
         />
         <div className="min-w-0 flex-1">
           <p className={`text-sm font-medium ${estado.color}`}>{estado.texto}</p>
-          <p className="text-xs text-gray-600 font-mono truncate mt-0.5">
+          <p className="text-xs text-gray-500 font-mono truncate mt-0.5">
             {ligaDeTatuaje(tatuaje.id)}
           </p>
         </div>

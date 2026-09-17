@@ -137,7 +137,7 @@ export default function PhotoUpload({ onPhotoSelected }) {
 
   return (
     <div className="text-center">
-      <p className="text-gray-400 mb-6">
+      <p className="text-gray-600 mb-6">
         {t('Toma una foto clara de tu tatuaje. Buena iluminación, sin flash, piel sanada.')}
       </p>
 
@@ -146,7 +146,7 @@ export default function PhotoUpload({ onPhotoSelected }) {
           <img
             src={preview}
             alt={t('Vista previa del tatuaje')}
-            className="mx-auto rounded-xl max-h-64 mb-4 border border-white/10"
+            className="mx-auto rounded-xl max-h-64 mb-4 border border-tinta/10"
           />
           <Boton variante="enlace" onClick={handleRetake}>{t('Tomar otra foto')}</Boton>
         </div>
@@ -164,12 +164,12 @@ export default function PhotoUpload({ onPhotoSelected }) {
             {t('Subir de galería')}
           </Boton>
 
-          <p className="text-gray-600 text-xs mt-2">{t('JPG, PNG o WebP · mínimo 800x800px')}</p>
+          <p className="text-gray-500 text-xs mt-2">{t('JPG, PNG o WebP · mínimo 800x800px')}</p>
         </div>
       )}
 
       {error && (
-        <p className="text-red-400 text-sm mt-3">{error}</p>
+        <p className="text-red-700 text-sm mt-3">{error}</p>
       )}
 
       {/*

@@ -197,15 +197,15 @@ export default function Creditos() {
                 autoCapitalize="characters"
                 autoCorrect="off"
                 spellCheck={false}
-                className="flex-1 min-w-0 py-3 px-4 rounded-xl bg-white/5 border border-white/10
-                           font-mono tracking-widest text-white placeholder-gray-600
-                           focus:outline-none focus:border-white/40"
+                className="flex-1 min-w-0 py-3 px-4 rounded-xl bg-tinta/[0.03] border border-tinta/10
+                           font-mono tracking-widest text-tinta placeholder-gray-400
+                           focus:outline-none focus:border-tinta/60"
               />
               <button
                 type="submit"
                 disabled={canjeando || !codigoPromo}
-                className="px-4 rounded-xl bg-white/10 border border-white/20 text-sm
-                           hover:bg-white/15 disabled:opacity-40 transition-colors"
+                className="px-4 rounded-xl bg-tinta/5 border border-tinta/20 text-sm
+                           hover:bg-tinta/10 disabled:opacity-40 transition-colors"
               >
                 {canjeando ? t('Canjeando...') : t('Canjear')}
               </button>
@@ -221,7 +221,7 @@ export default function Creditos() {
               <SinPaquetes />
             ) : (
               <div className="grid gap-3">
-                <p className="text-gray-400 text-sm mb-1">
+                <p className="text-gray-600 text-sm mb-1">
                   {t('Cada crédito genera un video para tu tatuaje.')}
                 </p>
                 {paquetes
@@ -271,7 +271,7 @@ function Saldo({ valor }) {
       <span className="text-4xl font-bold tabular-nums">
         {valor === null ? '—' : valor}
       </span>
-      <span className="text-gray-400">
+      <span className="text-gray-600">
         {valor === 1 ? t('crédito disponible') : t('créditos disponibles')}
       </span>
     </Tarjeta>
@@ -295,18 +295,18 @@ function BotonPaquete({ item, destacado = false, ocupado, fase, onClick }) {
                   active:scale-95 disabled:opacity-50 disabled:active:scale-100
                   flex items-center justify-between gap-4
                   ${destacado
-                    ? 'bg-realidad/10 border-realidad/60 hover:bg-realidad/15'
-                    : 'bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/20'}`}
+                    ? 'bg-tinta/5 border-tinta hover:bg-tinta/5'
+                    : 'bg-tinta/[0.03] border-tinta/10 hover:bg-tinta/5 hover:border-tinta/20'}`}
     >
       <div className="min-w-0">
         {destacado && (
-          <p className="text-[10px] uppercase tracking-wider text-realidad mb-1">
+          <p className="text-[10px] uppercase tracking-wider text-tinta mb-1">
             {t('Solo tu primera vez')}
           </p>
         )}
         <h3 className="font-semibold">{item.titulo}</h3>
         {activo && (
-          <p className="text-xs text-gray-400 mt-1">
+          <p className="text-xs text-gray-600 mt-1">
             {fase === 'pagando' ? t('Abriendo Google Play...') : t('Acreditando...')}
           </p>
         )}
@@ -333,7 +333,7 @@ function Cargando() {
 function SinPaquetes() {
   return (
     <Tarjeta className="text-center">
-      <p className="text-gray-300 font-medium">{t('Todavía no hay paquetes a la venta')}</p>
+      <p className="text-gray-700 font-medium">{t('Todavía no hay paquetes a la venta')}</p>
       <p className="text-gray-500 text-sm mt-1">{t('Vuelve en un rato.')}</p>
     </Tarjeta>
   )
@@ -343,7 +343,7 @@ function SinPaquetes() {
 function SinCobro() {
   return (
     <Tarjeta className="text-center">
-      <p className="text-gray-300 font-medium">{t('Las compras se hacen desde la app')}</p>
+      <p className="text-gray-700 font-medium">{t('Las compras se hacen desde la app')}</p>
       <p className="text-gray-500 text-sm mt-1">
         {t('Descarga InkAR en tu teléfono para comprar créditos.')}
       </p>
@@ -352,9 +352,9 @@ function SinCobro() {
 }
 
 const TONOS = {
-  error: 'bg-red-500/10 border-red-500/20 text-red-300',
-  ok: 'bg-emerald-500/10 border-emerald-500/20 text-emerald-300',
-  info: 'bg-amber-500/10 border-amber-500/20 text-amber-200',
+  error: 'bg-red-500/10 border-red-500/20 text-red-700',
+  ok: 'bg-emerald-500/10 border-emerald-500/20 text-emerald-700',
+  info: 'bg-amber-500/10 border-amber-500/20 text-amber-700',
 }
 
 function Aviso({ tono, texto }) {

@@ -5,9 +5,10 @@
   Tomada del tablero de marca. Los nombres describen el papel, no el color, para
   que un ajuste de paleta no obligue a tocar cada componente.
 
-  La app es de fondo oscuro aunque el tablero sea claro: el AR se mira sobre
-  video de cámara, y una interfaz clara encima compite con la imagen y lava el
-  contraste del 3D.
+  Desde el 16 sep la app entera es de PAPEL (tinta sobre claridad), como la
+  pieza de marca que eligió Richard. La excepción es el visor AR: se mira
+  sobre el video de la cámara, y una interfaz clara encima lava el contraste
+  del contenido. Ese se marca con `useTema('oscuro')`.
 */
 @theme {
   --color-tinta: #000000;        /* Tinta · confianza */
@@ -50,8 +51,8 @@ h1, h2, h3 {
 html, body {
   margin: 0;
   padding: 0;
-  background: #0a0a0a;
-  color: white;
+  background: var(--color-claridad);
+  color: var(--color-tinta);
   font-family: var(--font-cuerpo);
 
   /* Evita el rebote elástico al llegar al final del scroll. Dentro de un WebView
@@ -108,17 +109,49 @@ html, body {
 }
 
 /*
-  Tema claro — pantallas de marketing.
+  Tema oscuro — solo el visor AR.
 
   Se aplica sobre <html> y no sobre un contenedor porque el fondo del documento
   asoma al rebotar el scroll y detrás de las barras del sistema; pintar solo un
   div deja franjas del color equivocado justo en los bordes.
 
-  El visor AR NO lo usa: el 3D se dibuja sobre el video de la cámara y una
-  interfaz clara encima le lava el contraste.
+  `data-tema='claro'` sigue siendo válido (landing, demo) y ya coincide con el
+  predeterminado.
 */
-html[data-tema='claro'],
-html[data-tema='claro'] body {
-  background: var(--color-claridad);
-  color: var(--color-tinta);
+html[data-tema='oscuro'],
+html[data-tema='oscuro'] body {
+  background: #0a0a0a;
+  color: white;
+}
+
+/*
+  Animaciones de la pantalla de carga (PantallaCarga.jsx e index.html).
+
+  El trazo se "pinta" revelándose de un extremo al otro, como pasa la brocha.
+  Con clip-path y no con opacidad: un trazo que aparece desvanecido se lee
+  como imagen cargando; uno que se revela se lee como gesto.
+*/
+@keyframes trazo-entra {
+  from { clip-path: inset(0 100% 0 0); }
+  to   { clip-path: inset(0 0 0 0); }
+}
+.trazo-entra {
+  animation: trazo-entra 900ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+.trazo-entra-tarde {
+  animation-delay: 250ms;
+}
+
+/* La línea bajo el lema: se estira y se encoge mientras hay trabajo */
+@keyframes linea-respira {
+  0%, 100% { transform: scaleX(0.35); opacity: 0.5; }
+  50%      { transform: scaleX(1);    opacity: 1; }
+}
+.linea-respira {
+  animation: linea-respira 1.6s ease-in-out infinite;
+}
+
+/* Quien pidió menos movimiento ve la composición quieta */
+@media (prefers-reduced-motion: reduce) {
+  .trazo-entra, .linea-respira { animation: none; }
 }

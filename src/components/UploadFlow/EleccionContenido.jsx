@@ -42,20 +42,20 @@ export default function EleccionContenido({
 
   return (
     <div className="grid gap-4">
-      <p className="text-gray-400">{t('¿Qué quieres que aparezca sobre tu tatuaje?')}</p>
+      <p className="text-gray-600">{t('¿Qué quieres que aparezca sobre tu tatuaje?')}</p>
 
       <Tarjeta destacada={generacionDisponible}>
         <p
           className={`text-[10px] uppercase tracking-wider mb-1 ${
-            generacionDisponible ? 'text-realidad' : 'text-gray-500'
+            generacionDisponible ? 'text-tinta' : 'text-gray-500'
           }`}
         >
           {generacionDisponible ? t('1 crédito') : t('Vuelve pronto')}
         </p>
-        <h3 className={`font-semibold text-lg ${generacionDisponible ? '' : 'text-gray-400'}`}>
+        <h3 className={`font-semibold text-lg ${generacionDisponible ? '' : 'text-gray-600'}`}>
           {t('Anima tu recuerdo')}
         </h3>
-        <p className="text-sm text-gray-400 mt-1 mb-4">
+        <p className="text-sm text-gray-600 mt-1 mb-4">
           {t('Una foto y unas palabras. Tu mascota, esa persona, ese momento — cobra vida sobre tu tatuaje.')}
         </p>
 

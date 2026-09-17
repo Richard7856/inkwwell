@@ -12,19 +12,21 @@
  * @param {boolean} [compacta] - p-3 en vez de p-5: filas de miniatura, no bloques
  */
 export default function Tarjeta({ destacada = false, as = 'div', compacta = false, className = '', children, ...rest }) {
+  // Destacada = contorno de tinta completo; normal = línea fina. Sin color:
+  // en el papel, el peso del trazo es lo que jerarquiza.
   const tono = destacada
-    ? 'bg-realidad/10 border-realidad/50'
-    : 'bg-white/5 border-white/10'
+    ? 'bg-white border-tinta shadow-[4px_4px_0_0_rgba(0,0,0,0.9)]'
+    : 'bg-white border-tinta/10'
 
   const interactiva = as === 'button'
-    ? 'text-left w-full hover:bg-white/10 hover:border-white/20 transition-colors active:scale-[0.98]'
+    ? 'text-left w-full hover:border-tinta/40 transition-colors active:scale-[0.98]'
     : ''
 
   const Etiqueta = as
   return (
     <Etiqueta
       type={as === 'button' ? 'button' : undefined}
-      className={`rounded-2xl border ${compacta ? 'p-3' : 'p-5'} ${tono} ${interactiva} ${className}`}
+      className={`rounded-lg border ${compacta ? 'p-3' : 'p-5'} ${tono} ${interactiva} ${className}`}
       {...rest}
     >
       {children}

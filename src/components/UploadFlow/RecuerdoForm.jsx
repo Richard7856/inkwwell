@@ -45,7 +45,7 @@ export default function RecuerdoForm({ onEnviar, enviando = false }) {
         <p className="text-xs uppercase tracking-wide text-gray-500 mb-2">{t('La foto del recuerdo')}</p>
         {preview ? (
           <div className="relative">
-            <img src={preview} alt="" className="w-full max-h-72 object-cover rounded-2xl border border-white/10" />
+            <img src={preview} alt="" className="w-full max-h-72 object-cover rounded-2xl border border-tinta/10" />
             <button
               type="button"
               onClick={() => { setFile(null); setPreview(null) }}
@@ -59,16 +59,16 @@ export default function RecuerdoForm({ onEnviar, enviando = false }) {
             <button
               type="button"
               onClick={() => cameraRef.current?.click()}
-              className="bg-white/5 border border-white/10 rounded-2xl py-6 text-sm
-                         hover:bg-white/10 transition-colors"
+              className="bg-tinta/[0.03] border border-tinta/10 rounded-2xl py-6 text-sm
+                         hover:bg-tinta/5 transition-colors"
             >
               {t('Tomar foto')}
             </button>
             <button
               type="button"
               onClick={() => galleryRef.current?.click()}
-              className="bg-white/5 border border-white/10 rounded-2xl py-6 text-sm
-                         hover:bg-white/10 transition-colors"
+              className="bg-tinta/[0.03] border border-tinta/10 rounded-2xl py-6 text-sm
+                         hover:bg-tinta/5 transition-colors"
             >
               {t('Elegir de la galería')}
             </button>
@@ -78,7 +78,7 @@ export default function RecuerdoForm({ onEnviar, enviando = false }) {
                onChange={(e) => elegir(e.target.files?.[0])} />
         <input ref={galleryRef} type="file" accept="image/*" hidden
                onChange={(e) => elegir(e.target.files?.[0])} />
-        <p className="text-xs text-gray-600 mt-2">
+        <p className="text-xs text-gray-500 mt-2">
           {t('Una foto clara, de frente, donde se vea bien. No hace falta que sea del tatuaje.')}
         </p>
       </div>
@@ -90,10 +90,10 @@ export default function RecuerdoForm({ onEnviar, enviando = false }) {
           onChange={(e) => setHistoria(e.target.value.slice(0, MAX_HISTORIA))}
           rows={4}
           placeholder={t('Siempre que compraba pan le llevaba una concha y se sentaba a comer con nosotros.')}
-          className="w-full py-3 px-4 rounded-2xl bg-white/5 border border-white/10 text-white
-                     placeholder-gray-600 focus:outline-none focus:border-white/40 resize-none"
+          className="w-full py-3 px-4 rounded-2xl bg-tinta/[0.03] border border-tinta/10 text-tinta
+                     placeholder-gray-400 focus:outline-none focus:border-tinta/60 resize-none"
         />
-        <p className="text-xs text-gray-600 mt-1 text-right tabular-nums">
+        <p className="text-xs text-gray-500 mt-1 text-right tabular-nums">
           {historia.length}/{MAX_HISTORIA}
         </p>
       </div>

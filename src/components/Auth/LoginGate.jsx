@@ -85,7 +85,7 @@ export default function LoginGate({
   return (
     <div className="max-w-sm mx-auto mt-8">
       <h2 className="text-xl font-semibold mb-2 text-center">{encabezado.t}</h2>
-      <p className="text-gray-400 text-sm text-center mb-8">{encabezado.d}</p>
+      <p className="text-gray-600 text-sm text-center mb-8">{encabezado.d}</p>
 
       {metodo === 'password' ? (
         <form onSubmit={entrarConPassword} className="flex flex-col gap-3">
@@ -101,8 +101,8 @@ export default function LoginGate({
             placeholder={esRegistro
               ? t('Al menos {n} caracteres', { n: MIN_PASSWORD })
               : t('Tu contraseña')}
-            className="w-full py-4 px-4 rounded-2xl bg-white/10 border border-white/10
-                       text-white placeholder-gray-500 focus:outline-none focus:border-white/40"
+            className="w-full py-4 px-4 rounded-2xl bg-tinta/5 border border-tinta/10
+                       text-tinta placeholder-gray-400 focus:outline-none focus:border-tinta/60"
           />
           <Boton disabled={enviando || !email || !password}>
             {enviando
@@ -112,7 +112,7 @@ export default function LoginGate({
           <button
             type="button"
             onClick={() => { setEsRegistro(!esRegistro); setError('') }}
-            className="text-gray-400 text-sm underline mt-1"
+            className="text-gray-600 text-sm underline mt-1"
           >
             {esRegistro ? t('Ya tengo cuenta') : t('Crear una cuenta nueva')}
           </button>
@@ -139,9 +139,9 @@ export default function LoginGate({
             value={codigo}
             onChange={(e) => setCodigo(e.target.value.replace(/\D/g, ''))}
             placeholder="000000"
-            className="w-full py-4 px-4 rounded-2xl bg-white/10 border border-white/10
-                       text-white text-center text-2xl tracking-[0.5em] font-mono
-                       placeholder-gray-600 focus:outline-none focus:border-white/40"
+            className="w-full py-4 px-4 rounded-2xl bg-tinta/5 border border-tinta/10
+                       text-tinta text-center text-2xl tracking-[0.5em] font-mono
+                       placeholder-gray-400 focus:outline-none focus:border-tinta/60"
           />
           <Boton disabled={enviando || codigo.length < 6}>
             {enviando ? t('Verificando...') : t('Entrar')}
@@ -156,7 +156,7 @@ export default function LoginGate({
         </form>
       )}
 
-      {error && <p className="text-red-400 text-sm mt-4 text-center">{error}</p>}
+      {error && <p className="text-red-700 text-sm mt-4 text-center">{error}</p>}
 
       {paso === 'email' && (
         <button
@@ -181,8 +181,8 @@ function CampoCorreo({ value, onChange }) {
       value={value}
       onChange={(e) => onChange(e.target.value)}
       placeholder={t('tu@correo.com')}
-      className="w-full py-4 px-4 rounded-2xl bg-white/10 border border-white/10
-                 text-white placeholder-gray-500 focus:outline-none focus:border-white/40"
+      className="w-full py-4 px-4 rounded-2xl bg-tinta/5 border border-tinta/10
+                 text-tinta placeholder-gray-400 focus:outline-none focus:border-tinta/60"
     />
   )
 }

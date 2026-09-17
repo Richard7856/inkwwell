@@ -16,7 +16,14 @@
     </style>
 
 
+    <!--
+      Splash. En Android 12+ el sistema solo dibuja el ícono sobre un color, así
+      que el color es el papel de la marca (#F7F7F7) para que empate con la
+      pantalla de carga web que sigue. En versiones anteriores se ve
+      @drawable/splash, que ya trae la composición completa con los trazos.
+    -->
     <style name="AppTheme.NoActionBarLaunch" parent="Theme.SplashScreen">
         <item name="android:background">@drawable/splash</item>
+        <item name="windowSplashScreenBackground">#F7F7F7</item>
     </style>
 </resources>
