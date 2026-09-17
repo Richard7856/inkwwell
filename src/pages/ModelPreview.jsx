@@ -30,6 +30,7 @@ const MODELS = [
   { label: 'Shiba negro', url: '/models/shiba_negro.glb' },
   { label: 'Malamute', url: '/models/alaskan_malamute_dog.glb' },
   { label: 'Fénix', url: '/models/Fenix.glb' },
+  { label: 'Zero (Meshy)', url: '/models/zero-meshy.glb' },
   { label: 'Dr. Simi', url: '/models/farmacias_similares.glb' },
 ]
 

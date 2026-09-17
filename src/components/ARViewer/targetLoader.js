@@ -117,6 +117,23 @@ const DEMO_ZERO_NACE = {
   ],
 }
 
+/*
+  Zero en 3D sobre su huella — prueba del motor de negocio (16 sep).
+
+  Modelo hecho con Meshy desde la caricatura de la foto real: imagen a 3D con
+  textura (30 créditos), remesh a 20k caras (5), comprimido con Draco y WebP
+  de 1024 (10.6 MB → 413 KB). SIN animación: el rigging de Meshy solo acepta
+  humanoides ("Pose estimation failed" con un perro). Sirve para comparar en
+  piel el 3D quieto contra el video.
+*/
+const DEMO_ZERO_3D = {
+  mindUrl: DEMO_ZERO.mindUrl,
+  targets: [
+    { glbUrl: '/models/zero-meshy.glb', label: 'Zero 3D' },
+    { glbUrl: '/models/Fenix.glb', label: 'Esqueleto' },
+  ],
+}
+
 /**
  * @param {object} params
  * @param {string|null} params.tattooId - UUID de un tatuaje concreto
@@ -129,6 +146,7 @@ export async function loadTarget({ tattooId = null, demo = null } = {}) {
   if (demo === 'zero') return DEMO_ZERO
   if (demo === 'zero-concha') return DEMO_ZERO_CONCHA
   if (demo === 'zero-nace') return DEMO_ZERO_NACE
+  if (demo === 'zero-3d') return DEMO_ZERO_3D
 
   if (!tattooId) {
     throw new Error('No se indicó qué tatuaje escanear')

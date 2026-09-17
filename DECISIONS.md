@@ -997,3 +997,25 @@ El fondo del video generado quedó plano ([96,199,76] en 0.5, 3 y 5.5 s).
 **El CLI y la ruta comparten `meshy.js`**, para que no existan dos versiones del cliente que se desincronicen — el mismo error que ya se cometió con los textos de la ficha de Play.
 
 **Verificado con el worker levantado:** sin `MESHY_ADMIN_TOKEN` ambas rutas responden 503; con token equivocado, 401; con token bueno y sin fotos, 400 `sin_imagenes`; con cinco fotos, 400 `demasiadas_imagenes`; y con dos fotos reales llega hasta el API de Meshy y devuelve `credenciales` porque la llave de prueba era falsa. Falta lo que solo puede comprobar la llave real.
+
+
+## [2026-09-16] Meshy por API: el modelo sale bien, el rigging de un perro no existe
+**Context:** Richard puso `MESHY_API_KEY` en `worker/.env` y pidió una prueba real de calidad y costo. Entrada: la caricatura de Zero hecha con popcorn desde su foto real.
+
+**Resultado:**
+| Paso | Créditos | Tiempo | Resultado |
+|---|---|---|---|
+| Imagen a 3D con textura (`ai_model: latest`) | 30 | 176 s | Muy fiel a la caricatura. **423,264 caras** aunque se pidió `target_polycount: 30000`; GLB de 15 MB |
+| Remesh a 20k caras | 5 | 106 s | 10.6 MB (la textura domina) |
+| Rigging | 0 | — | Primero rechazado por exceso de caras; con el remesh, **"Pose estimation failed"** |
+| Compresión local (gltf-transform: Draco + WebP 1024) | 0 | segundos | **413 KB**, se ve bien en el visor |
+
+Saldo: 1,115 → 1,080. Los rechazos de rigging no cobran.
+
+**Lo que confirma:** la documentación del API es explícita: el rigging "solo funciona con humanoides". El modelo de un perro sale excelente, pero **quieto**. Para animarlo hace falta otra vía (Blender a mano, o un servicio que rigee cuadrúpedos — por investigar).
+
+**Precio en dólares:** el API no publica la conversión de créditos. Hay que verla en el plan contratado en el panel de Meshy.
+
+**Decision:** el modelo queda como `public/models/zero-meshy.glb` con `demo=zero-3d` (sobre la huella), para comparar en piel el 3D quieto contra el video. No cambia la estrategia: el video sigue siendo el producto del concurso.
+
+**Risks/Limitations:** `target_polycount` no se respeta en imagen a 3D; siempre hará falta remesh (+5) o compresión propia. El modelo pesaba 15 MB sin comprimir: el pipeline del motor de negocio necesita `gltf-transform` sí o sí.
