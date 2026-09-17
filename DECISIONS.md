@@ -826,3 +826,28 @@ Probado en la página de simulación con el video corrido a propósito (1.5% del
 **Cómo probar AR sin teléfono (queda como herramienta):** abrir cualquier ruta del sitio, reemplazar `navigator.mediaDevices.getUserMedia` por `canvas.captureStream()` de un lienzo que dibuja la foto compilada, y navegar a `/scan` con `history.pushState` + `popstate`. Ojo: si el panel del navegador queda oculto, el lienzo deja de dibujar y la "cámara" se ve negra; no es la app.
 
 **Risks/Limitations:** no se reprodujo en el teléfono; es la causa que encaja con lo observado en escritorio.
+
+## [2026-09-16] Primera generación por el camino del worker: funciona de punta a punta
+**Context:** con la `SUPABASE_SERVICE_ROLE_KEY` en `worker/.env`, por fin se pudo ejercitar lo que rodea a Higgsfield. Worker en local, base real, cuenta del revisor (`prueba@inkar.app`).
+
+**Sesión sin contraseña:** se abrió con `POST /auth/v1/admin/generate_link` (magiclink, con la service_role) y `POST /auth/v1/verify` con el `hashed_token`. Da un JWT real para PostgREST y para el worker sin manejar credenciales en texto. Sirve para cualquier prueba futura con `auth.uid()`.
+
+**Resultados:**
+| Caso | Respuesta | Efecto en la base |
+|---|---|---|
+| Sin sesión | 401 `sin_sesion` | nada |
+| Tatuaje ajeno | 404 `tatuaje_invalido` | nada |
+| Historia vacía | 400 `historia_invalida` | nada |
+| **Generación real** | 202 con id y saldo 0 | `consumo -1` → **lista en 153 s** → video copiado a `videos/generados/` (2.5 MB) → `tattoos.video_url` asignado |
+| Sin crédito | 402 `sin_creditos` | queda una fila `fallida` (se crea antes de reservar, por diseño) |
+| Proveedor rechaza (Veo deshabilitado) | 502 `proveedor` | `consumo -1` y **`reembolso +1` un segundo después** |
+| Siguiente usuario | 503 `no_disponible` | el interruptor cortó antes de tocar la base; `/health` reporta suspensión de 15 min |
+
+El fondo del video generado quedó plano ([96,199,76] en 0.5, 3 y 5.5 s).
+
+**Datos que quedaron en la base, a propósito:** la cuenta del revisor tiene ahora un tatuaje (`15881234-…`, la huella del founder) con video, y 1 crédito (ajuste de prueba reembolsado). Le sirve al revisor de Play para ver el flujo completo.
+
+**Pendientes que salieron de la prueba:**
+- El video salió de **10.1 s** aunque el perfil pide 6 (las intros con `end_image_url` sí salieron de 5.9 s). La API no devuelve los parámetros recibidos: **revisar en el billing de Higgsfield si se cobró $0.28 o $0.47.**
+- `tattoo-images/pruebas/zero-real-*.jpg` **no es una foto real**: es la ilustración de popcorn. El video salió en caricatura. El realismo sigue sin probar.
+- Las variables siguen sin estar en Railway: en producción `/generar` sigue en 503.
