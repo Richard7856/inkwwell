@@ -681,3 +681,133 @@ O sea, ese tatuaje está en el extremo bajo de lo ACEPTABLE, y con poca luz se c
 **Por qué esto importa ahora:** `zero-nace.mp4` y `zero-concha.mp4` están en el repo y es tentador ponerlos aquí. **Son la capa de contenido** —lo que se proyecta encima del tatuaje—, no el producto funcionando. Sueltos muestran una animación bonita; no muestran que la app reconozca un tatuaje ni que el contenido se pegue a la piel y la siga. Lo que vende InkAR es el mecanismo, y el mecanismo solo se ve en una grabación de la cámara sobre piel real. Si alguno de esos archivos se usa aquí, `VIDEO_ES_GRABACION` va en `false`.
 
 **`?demo=zero-nace` no es un video y no se puede enlazar desde la landing.** Es la experiencia AR: exige apuntar la cámara al tatuaje real de la huella de Zero. Un visitante que haga clic ve una pantalla de cámara y nada más — peor que no poner nada. Sirve para enseñar en persona, no para una página pública.
+## [2026-09-16] La primera generación real: funcionó, y el croma también
+**Context:** El motor de video se construyó el 9 sep y nunca se había ejecutado — cero generaciones en la base. Con la API recargada se corrió la primera de punta a punta contra Higgsfield (sin pasar por el worker todavía: falta la `service_role`).
+
+**Resultado, medido:** `completed` en **240 segundos**. Video de **768x768, 5.875 s, 24 fps, 240 KB**. Ni un error.
+
+**Lo que de verdad se estaba probando — el fondo:** el prompt pide verde plano porque de eso depende todo el recorte de `videoLayer.js`. Medido sobre las cuatro esquinas del cuadro 20: color **[96, 206, 67]**, desviación **[2.9, 1.8, 2.1]**. Plano. Y muy cerca del histórico [105, 195, 80], lo que confirma que el comportamiento es estable entre modelos distintos: **ninguno respeta el `#00FF00` que se pide, pero todos devuelven un verde plano**, que es justo lo que la capa necesita porque mide el color real en vez de asumirlo.
+
+**Verificado en la capa real, no solo por números:** el video se sirvió en `/preview?video=` y se cargó (206 Partial Content en la petición del `.mp4`). En pantalla aparece el sujeto sin recuadro verde alrededor. La decisión de medir el color en lugar de asumirlo se valida por segunda vez, ahora con un generador distinto al original.
+
+**Un detalle que hay que tener presente:** la salida es **cuadrada (768x768) porque la entrada era cuadrada**. MiniMax y Kling heredan la proporción de la foto; no aceptan `aspect_ratio`. Con la foto vertical de un teléfono saldría vertical, que es lo que quiere el producto — pero no está garantizado por el perfil, sale de lo que suba el usuario.
+
+**Costo confirmado:** la estimación previa decía $0.28 y el envío se aceptó sin objeción. Con 240 s de espera, el texto de la app ("suele tardar de 1 a 3 minutos") se queda corto: **conviene decir 2 a 5 minutos**, o la pantalla de espera parecerá colgada justo en la primera impresión.
+
+**Lo que sigue sin probarse:** el camino completo por el worker — reserva de crédito con cerrojo, copia a nuestro Storage, asignación al tatuaje y reembolso ante fallo. Todo eso necesita `SUPABASE_SERVICE_ROLE_KEY`.
+
+## [2026-09-16] La cámara en movimiento NO ensucia el croma
+**Context:** Richard pidió probar que el video "se vea 3D". Lo que da sensación de volumen en un video plano es el **paralaje**: si la cámara orbita, el cerebro lee profundidad. Se probó con el mismo modelo y la misma foto, cambiando solo el prompt, para que la comparación sirviera.
+
+**El riesgo real que se estaba probando no era estético.** Una cámara que orbita suele arrastrar sombras y degradados al fondo, y todo el recorte de `videoLayer.js` depende de que el verde sea plano. Si se ensuciaba, el efecto 3D quedaba descartado de entrada.
+
+**No se ensució.** Medido en tres momentos del video (cuadros 10, 60 y 120), desviación máxima **1.2 a 1.4** — incluso más plano que el video estático (1.9). Se pidió explícitamente `no shadows cast on the background` en el prompt, y el modelo lo respetó.
+
+**Consecuencia:** el prompt tiene mucha más libertad de la que suponíamos. Movimiento de cámara, iluminación volumétrica y estética de render 3D son compatibles con el croma. La restricción que sí hay que conservar en cada prompt es la del **fondo plano sin sombras**, no la de la cámara quieta.
+
+**Tiempos observados, con varianza alta:** 240 s el primero, **115 s** el segundo. Mismo modelo, misma resolución, misma duración. Cualquier texto de espera tiene que cubrir el peor caso, no el promedio.
+
+**Costo:** $0.28 por video, confirmado por la estimación antes de cada envío. Dos pruebas: $0.56 en total.
+
+**Lo que queda a criterio de producto, no técnico:** el video va anclado plano sobre el tatuaje. Un sujeto que gira sobre ese plano puede leerse como holograma —que es el efecto buscado— o puede romper la sensación de que está pegado a la piel. Eso se juzga viéndolo sobre piel real, no por números.
+
+## [2026-09-16] El video hereda el estilo de la foto de entrada, y eso define el producto
+**Context:** Richard pidió que el video "se viera más 3D y realista", con una acción de verdad —el perro agarrando la concha del suelo— y no una animación corta.
+
+**La acción sí se consiguió.** Con la imagen de partida correcta y 10 segundos, el arco quedó completo: el perro mira la concha en el suelo, se echa, la sujeta con las patas y se la come, con un acercamiento lento de cámara. Vertical 9:16 (768x1364), 146 s de generación. El croma aguantó todo el video (desviación 1.8 a 2.3).
+
+**El realismo NO se consiguió, y la causa es estructural:** `image-to-video` **hereda el estilo de la imagen de entrada**. La foto que se estaba usando era un cuadro de `brand/video/zero-croma.mp4`, que resultó ser una **ilustración plana de caricatura** — no un render 3D, como se había supuesto al describirla de lejos. De una caricatura sale animación de caricatura, siempre, sin importar el prompt.
+
+**Se intentó convertirla a foto y no se puede con este plan.** `nano-banana` responde `model_not_found`; toda la familia `reve` responde `423 model_blocked`; `flux-pro/kontext` tampoco está. Sí están `higgsfield-ai/soul/*` ($0.188) y `popcorn/auto` ($0.092). Se probó popcorn con la caricatura como referencia pidiendo explícitamente fotografía: **devolvió otra ilustración**, más detallada y con la concha en el suelo, pero ilustración. Popcorn conserva el estilo de la referencia; es lo que hace.
+
+**Consecuencia para el producto, y es la buena noticia:** esto no es una limitación del motor, es exactamente cómo debe funcionar. **El usuario sube la foto real de su mascota**, y de una foto real sale video realista. El pipeline está bien; lo que estaba mal era la entrada de prueba. Para validar el realismo hace falta una foto real de Zero — que es justo lo que hará cualquier cliente.
+
+**Costos de esta ronda:** imagen $0.09 + video de 10 s $0.47. Total del día con las cuatro generaciones: **$1.21**.
+
+**Dato de precio nuevo:** 10 segundos cuestan $0.467 contra $0.28 de 6 segundos — no es proporcional, sale más barato por segundo. Si el arco de una acción necesita 10 s, el costo sigue siendo ~2% del neto.
+
+## [2026-09-16] Evocación: el contenido sale del tatuaje, y se hace en la GPU
+**Context:** A Richard le comentaron que "solo vincular" un video a un tatuaje no impresiona y es fácil de copiar. La propuesta fue que el contenido se vea **salir** del tatuaje. La pregunta era si eso se hornea en el video generado o se anima en la app.
+
+**Decision:** se anima en la app (`ARViewer/evocacion.js`), con los píxeles del propio tatuaje. La secuencia dura ~2 s: una onda enciende las líneas de tinta en violeta de marca, la tinta se desprende en ~700 partículas que suben de la piel, y el contenido se materializa desde el centro con el borde encendido, crece y se despega 0.12 del brazo (paralaje).
+
+**De dónde salen los píxeles del tatuaje:** el `.mind` guarda la foto de cada target en escala de grises (256 px de ancho). MindAR ya la tiene en memoria en `controller.tracker.trackingDataList`, así que no hay descarga extra ni cambio de esquema. `mascaraTinta.js` separa la tinta de la piel comparando cada píxel contra la luz de su zona en dos escalas (6 px para trazos, 36 px para rellenos). La primera versión comparaba contra un nivel de piel global, y la sombra del brazo brillaba como tatuaje.
+
+**Alternatives considered:**
+- **Hornearlo en el video generado** ("el perro sale de un dibujo de tinta"): el generador no sabe dónde está el tatuaje real ni desde qué ángulo se mira, así que el efecto se vería pegado. Además cuesta otra generación por cliente y hereda el estilo de la imagen de entrada (ver la entrada anterior).
+- **Una animación genérica** (portal, humo): cualquiera la copia en una tarde. Lo que protege es que el efecto dependa del rastreo **y** de la forma exacta de ese tatuaje.
+
+**Hallazgo colateral, corregido:** el recorte de croma tenía un umbral absoluto (0.32) casi igual a la saturación del verde apagado que entrega el generador (~0.31). Resultado: **todo color neutro —el pelaje negro, el pecho blanco— quedaba a alfa ~0.45**, y se veía el tatuaje a través del perro. Esto ya estaba en producción con `demo=zero-concha`. Ahora la distancia se divide entre la saturación del fondo y un neutro vale 1.0 siempre.
+
+**Risks/Limitations:**
+- `trackingDataList` no es API pública de MindAR. Si cambia, el visor sigue funcionando pero sin evocación.
+- Con `LuminanceFormat` la textura llegaba vacía en WebGL2 sin ningún error. Se usa RGBA.
+- **Solo se probó en una página que simula el ancla** (`prueba-evocacion.html`), no con cámara sobre piel. Falta probar en el teléfono: fps en gama media, cómo se ve el violeta sobre piel real y la gracia de 1.5 s ante los parpadeos del rastreo (la huella rastrea al 16%).
+- Llega al APK solo con una versión nueva (Capacitor empaqueta `dist`). En la web basta con desplegar.
+
+**Improvement opportunities:** color de tinta por tatuaje; destino de las partículas con la silueta del primer cuadro en vez de una elipse; `?evocacion=0` ya permite grabar el antes y el después.
+
+## [2026-09-16] El video empieza en el tatuaje (y se retira la evocación por GPU)
+**Context:** Richard probó la evocación en el teléfono el mismo día y la descartó: "no se ve nada profesional". Además reportó dos fallas: al mover el brazo el contenido se descuadra, y al escanear primero el esqueleto y luego la huella apareció la pantalla verde completa. Compartió como referencia un video donde el dibujo del tatuaje cobra vida desde su propio trazo.
+
+**Decision:** el efecto se hornea en el video generado, pero **anclado al trazo real**:
+1. `worker/componer-inicio.js` extrae la tinta de la MISMA foto que se compiló en el `.mind` (`mascara-tinta.js`, que sobrevivió de la evocación) y la pone sobre el verde de croma, a todo lo ancho de un lienzo 768x1364.
+2. Hailuo-02 recibe ese dibujo como `image_url` y el primer cuadro del video principal como **`end_image_url`**. Genera la transición: la tinta se vuelve líquida, forma un hoyo, Zero sale brincando y aterriza exactamente donde empieza el video de la concha.
+3. `videoLayer` reproduce la intro una vez y cambia al principal en bucle, en el mismo plano. Con `escala: 1`, el cuadro 0 cae encima del tatuaje real.
+
+Resultado de la prueba (`demo=zero-nace`): 6 s, **$0.28**, 110 s de generación. El último cuadro de la intro y el primero de la concha son prácticamente idénticos, y el fondo se mantuvo plano (el verde varía menos de 10 niveles).
+
+**Por qué ahora sí en el video y antes no:** la objeción de la entrada anterior era que el generador no sabe dónde está el tatuaje. Dándole el trazo exacto como primer cuadro y la posición final como último, sí lo sabe. Y la herencia de estilo, que era una limitación, aquí trabaja a favor: de un dibujo de tinta sale una animación de tinta.
+
+**Cómo se descubrió `end_image_url`:** el OpenAPI ya no se sirve en las rutas conocidas. Se mandó a `/estimate` (gratis) un cuerpo con varios nombres candidatos con tipo incorrecto; la API validó y nombró el que existe. Hailuo-02 (standard y pro) usa `end_image_url`; Kling 2.1 pro, `last_image_url`; Hailuo-2.3 y Kling 2.5 lo ignoran.
+
+**Pantalla verde, causa probable:** en el celular `loadeddata` puede llegar sin cuadro decodificado y la medición del croma sale negra. Con el umbral relativo a la saturación que se había agregado ese mismo día, eso apagaba el recorte por completo (antes quedaba a medias). Ahora una medición sin saturación se descarta, se usa un respaldo medido de un video real (no `#00FF00`) y se vuelve a medir al reproducir. **No se reprodujo en el teléfono**; es la explicación que encaja con el código.
+
+**Descuadre al mover el brazo:** `filterBeta` estaba en 0.001, que suaviza tanto que el contenido se queda atrás en cuanto hay movimiento. Pasa a 0.01, y `?beta=` / `?mincf=` permiten calibrarlo en piel sin recompilar.
+
+**Alternatives considered:** conservar la evocación como opción (descartado, Richard no la quiere y sería código muerto; queda en el historial de git, commit 48c205c).
+
+**Risks/Limitations:**
+- La foto de entrada DEBE ser la que se compiló. Otra toma del mismo tatuaje no calza.
+- Las orillas del brazo con vello pegadas al diseño se cuelan en el dibujo (se ve en la almohadilla izquierda de la huella). `limpiarMascara` quita las líneas sueltas, no las que tocan el tatuaje.
+- La deriva del generador dentro de la intro no se controla: si el trazo "se mueve" antes de disolverse, se notará sobre la piel.
+- Para el producto hace falta llevar esto al worker: dos generaciones por cliente (intro + recuerdo) o una sola con el recuerdo como cuadro final. Costo sigue en ~2-4% del neto.
+
+**Improvement opportunities:** probar 10 s para una salida más lenta; `hailuo-02/pro` para más calidad; un borde de trazo más limpio si la foto es de estudio.
+
+## [2026-09-16] Contenido tolerante al rastreo: congelar al perderlo e intro de gota
+**Context:** Con `zero-nace` en el teléfono, Richard confirmó que se ve mucho mejor, pero que al mover el brazo el rastreo falla mucho. Opciones que puso sobre la mesa: omitir el rastreo, tinta solo en algunas zonas, solo el efecto de la tinta que escurre, o compilar varias fotos del mismo tatuaje.
+
+**Diagnóstico:** MindAR supone un objetivo plano y rígido. El brazo es curvo, la piel se deforma, el movimiento desenfoca, y la huella rastrea al 16%. Ningún ajuste lo deja pegado con el brazo en movimiento rápido; lo que se puede controlar es cuánto SE NOTA la falla.
+
+**Decision:**
+1. **Congelar en vez de desaparecer** (`useThreeScene`): el contenido cuelga de un grupo seguidor que copia la matriz del ancla mientras hay rastreo. Al perderlo se queda quieto 600 ms, se desvanece en 400 ms y solo entonces se pausa. Antes, MindAR lo apagaba en el mismo cuadro y se sentía como parpadeo.
+2. **Intro de gota** (`componer-inicio.js --modo=gota`, `demo=zero-gota`): el primer cuadro ya no es el dibujo completo sino una gota de tinta en el corazón de la forma más grande del tatuaje (transformada de distancia sobre el relleno cerrado). Con el dibujo completo, un desfase de milímetros se ve como líneas dobles; una gota sobre relleno oscuro lo tolera. Generación: 6 s, $0.28, 117 s.
+
+**Alternatives considered:**
+- **Varias fotos del mismo tatuaje:** ayudaría a *detectarlo* con distinta luz y ángulo, no a *seguirlo* en movimiento. Cada foto tiene su propia perspectiva, así que al alternar entre targets el contenido brincaría; evitarlo exige registrar las fotos entre sí. Varios días de trabajo con 14 días al cierre: se pospone.
+- **Omitir el rastreo:** sin ancla el contenido deja de ser "del tatuaje", que es el producto.
+
+**Risks/Limitations:**
+- El congelado no se ha visto en el teléfono todavía.
+- En la intro de gota el charco llega al borde inferior del lienzo entre 2.5 y 3.5 s; en piel puede verse un corte recto.
+- Cerca de 4.5 s hay un acercamiento: el modelo lo mete para llegar al tamaño del cuadro final.
+- Tres intentos para ubicar la gota: la zona más densa (cayó entre dos almohadillas), densidad ponderada al centro (cayó en la piel del hueco), y el que quedó.
+
+**Improvement opportunities:** pedir en el prompt que el charco no pase de cierto tamaño; un cuadro final más pequeño (el sujeto a la escala del tatuaje) para evitar el acercamiento.
+
+## [2026-09-16] Llave por diferencia: el dibujo quieto de la intro no se pinta
+**Context:** Richard descartó la intro de gota ("exagerada, la tinta se sale y se corta en los lados") y eligió `zero-nace`: le encantó cómo escurre la tinta y forma el charco. Lo único problemático era el arranque: el dibujo del video se pinta encima del tatuaje real, y con el rastreo imperfecto se ven líneas dobles.
+
+**Decision:** `videoLayer` captura el primer cuadro de la intro y, en el sombreador, no pinta los píxeles que siguen iguales a él. Mientras el dibujo está quieto se ve el tatuaje REAL; solo aparece la tinta que empieza a moverse. La llave se apaga entre el 40% y el 48% de la intro (2.4-2.8 s en `zero-nace`), cuando el charco ya cubrió el dibujo: sin eso, el pelaje negro del perro sobre una línea del dibujo original contaba como "sin cambio" y quedaba recortado. `introLlave: [ini, fin]` lo ajusta por video.
+
+Probado en la página de simulación con el video corrido a propósito (1.5% del ancho y 1° de giro): a los 0.3 s no hay ninguna línea doble; a 1.3 s la tinta burbujea desde la almohadilla; a 3.2 s Zero sale sólido.
+
+**Alternatives considered:**
+- Saltar el primer segundo y hacer un fundido: resuelve el arranque, pero las almohadillas de abajo siguen dibujadas quietas hasta ~2.4 s y el desfase se vería ahí.
+- Intro de gota: descartada por Richard; el compositor la conserva como `--modo=gota`, pero el modo por defecto vuelve a ser `trazo`. Se retira `demo=zero-gota` y su video (1.1 MB menos en el APK).
+
+**Risks/Limitations:**
+- Cuando la llave se apaga, los trazos de los dedos que el charco no cubrió se ven un instante (poco, y ya derritiéndose).
+- La fracción 40-48% está medida sobre UN video. Otra intro con otro ritmo puede necesitar `introLlave`. Para producción conviene calcularla del propio video (cuando la cobertura de tinta deja de crecer).
+- Si el primer cuadro no se puede capturar (CORS o cuadro sin decodificar), se reintenta al reproducir; si vuelve a fallar, se muestra el dibujo completo como antes.

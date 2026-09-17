@@ -26,6 +26,7 @@ export function useMindAR(mindUrl, containerRef, targetCount = 1) {
   const start = useCallback(async () => {
     if (!containerRef.current || !mindUrl || isRunning.current) return
 
+    const filtro = leerFiltro()
     const mindar = new MindARThree({
       container: containerRef.current,
       imageTargetSrc: mindUrl,
@@ -58,13 +59,14 @@ export function useMindAR(mindUrl, containerRef, targetCount = 1) {
           DEFAULT = 1000 → muy reactivo al movimiento → mucho jitter (vibración).
           0.001 → suavizado consistente incluso en movimiento → menos vibración.
 
-        Por qué estos valores para un tatuaje:
+        Los valores reales están en FILTRO_POR_DEFECTO, al final del archivo.
+        Por qué se busca suavizar para un tatuaje:
         El tatuaje se mueve lentamente (brazo, cuerpo). No necesitamos respuesta
         ultra-rápida a velocidades altas. Priorizamos estabilidad sobre reactividad.
         Resultado: el 3D "flota" estable en lugar de vibrar.
       */
-      filterMinCF: 0.001,
-      filterBeta: 0.001,
+      filterMinCF: filtro.minCF,
+      filterBeta: filtro.beta,
     })
 
     mindarRef.current = mindar
@@ -219,5 +221,32 @@ export function useMindAR(mindUrl, containerRef, targetCount = 1) {
     getCamera: () => mindarRef.current?.camera ?? null,
     getRenderer: () => mindarRef.current?.renderer ?? null,
     didApplyVideoFallback: () => videoFallbackRef.current,
+  }
+}
+
+/*
+  Suavizado por defecto (ver el comentario en MindARThree arriba).
+
+  Con beta 0.001 el contenido casi no vibra, pero al mover el brazo se queda
+  ATRÁS del tatuaje: el filtro trata el movimiento real como ruido. Richard lo
+  vio en el teléfono el 16 sep ("se descuadra"). 0.01 se deja como punto de
+  partida; el valor final sale de probar en piel con los parámetros de abajo.
+*/
+const FILTRO_POR_DEFECTO = { minCF: 0.001, beta: 0.01 }
+
+/**
+ * Permite calibrar el suavizado desde la liga, sin recompilar:
+ * `?beta=0.1&mincf=0.001`. Solo acepta números positivos; cualquier otra cosa
+ * cae al valor por defecto.
+ */
+function leerFiltro() {
+  const q = new URLSearchParams(window.location.search)
+  const num = (clave, respaldo) => {
+    const v = Number(q.get(clave))
+    return q.has(clave) && Number.isFinite(v) && v > 0 ? v : respaldo
+  }
+  return {
+    minCF: num('mincf', FILTRO_POR_DEFECTO.minCF),
+    beta: num('beta', FILTRO_POR_DEFECTO.beta),
   }
 }

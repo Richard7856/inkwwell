@@ -1,16 +1,15 @@
 # Dónde retomar
 
-> **Actualizado el 16 de septiembre de 2026.**
+> **Actualizado el 17 de septiembre de 2026.**
 >
 > Si vienes de otra máquina, primero `SETUP.md`. El contexto del sprint está en
 > `SHIPATON.md`; el porqué de cada decisión técnica, en `DECISIONS.md`.
 > Tablero visual: https://claude.ai/artifact/4jVEXfBEa4jw43mBHUqxPC
-> (se editó desde otra sesión el 12 sep; puede no coincidir con este archivo —
-> **este archivo manda**).
+> (editado desde otra sesión el 12 sep — **este archivo manda**).
 
 ---
 
-## ⚠️ Lo primero que tiene que leer una sesión nueva
+## ⚠️ Lo primero: la fecha ya se venció
 
 **La ventana quedó cerrada el 16 sep: se comparte la landing HOY, la lista
 cierra el jueves 18, se lanza el viernes 19.** Los pasos concretos, en orden y
@@ -34,44 +33,81 @@ lo antes físicamente posible; el anuncio puede ir después.
 | inkar.app | ✅ 200 (redirige a `www.inkar.app`) |
 | Worker `/health` | ✅ 200, analizador vivo |
 | Worker `/generar` | ⚠️ **503 `no_configurado`** — Railway no tiene las llaves de generación |
-| `SUPABASE_SERVICE_ROLE_KEY` en `worker/.env` | ❌ falta |
-| Llaves de Higgsfield en `worker/.env` | ✅ válidas |
-| Saldo en Higgsfield Cloud | ❌ sin recargar (al 9 sep: `403 not_enough_credits`) |
+| `SUPABASE_SERVICE_ROLE_KEY` | ❌ **falta. Es lo único que bloquea probar el worker** |
+| Llaves de Higgsfield | ✅ válidas |
+| Saldo en Higgsfield Cloud | ✅ **con saldo desde el 16 sep** |
+| Generación contra la API | ✅ **probada: 240 s, 768x768, fondo verde plano medido** |
+| Generación por el camino del worker | ❌ **nunca** — reserva de crédito, Storage y reembolso sin ejecutar |
 | Repo | ✅ todo commiteado y empujado |
 
-**Lo que dice la base — nada del núcleo se ha ejercitado en producción:**
+**La base sigue en cero.** Nada del núcleo se ha ejercitado por el camino de la
+app:
 
-- **0** generaciones de video, jamás
-- **0** compras reales
-- **0** estudios registrados
-- **1** persona en la lista de espera (Richard **no ha compartido la landing**;
-  no es falta de interés)
-- **5** tatuajes, **3** usuarios
+- **0** filas en `generaciones` — el worker nunca ha corrido una
+- **0** compras · **0** estudios · **0** tatuajes con video
+- **1** en la lista de espera (Richard **no ha compartido la landing**; no es
+  falta de interés)
 
 ---
 
-## El costo por video ya se conoce (15 sep)
+## Lo que SÍ se probó el 16 sep: el motor de video funciona
 
-Se encontró `POST /estimate<ruta>`: devuelve créditos **y USD sin generar nada**.
-No aparece en el `openapi.json`, está en la página de billing.
+Cuatro generaciones reales contra Higgsfield, **sin pasar por el worker** (por
+eso `generaciones` sigue en 0). Detalle en `DECISIONS.md`.
 
-| Modelo | Costo por video |
+**El croma aguanta todo.** Fondo plano en todos los casos, desviación 1.2 a 2.3.
+Incluso **con la cámara orbitando**, que era el riesgo real — basta pedir
+`no shadows cast on the background` en el prompt. Eso libera el prompt:
+movimiento de cámara, luz volumétrica y estética 3D son compatibles.
+
+**El arco de acción sale bien con 10 segundos.** El perro mira la concha en el
+suelo, se echa, la agarra con las patas y se la come, con acercamiento de
+cámara. Vertical 9:16.
+
+**Costos reales** (vía `POST /estimate<ruta>`, gratis, antes de cada envío):
+
+| | |
 |---|---|
-| **MiniMax Hailuo-02 estándar** ← el configurado | **$0.28** |
-| MiniMax Hailuo-2.3 fast | $0.19 |
-| Kling 2.5 turbo | $0.21 |
-| Versiones "pro" | ~$0.49 |
-| Kling 2.1 master | $1.40 |
+| 6 s | $0.28 |
+| **10 s** | **$0.467** — más barato por segundo, no hay razón para quedarse en 6 |
+| Imagen (`popcorn`) | $0.09 |
+| Gastado el 16 sep | $1.21 en cuatro generaciones |
 
-1 crédito de API ≈ $0.0625. **Contra $25 por crédito de usuario, generar cuesta
-1-2% del neto: el precio no está limitado por el costo.** Cabe regalar una
-regeneración sin despeinarse.
+Contra $25 por crédito de usuario, generar cuesta **~2% del neto**.
 
-**Suscripción del panel ≠ API.** La app solo usa la API; pagar la suscripción no
-alimenta el producto. Evidencia: el 9 sep el panel tenía 12.5 créditos y la API
-rechazó un video de 4.476 con `not_enough_credits`. Recomendación dada:
-**recargar la API con ~$10 USD** (≈35 videos) y **no** pagar suscripción.
-Pendiente además revisar que no se esté cobrando el plan Plus sin usarlo.
+### La limitación que define el producto
+
+**`image-to-video` hereda el estilo de la imagen de entrada.** De una caricatura
+sale animación de caricatura por más que el prompt pida fotorrealismo. Y no hay
+cómo convertir estilo con este plan: `nano-banana` da `model_not_found`, toda la
+familia `reve` da `423 model_blocked`, y `popcorn` conserva el estilo de la
+referencia.
+
+**No es límite del motor: es cómo debe funcionar.** El cliente sube su foto
+real y de ahí sale video real. Lo que estaba mal era la imagen de prueba —
+`brand/video/zero-croma.mp4` resultó ser una **ilustración plana**, no un render
+3D. Para validar realismo hace falta **una foto real de Zero**.
+
+---
+
+## Listo para que Richard grabe la landing
+
+`demo=zero-concha` pone el video generado sobre su tatuaje real de la huella.
+**No necesita la app, ni el worker, ni créditos** — corre en el navegador del
+celular:
+
+```
+inkar.app/scan?demo=zero-concha
+```
+
+`demo=zero` se conservó con la pieza anterior, para comparar las dos sobre la
+misma piel. La escala del nuevo bajó a **0.9** porque el video es vertical y
+`videoLayer` calcula el alto desde el ancho (con 1.4 tapaba medio brazo). Si al
+verlo queda grande o chico, es un número en `targetLoader.js`.
+
+**Lo que decide si la toma sirve:** el tatuaje de la huella rastrea al **16%**,
+extremo bajo de lo aceptable. Luz lateral suave, sin flash, cámara cerca y
+movimiento lento.
 
 ---
 
@@ -162,18 +198,6 @@ Lenguaje: **"tu primer video"**, no "tu primer tatuaje" — no vendemos tatuajes
 
 ---
 
-## Listo — NO rehacer
-
-- **v3 publicada en Play** (8 sep). Cuenta de servicio de Google Cloud validada.
-- **RevenueCat**: proyecto INKAR, credenciales validadas, llave pública de
-  Android en `.env` y horneada en el bundle.
-- **Analizador vivo en Railway**, conectado a la activación, veredicto guardado
-  en `tattoos` (migración 007).
-- **Generación de video construida**: worker `/generar`, tabla `generaciones`,
-  reserva con cerrojo y reembolso automático, reanudación tras reinicio
-  (migración 009). **Sin ejecutar nunca.**
-- **Interruptor de degradación** (16 sep): `worker/disponibilidad.js`, el estado
-  en `/health`, y la tarjeta apagada en la elección de contenido.
 - **`worker/modelos.js`**: disponibilidad **y costo real** de cada modelo, gratis.
 - **Flujo de compra**, canje de códigos, primer crédito a mitad de precio,
   estudios con atribución permanente (migración 008). `SHIPATON` = 1 crédito,
@@ -222,26 +246,28 @@ vez hiciera falta recuperarla, la punta es `ef2d231` y se restaura con
 - **Los perfiles de modelo se escriben desde `openapi.json`, no desde un
   resumen.** La primera versión salió de un resumen y quedó mal.
 - **Higgsfield Cloud (API) y el plan Plus del panel son cuentas distintas.**
+- **Antes de juzgar una imagen o un video, ábrelo.** Se describió `zero-croma`
+  como "render 3D" sin mirarlo; era una ilustración plana, y eso invalidó dos
+  rondas de pruebas de realismo.
 - **Capacitor empaqueta los assets** (`webDir: dist`): desplegar a Vercel NO
-  actualiza la app instalada. Todo lo que deba llegar al teléfono exige build,
-  `versionCode` nuevo y otra revisión.
+  actualiza la app instalada. Todo cambio que deba llegar al teléfono exige
+  build, `versionCode` nuevo y otra revisión.
 - **La llave de RevenueCat se hornea al compilar.** Tiene que estar en `.env`
-  ANTES del build; ponerla en Vercel no sirve para Android.
+  ANTES del build.
 - El `.mind` y el video **deben servirse con su tipo MIME correcto**; si el
-  servidor devuelve el index.html, MindAR revienta con un error de msgpack que
-  no menciona la URL.
+  servidor devuelve el index.html, MindAR revienta con un msgpack error que no
+  menciona la URL.
 - Las rutas del SPA devuelven **200 aunque la página no exista**: verificar con
   navegador, nunca con `curl` a secas.
-- Los generadores de video **no respetan el color de fondo pedido**; la capa de
-  video mide el color real. `prompt_optimizer` va en `false` o se pierde el verde.
+- Los generadores **no respetan el color de fondo pedido**; la capa de video mide
+  el color real. `prompt_optimizer` va en `false` o se pierde el verde.
 - Three 0.151 usa `encodings_fragment`, no `colorspace_fragment`.
 - El dev server corre en **HTTPS** autofirmado y un navegador automatizado lo
   rechaza. Para revisiones visuales: `npm run build` y servir `dist` por HTTP.
 - **Las funciones con `auth.uid()` se prueban con un JWT real por PostgREST**,
   no simulando sesión por SQL. La cuenta del revisor (`prueba@inkar.app`) abre
   sesión por `POST /auth/v1/token?grant_type=password`.
-- Los textos que redacta el **worker** no pasan por el diccionario del cliente:
-  necesitan un `code` estable o llegan sin traducir.
+- Los textos que redacta el **worker** no pasan por el diccionario del cliente.
 - **Las capturas del navegador emulado muestran franjas negras** a los lados: es
   el capturador, no la app. Medir el ancho con JS antes de "arreglar" nada.
 - **En una sesión en la nube, `npm ci` instala sin devDependencies** porque

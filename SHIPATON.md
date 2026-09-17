@@ -23,14 +23,21 @@ Las razones del 17 siguen valiendo para el 18-19:
 
 Consecuencia dura: **la v4 tiene que estar publicada antes del anuncio.**
 
-> **Al 16 de septiembre la v4 no existía** (`versionCode` sigue en 3) y la
-> revisión de Play tarda cerca de un día, así que el 17 dejó de ser posible. Se
-> movió al **18-19**: conserva la quincena y da un día de colchón.
+> **Decidido el 16 de septiembre: se comparte la landing el 16, la lista cierra
+> el 18, se lanza el 19.** El 17 dejó de ser posible — la v4 no existía esa
+> mañana y la revisión de Play tarda cerca de un día. (Otra sesión recomendó
+> 19-20 el mismo día; la decisión de Richard fue 18-19 y es la que manda.)
 >
 > **Pero la fecha del anuncio no es lo que urge.** La v3 no puede cobrar, así
 > que la facturación por RevenueCat —la métrica que pondera el premio— está en
 > cero hasta que la v4 esté publicada. La v4 entra a revisión lo antes posible;
-> el anuncio va después. Ver `PROXIMA-SESION.md`.
+> el anuncio va después.
+>
+> **Al 17 de septiembre**, `versionCode` sigue en 3. Higgsfield ya tiene saldo y
+> la generación quedó probada de punta a punta contra la API (240 s, fondo verde
+> plano), pero **falta la `service_role`** para el camino del worker, que es el
+> que cobra el crédito y guarda el video. Ver `LANZAMIENTO.md` para los pasos y
+> `PROXIMA-SESION.md` para el estado.
 
 ## Meta
 
@@ -129,7 +136,7 @@ limitado por el costo. La API es una cuenta distinta del plan Plus del panel.
 |---|---|
 | Textura de video sobre plano anclado al target | ✅ probado sobre piel real |
 | Catálogo que acepte assets de video desde la base | ⬜ **lo siguiente** |
-| Generación de video desde foto + historia, vía Higgsfield | ✅ **construida el 9 sep** — worker `/generar`, sin probar con llaves reales |
+| Generación de video desde foto + historia, vía Higgsfield | ✅ construida (9 sep) y **probada contra la API el 16 sep** — croma estable, arco de acción correcto. Falta el camino por el worker |
 | Créditos que se consumen por generación | ✅ el worker reserva con cerrojo y reembolsa si falla |
 | Perfil con liga compartible (cierra el loop de crecimiento) | ⬜ |
 | Actualización publicada en Play | ⬜ |

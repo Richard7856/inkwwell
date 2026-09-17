@@ -2,7 +2,7 @@ import { useRef, useCallback } from 'react'
 import * as THREE from 'three'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js'
-import { cargarVideo, alternarVideo, liberarVideo } from './videoLayer.js'
+import { cargarVideo, alternarVideo, liberarVideo, actualizarVideo } from './videoLayer.js'
 
 /*
   DRACOLoader compartido — necesario para decodificar GLBs comprimidos con Draco.
@@ -46,6 +46,20 @@ const MODEL_CONFIGS = [
 */
 const TARGET_SIZE = 0.5
 
+/*
+  Qué pasa cuando MindAR pierde el tatuaje.
+
+  MindAR esconde el ancla en el MISMO cuadro en que lo pierde. Al mover el
+  brazo eso pasa seguido, y el contenido parpadea: es lo que más se siente como
+  falla (visto por Richard en el teléfono el 16 sep). En vez de eso, el
+  contenido se queda donde estaba CONGELADO_MS y luego se desvanece en
+  DESVANECER_MS. Si el rastreo vuelve antes, sigue como si nada.
+
+  Más de ~1 s congelado ya se nota "despegado" cuando el brazo se movió mucho.
+*/
+const CONGELADO_MS = 600
+const DESVANECER_MS = 400
+
 /**
  * Carga uno o varios GLB y los ancla a los image targets de MindAR.
  *
@@ -68,6 +82,7 @@ export function useThreeScene() {
   const lightsRef = useRef([])
   const clockRef = useRef(new THREE.Clock())
   const frameIdRef = useRef(null)
+  const seguidoresRef = useRef([])
 
   /**
    * Carga el modelo de cada target y arranca el loop de render.
@@ -76,6 +91,19 @@ export function useThreeScene() {
    * @param {{glbUrl: string}[]} targets - Configuración de cada target
    */
   const loadModels = useCallback(async (anchorGroups, targets, renderer, scene, camera) => {
+    /*
+      El contenido NO se cuelga del ancla de MindAR sino de un seguidor que
+      copia su posición mientras el tatuaje está a la vista. Así, al perderlo,
+      el seguidor conserva la última posición (ver CONGELADO_MS).
+    */
+    seguidoresRef.current = anchorGroups.map((ancla) => {
+      const grupo = new THREE.Group()
+      grupo.matrixAutoUpdate = false
+      grupo.visible = false
+      scene.add(grupo)
+      return { grupo, ancla, rastreado: false, perdidoEn: null }
+    })
+
     /*
       Luces: se agregan UNA vez a la escena, no por modelo.
 
@@ -111,8 +139,8 @@ export function useThreeScene() {
     const resultados = await Promise.allSettled(
       targets.map((t, i) =>
         t.videoUrl
-          ? cargarVideo(t, anchorGroups[i])
-          : loadOneModel(t.glbUrl, anchorGroups[i])
+          ? cargarVideo(t, seguidoresRef.current[i].grupo)
+          : loadOneModel(t.glbUrl, seguidoresRef.current[i].grupo)
       )
     )
 
@@ -130,7 +158,12 @@ export function useThreeScene() {
       // Un solo delta para todos: si cada mixer pidiera el suyo, el primero
       // consumiría el tiempo transcurrido y los demás avanzarían en cámara lenta
       // Solo los GLB tienen mixer; la textura de video se actualiza sola
-      for (const t of targetsRef.current) t?.mixer?.update(delta)
+      for (const t of targetsRef.current) {
+        t?.mixer?.update(delta)
+        actualizarVideo(t)
+      }
+      const ahora = performance.now()
+      seguidoresRef.current.forEach((seg, i) => actualizarSeguidor(seg, targetsRef.current[i], ahora))
       renderer.render(scene, camera)
     }
     animate()
@@ -152,7 +185,20 @@ export function useThreeScene() {
    * principio que respetar.
    */
   const setTargetVisible = useCallback((targetIndex, visible) => {
-    alternarVideo(targetsRef.current[targetIndex], visible)
+    const seg = seguidoresRef.current[targetIndex]
+    if (!seg) return
+    seg.rastreado = visible
+    if (visible) {
+      seg.perdidoEn = null
+      seg.grupo.matrix.copy(seg.ancla.matrix)
+      seg.grupo.visible = true
+      ponerOpacidad(targetsRef.current[targetIndex], 1)
+      alternarVideo(targetsRef.current[targetIndex], true)
+    } else {
+      // El video NO se pausa aquí: sigue corriendo mientras está congelado,
+      // y se pausa cuando termina de desvanecerse (actualizarSeguidor)
+      seg.perdidoEn = performance.now()
+    }
   }, [])
 
   /** Cambia la animación de un target concreto, con transición suave */
@@ -201,6 +247,8 @@ export function useThreeScene() {
       t.model?.parent?.remove(t.model)
     }
     targetsRef.current = []
+    seguidoresRef.current.forEach((seg) => seg.grupo.parent?.remove(seg.grupo))
+    seguidoresRef.current = []
 
     // Las luces no tienen dispose, pero sí hay que sacarlas del grafo para que
     // no se acumulen si el componente se vuelve a montar
@@ -211,7 +259,39 @@ export function useThreeScene() {
   return { loadModels, setTargetVisible, playAnimation, getAnimationNames, cleanup }
 }
 
-/** Carga un GLB, lo ajusta y lo cuelga del ancla que le corresponde. */
+/**
+ * Un cuadro de la vida del seguidor: copia al ancla mientras hay rastreo; sin
+ * rastreo se queda quieto, se desvanece y al final se oculta y pausa.
+ */
+function actualizarSeguidor(seg, capa, ahora) {
+  if (seg.rastreado) {
+    seg.grupo.matrix.copy(seg.ancla.matrix)
+    return
+  }
+  if (seg.perdidoEn === null) return
+
+  const t = ahora - seg.perdidoEn
+  if (t < CONGELADO_MS) return
+  if (t < CONGELADO_MS + DESVANECER_MS) {
+    ponerOpacidad(capa, 1 - (t - CONGELADO_MS) / DESVANECER_MS)
+    return
+  }
+  seg.grupo.visible = false
+  seg.perdidoEn = null
+  alternarVideo(capa, false)
+}
+
+/**
+ * Solo el video se desvanece: su sombreador ya tiene opacidad. Un GLB
+ * necesitaría volver transparentes todos sus materiales, lo que cambia cómo se
+ * ordenan al dibujarse; se oculta de golpe al final del congelado.
+ */
+function ponerOpacidad(capa, valor) {
+  const u = capa?.material?.uniforms?.opacidad
+  if (u) u.value = valor
+}
+
+/** Carga un GLB, lo ajusta y lo cuelga del grupo que le corresponde. */
 async function loadOneModel(glbUrl, anchorGroup) {
   const loader = new GLTFLoader()
   // Sin esto, un GLB comprimido falla con "No DRACOLoader instance provided"
