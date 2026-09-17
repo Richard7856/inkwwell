@@ -132,7 +132,7 @@ const ES = {
 
   videoTitulo: 'La idea, en movimiento',
   videoTexto: 'Representación del concepto. No es una grabación de la app.',
-  videoTextoReal: 'Grabado con un teléfono, sobre un tatuaje real. Sin editar.',
+  videoTextoReal: 'Grabado con un teléfono, sobre un tatuaje real.',
 
   distintoTitulo: 'Por qué no es un filtro',
   distinto: [
@@ -225,7 +225,7 @@ const EN = {
 
   videoTitulo: 'The idea, in motion',
   videoTexto: 'Concept illustration. Not a recording of the app.',
-  videoTextoReal: 'Shot on a phone, over a real tattoo. Unedited.',
+  videoTextoReal: 'Shot on a phone, over a real tattoo.',
 
   distintoTitulo: 'Why this isn’t a filter',
   distinto: [
