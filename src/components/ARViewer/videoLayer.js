@@ -143,9 +143,12 @@ const FRAGMENT = `
   uniform float opacidad;
   uniform sampler2D base;
   uniform float usarBase;
+  uniform float listo;
   varying vec2 vUv;
 
   void main() {
+    // Sin un cuadro real subido, la textura es negra: no se pinta nada
+    if (listo < 0.5) discard;
     vec4 color = texture2D(mapa, vUv);
 
     /*
@@ -312,7 +315,20 @@ function abrirVideo(url, { bucle, croma }) {
         medido, así que el recorte no recorta.
       */
       const textura = new THREE.VideoTexture(video)
-      const pieza = { video, textura, croma: null, url }
+      const pieza = { video, textura, croma: null, url, avisaCuadros: false }
+      /*
+        ¿El navegador avisa de cada cuadro? Si sí, Three sube la textura por su
+        cuenta y la app no debe duplicarlo (ver actualizarVideo). Se registra
+        aparte del aviso de Three para no tocar su ciclo.
+      */
+      if ('requestVideoFrameCallback' in video) {
+        const alAvisar = () => {
+          pieza.avisaCuadros = true
+          pieza.subida = true
+          video.requestVideoFrameCallback(alAvisar)
+        }
+        video.requestVideoFrameCallback(alAvisar)
+      }
 
       if (croma) {
         const detectado = detectarCroma(video)
@@ -423,6 +439,7 @@ export async function cargarVideo(config, anchorGroup) {
           opacidad: { value: 1 },
           base: { value: null },
           usarBase: { value: 0 },
+          listo: { value: 0 },
         },
         vertexShader: VERTEX,
         fragmentShader: FRAGMENT,
@@ -501,13 +518,37 @@ function fuerzaLlave(pieza) {
 }
 
 /**
- * Se llama en cada cuadro: la fuerza de la llave depende del tiempo del video,
- * y la textura del video se actualiza sola pero los uniformes no.
+ * Se llama en cada cuadro, antes de dibujar.
+ *
+ * ── Por qué la app sube el cuadro y no confía en Three ──
+ * VideoTexture (Three 0.151) solo sube un cuadro cuando el navegador lo avisa
+ * con requestVideoFrameCallback. Hasta el primer aviso la textura está vacía y
+ * se pinta NEGRA; y algunos navegadores móviles avisan tarde o nunca para un
+ * <video> que no está en el documento. Visto el 16 sep: rectángulo negro sobre
+ * el tatuaje y en el teléfono "ya no carga". Si el navegador no ha avisado,
+ * la app sube el cuadro cuando cambia el tiempo del video.
+ *
+ * Solo como respaldo: subir en paralelo al aviso hizo que Chrome dejara de
+ * mostrar el video de la CÁMARA (pantalla negra detrás del contenido, visto en
+ * la prueba con cámara simulada).
+ *
+ * `listo` esconde el plano hasta que hay un cuadro real de la pieza actual:
+ * al reiniciar la intro, su textura aún tiene el último cuadro de la vez
+ * anterior (el perro) y se vería un destello.
  */
 export function actualizarVideo(capa) {
   if (capa?.tipo !== 'video') return
+  const pieza = capa.actual
+  const v = pieza.video
+  if (!pieza.avisaCuadros && v.readyState >= 2 && !v.seeking && v.currentTime !== pieza.ultimoTiempo) {
+    pieza.textura.needsUpdate = true
+    pieza.ultimoTiempo = v.currentTime
+    pieza.subida = true
+  }
   const u = capa.material.uniforms
-  if (u && capa.actual.base) u.usarBase.value = fuerzaLlave(capa.actual)
+  if (!u) return
+  u.listo.value = pieza.subida ? 1 : 0
+  if (pieza.base) u.usarBase.value = fuerzaLlave(pieza)
 }
 
 /**
@@ -535,6 +576,9 @@ export function alternarVideo(capa, visible) {
     capa.actual.video.pause()
     mostrarPieza(capa, capa.intro ?? capa.principal)
     capa.actual.video.currentTime = 0
+    // Hasta subir un cuadro del nuevo inicio no se pinta (ver actualizarVideo)
+    capa.actual.subida = false
+    capa.actual.ultimoTiempo = undefined
   }
   // play() devuelve una promesa que el navegador rechaza si bloquea la
   // autoreproducción. Se ignora: el video queda en el primer cuadro, que es
