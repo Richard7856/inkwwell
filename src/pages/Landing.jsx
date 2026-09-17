@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { getIdioma, setIdioma, t } from '../lib/i18n.js'
 import { inscribirEnLista } from '../lib/waitlist.js'
@@ -301,6 +301,45 @@ export default function Landing() {
   const [yaEstaba, setYaEstaba] = useState(false)
   const [error, setError] = useState('')
   const [videoRoto, setVideoRoto] = useState(false) // el archivo del demo no cargó
+  const [conControles, setConControles] = useState(false) // solo si el arranque solo falla
+  const videoRef = useRef(null)
+
+  /*
+    El video arranca cuando entra en pantalla, no al cargar la página.
+
+    ── Por qué no `autoPlay` a secas ──
+    Lo que vende este video son los primeros segundos: el tatuaje quieto y la
+    tinta derritiéndose. Si arranca con la carga de la página, para cuando el
+    visitante baja hasta él ya va en el perro sentado y se perdió justo la parte
+    que prueba el producto. Empezar al entrar en cuadro garantiza que todos ven
+    el nacimiento.
+
+    ── Por qué en silencio y en bucle ──
+    Sin sonido puede arrancar solo: todos los navegadores bloquean el audio
+    automático, y con `muted` no hay nada que bloquear. Y el archivo no trae
+    pista de sonido, así que no se pierde nada. En bucle porque dura 9 segundos
+    y repetirse es más barato que pedir un clic.
+
+    ── Por qué se quitan los controles, y cuándo vuelven ──
+    Una barra de reproducción encima de la piel ensucia justo lo que se quiere
+    enseñar, y con 9 segundos en bucle no hay nada que adelantar. Pero si el
+    arranque automático falla —ahorro de datos, una política más estricta— el
+    visitante se quedaría viendo una imagen fija sin manera de reproducirla. Por
+    eso `play()` se vigila: si la promesa se rechaza, vuelven los controles.
+  */
+  useEffect(() => {
+    const v = videoRef.current
+    if (!v) return
+    const observador = new IntersectionObserver(
+      ([entrada]) => {
+        if (!entrada.isIntersecting) { v.pause(); return }
+        v.play().catch(() => setConControles(true))
+      },
+      { threshold: 0.5 },
+    )
+    observador.observe(v)
+    return () => observador.disconnect()
+  }, [videoRoto])
 
   // Se calcula una vez por render, no con temporizador: ver `momento()`
   const cuando = momento()
@@ -407,11 +446,14 @@ export default function Landing() {
               eso — si el archivo no está, la sección desaparece entera.
             */}
             <video
+              ref={videoRef}
               src={VIDEO}
               poster={POSTER || undefined}
-              controls
+              muted
+              loop
               playsInline
-              preload="metadata"
+              preload="auto"
+              controls={conControles}
               onError={() => setVideoRoto(true)}
               className="w-full rounded-2xl border border-black/10 bg-black"
             />

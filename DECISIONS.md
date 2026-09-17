@@ -930,3 +930,16 @@ El fondo del video generado quedó plano ([96,199,76] en 0.5, 3 y 5.5 s).
 **El camino que evita el problema, y que ya está en el repo.** `shiba_negro.glb` es un cuadrúpedo **ya rigeado, con 5 animaciones de perro de verdad** (`sitting`, `shake`, `rollover`, `play_dead`) y `alaskan_malamute_dog.glb` trae un galope. Meshy expone `meshy_v5_retexture`, que toma un `model_url` y una imagen de estilo: **se le puede poner el pelaje de Zero a un perro que ya sabe moverse como perro**, conservando rig y clips. Cambia la pregunta de "¿podemos animar una malla nueva?" a "¿podemos vestir una malla que ya se anima?", que es mucho más barata de responder.
 
 **Lo que esto NO resuelve, y hay que decirlo antes de invertir:** el producto que se vende hoy entrega un **video plano**, no un modelo 3D. Si la landing enseña 3D con paralaje real y el cliente recibe un plano, lo nota al primer giro de brazo — la misma deuda del dragón, en la otra dirección. Y un pipeline 3D para clientes es mucho más duro que el de video: foto → malla → rig → animación, con el rig humanoide como cuello de botella para mascotas. **El 3D es una decisión de producto, no de marketing, y no se toma la semana del lanzamiento.**
+
+## [2026-09-17] El video arranca al entrar en pantalla, no al cargar la página
+**Context:** El video de la landing estaba como "haz clic para reproducir" (`controls`, sin autoplay). Dos problemas: pedir un clic para lo único que prueba el producto pierde a la mayoría, y arrancarlo con la carga de la página sería peor.
+
+**Por qué `autoPlay` a secas habría sido un error.** Lo que vende este video son los primeros segundos —el tatuaje quieto y la tinta derritiéndose—. Si arranca cuando carga la página, para cuando el visitante baja hasta él ya va en el perro sentado: se perdió exactamente la parte que demuestra el mecanismo. **El nacimiento es el argumento; verlo a la mitad es no verlo.**
+
+**Decision:** `IntersectionObserver` al 50% de visibilidad. El video empieza cuando entra en cuadro y se pausa cuando sale. Todos ven el arranque, y nadie descarga ni reproduce algo que no está mirando.
+
+**En silencio y en bucle.** `muted` es lo que permite que arranque solo — todos los navegadores bloquean el audio automático, y sin audio no hay nada que bloquear. El archivo además no trae pista de sonido. En bucle porque dura 9 segundos: repetirse sale más barato que pedir un clic.
+
+**Sin controles, con un respaldo.** Una barra de reproducción encima de la piel ensucia justo lo que se quiere enseñar, y con 9 segundos en bucle no hay nada que adelantar. Pero si el arranque automático falla —ahorro de datos, una política más estricta— el visitante se quedaría viendo una imagen fija sin manera de reproducirla. Por eso se vigila la promesa de `play()`: si se rechaza, vuelven los controles.
+
+**Verificado en navegador** (sirviendo un webm con el mismo nombre, porque el Chromium del entorno de pruebas no decodifica H.264): al cargar la página el video existe y está **pausado en 0**; tras desplazarse hasta él queda reproduciendo, con `loop` y `muted` activos y sin controles.
