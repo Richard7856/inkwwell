@@ -811,3 +811,18 @@ Probado en la página de simulación con el video corrido a propósito (1.5% del
 - Cuando la llave se apaga, los trazos de los dedos que el charco no cubrió se ven un instante (poco, y ya derritiéndose).
 - La fracción 40-48% está medida sobre UN video. Otra intro con otro ritmo puede necesitar `introLlave`. Para producción conviene calcularla del propio video (cuando la cobertura de tinta deja de crecer).
 - Si el primer cuadro no se puede capturar (CORS o cuadro sin decodificar), se reintenta al reproducir; si vuelve a fallar, se muestra el dibujo completo como antes.
+
+## [2026-09-16] "Ya no carga": el video se pintaba negro antes de su primer cuadro
+**Context:** Richard reportó que `demo=zero-nace` dejó de cargar en el teléfono. En el navegador de escritorio, con una cámara simulada (un lienzo con la foto compilada, inyectado en `getUserMedia`), MindAR rastreó y apareció un **rectángulo negro** del tamaño del plano encima del tatuaje.
+
+**Causa:** `VideoTexture` de Three 0.151 solo sube un cuadro cuando `requestVideoFrameCallback` avisa. Antes del primer aviso la textura está vacía, el croma la compara contra el verde, la considera "sujeto" y la pinta negra y opaca. Con el rastreo parpadeando y la intro reiniciándose, ese estado puede durar; y hay navegadores móviles que avisan tarde para un `<video>` fuera del documento.
+
+**Decision:** uniforme `listo`: el plano no se pinta hasta que hay un cuadro real de la pieza actual (también evita el destello del último cuadro al reiniciar la intro). Si el navegador no avisa, la app sube el cuadro cuando cambia el tiempo del video.
+
+**Lo que NO funcionó:** subir el cuadro en cada render, además del aviso, hizo que Chrome dejara de mostrar el video de la cámara detrás del lienzo. Por eso la subida manual es solo respaldo.
+
+**Coordinación:** otra sesión (rama `claude/exciting-hamilton-j3quzt`, trabajo de la landing) había desplegado su rama a producción con este código de AR ya integrado. Para no retirar su landing de producción al empujar `main`, se integró esa rama en `main` antes de subir el arreglo. Producción = su landing + este arreglo.
+
+**Cómo probar AR sin teléfono (queda como herramienta):** abrir cualquier ruta del sitio, reemplazar `navigator.mediaDevices.getUserMedia` por `canvas.captureStream()` de un lienzo que dibuja la foto compilada, y navegar a `/scan` con `history.pushState` + `popstate`. Ojo: si el panel del navegador queda oculto, el lienzo deja de dibujar y la "cámara" se ve negra; no es la app.
+
+**Risks/Limitations:** no se reprodujo en el teléfono; es la causa que encaja con lo observado en escritorio.
