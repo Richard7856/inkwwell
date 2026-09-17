@@ -32,6 +32,7 @@ const MODELS = [
   { label: 'Fénix', url: '/models/Fenix.glb' },
   { label: 'Zero (Meshy)', url: '/models/zero-meshy.glb' },
   { label: 'Zero realista', url: '/models/zero-realista.glb' },
+  { label: 'Zero de pie', url: '/models/zero-parado.glb' },
   { label: 'Dr. Simi', url: '/models/farmacias_similares.glb' },
 ]
 

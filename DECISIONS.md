@@ -1037,3 +1037,14 @@ Saldo: 1,115 → 1,080. Los rechazos de rigging no cobran.
 **Resultado:** `public/models/zero-realista.glb` (19 MB → 387 KB), `demo=zero-realista`. Saldo de Meshy 1,080 → 1,045.
 
 **Pendiente si se quiere más fiel:** Retexture de Meshy (10 créditos) con el mismo texto sobre este modelo, para las patas traseras. Y sigue sin animación: el rig de cuadrúpedos (solo caminar) existe únicamente en el panel web.
+
+## [2026-09-17] Zero de pie para el rig de cuadrúpedo del panel de Meshy
+**Context:** el rig "Perro Cuadrúpedo" del panel web de Meshy marca la postura sentada como mal ejemplo: pide al animal de pie, con espacio entre las patas y la cola separada del cuerpo.
+
+**Decision:** cambiar la pose con edición de imagen que conserve la identidad: **`nano-banana-pro` desde el API de Meshy** (`POST /openapi/v1/image-to-image`, 9 créditos), con dos referencias (la foto real recortada y la vista del modelo sentado) y `remove_background: true`. Salió de pie, de perfil, **con todas las marcas que Richard describió**, incluidas las que ningún intento anterior respetó (patas traseras blancas, panza rosa). Luego imagen a 3D (30) y remesh a 20k (5).
+
+**Por qué funcionó donde popcorn y soul fallaron:** nano-banana es un modelo de edición: parte de la imagen y cambia solo lo que se le pide, en vez de generar un perro nuevo "parecido".
+
+**Resultado:** `~/Downloads/zero-parado-para-meshy.glb` (12 MB, para subir al panel) y `public/models/zero-parado.glb` (389 KB, en `/preview`). Saldo de Meshy 1,045 → 1,001. Las generaciones hechas por API no aparecen necesariamente en el panel; por eso se entrega el archivo.
+
+**Siguiente paso (manual, en el panel):** Auto Rigging → Perro Cuadrúpedo → caminar → exportar GLB con animación. Esa es la única animación de cuadrúpedo que existe hoy.
