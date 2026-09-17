@@ -861,3 +861,43 @@ Cambios, en los dos idiomas:
 - **Beneficio**: "lo tomamos en cuenta para el catálogo" → "nos dices qué quieres animar".
 
 **Se retira el etiquetado de origen** (`landing` contra `landing-final`). Existía para saber cuál de los dos formularios convertía; con uno solo la pregunta no existe.
+## [2026-09-16] Primera generación por el camino del worker: funciona de punta a punta
+**Context:** con la `SUPABASE_SERVICE_ROLE_KEY` en `worker/.env`, por fin se pudo ejercitar lo que rodea a Higgsfield. Worker en local, base real, cuenta del revisor (`prueba@inkar.app`).
+
+**Sesión sin contraseña:** se abrió con `POST /auth/v1/admin/generate_link` (magiclink, con la service_role) y `POST /auth/v1/verify` con el `hashed_token`. Da un JWT real para PostgREST y para el worker sin manejar credenciales en texto. Sirve para cualquier prueba futura con `auth.uid()`.
+
+**Resultados:**
+| Caso | Respuesta | Efecto en la base |
+|---|---|---|
+| Sin sesión | 401 `sin_sesion` | nada |
+| Tatuaje ajeno | 404 `tatuaje_invalido` | nada |
+| Historia vacía | 400 `historia_invalida` | nada |
+| **Generación real** | 202 con id y saldo 0 | `consumo -1` → **lista en 153 s** → video copiado a `videos/generados/` (2.5 MB) → `tattoos.video_url` asignado |
+| Sin crédito | 402 `sin_creditos` | queda una fila `fallida` (se crea antes de reservar, por diseño) |
+| Proveedor rechaza (Veo deshabilitado) | 502 `proveedor` | `consumo -1` y **`reembolso +1` un segundo después** |
+| Siguiente usuario | 503 `no_disponible` | el interruptor cortó antes de tocar la base; `/health` reporta suspensión de 15 min |
+
+El fondo del video generado quedó plano ([96,199,76] en 0.5, 3 y 5.5 s).
+
+**Datos que quedaron en la base, a propósito:** la cuenta del revisor tiene ahora un tatuaje (`15881234-…`, la huella del founder) con video, y 1 crédito (ajuste de prueba reembolsado). Le sirve al revisor de Play para ver el flujo completo.
+
+**Pendientes que salieron de la prueba:**
+- El video salió de **10.1 s** aunque el perfil pide 6 (las intros con `end_image_url` sí salieron de 5.9 s). La API no devuelve los parámetros recibidos: **revisar en el billing de Higgsfield si se cobró $0.28 o $0.47.**
+- `tattoo-images/pruebas/zero-real-*.jpg` **no es una foto real**: es la ilustración de popcorn. El video salió en caricatura. El realismo sigue sin probar.
+- Las variables siguen sin estar en Railway: en producción `/generar` sigue en 503.
+
+## [2026-09-16] Con una foto real sale video realista — pero hay que quitarle el fondo antes
+**Context:** Richard compartió una foto real de Zero (celular, 1074x1909, fondo de un cuarto desenfocado). Era la prueba de realismo pendiente desde el 16 sep.
+
+**Hallazgo que cambia el pipeline:** `image-to-video` arranca DESDE la foto, así que conserva su fondo. Las pruebas anteriores salían sobre verde porque la entrada ya era una ilustración sobre verde. Con una foto real de cliente, el fondo del cuarto llegaría al video y el croma no tendría nada que recortar. **El worker necesita quitar el fondo y poner la foto sobre el verde antes de enviarla.**
+
+**Lo que se hizo en la prueba:** recorte con Vision de macOS (`VNGenerateForegroundInstanceMaskRequest`, local y gratis), sujeto sobre `[95,196,77]`, escalado al 68% del ancho de un lienzo 768x1364 con margen (la foto cortaba orejas y patas en el borde). Generado por el worker completo, con la cuenta del revisor: lista en 151 s, 10.1 s de video.
+
+**Resultado:** realista y reconocible como Zero (pelaje, manchas, gesto). Fondo plano ([83-90, 202-204, 66-73] en todo el video). Defectos, todos del prompt: el pan salió enorme y sin costra de concha, el perro se echa sobre él pero no llega a comérselo, y la cara se oscurece en algunos cuadros.
+
+**Decision pendiente para producción:** Vision solo existe en macOS; el worker corre en Linux (Railway). Opciones:
+- `rembg` (Python, MIT, modelo u2net ~170 MB en la imagen de Docker): gratis por uso, sube el tamaño y el arranque del contenedor.
+- Un servicio externo (remove.bg y similares): simple, pero otro proveedor, otra llave y otro costo por foto.
+- `@imgly/background-removal-node`: corre en Node, **pero su licencia es AGPL**, lo que obligaría a publicar el código del worker. Descartado.
+
+**Risks/Limitations:** una foto con varios sujetos (dos perros, una persona con el perro) devuelve varias instancias; la prueba tomó todas. Hay que decidir si se toma la mayor o se pide al usuario una foto con uno solo.
