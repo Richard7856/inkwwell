@@ -15,14 +15,43 @@
  * worker generaría videos con los créditos de otro.
  */
 import { createClient } from '@supabase/supabase-js'
+import WebSocketImpl from 'ws'
 
 const URL = process.env.SUPABASE_URL
 const LLAVE = process.env.SUPABASE_SERVICE_ROLE_KEY
 
 export const supabaseConfigurado = Boolean(URL && LLAVE)
 
+/*
+  ── Por qué se le pasa un WebSocket, si este worker nunca usa Realtime ──
+
+  `createClient` arma SIEMPRE un cliente de Realtime, lo uses o no, y ese
+  cliente exige una implementación de WebSocket al construirse. Node 22 trae
+  `WebSocket` global; **la imagen de este worker es `node:20-slim`, que no lo
+  trae**, y supabase-js lanza "Node.js detected but native WebSocket not found"
+  ANTES de que el servidor llegue a escuchar. El contenedor muere al arrancar y
+  Railway responde 502 a todo.
+
+  ── Por qué esto no se había visto nunca ──
+  Porque `createClient` solo corre cuando HAY credenciales. Mientras faltó la
+  `service_role`, el cliente jamás se construía y el defecto estaba dormido.
+  Ponerle las credenciales a Railway el 17 sep fue, literalmente, lo que tumbó
+  el worker: la configuración correcta destapó un fallo que la incorrecta
+  escondía. Tampoco se reproduce en local con Node 22 — hay que quitarle el
+  global para verlo.
+
+  ── Por qué `transport` y no subir Node ──
+  Es la salida que sugiere el propio error de supabase-js, y no toca la imagen.
+  Subir a Node 22 arrastraría un cambio de base de Debian —la etapa final
+  instala nombres de paquete de bookworm— y un recompilado de `canvas` desde
+  fuente. Con el worker caído, el arreglo tenía que ser el de menor superficie.
+  Subir Node sigue siendo lo correcto a futuro, con calma y probándolo.
+*/
 const admin = supabaseConfigurado
-  ? createClient(URL, LLAVE, { auth: { persistSession: false, autoRefreshToken: false } })
+  ? createClient(URL, LLAVE, {
+      auth: { persistSession: false, autoRefreshToken: false },
+      realtime: { transport: WebSocketImpl },
+    })
   : null
 
 /** Error con código estable, para que el endpoint responda con el status correcto */

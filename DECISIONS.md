@@ -967,3 +967,18 @@ El fondo del video generado quedó plano ([96,199,76] en 0.5, 3 y 5.5 s).
 **Presupuesto de tamaño, medido contra la app.** Los modelos que ya carga pesan de 0.6 a 1.8 MB, y el AR los baja antes de mostrar nada: un GLB de 10 MB no es "más bonito", son segundos de pantalla vacía sobre datos móviles justo cuando el usuario decide si esto funciona. El CLI avisa arriba de 4 MB y sugiere bajar los polígonos. Por lo mismo, `enable_pbr: false` y textura a 2k: los mapas extra no los aprovecha la escena y 4k no se ve en un antebrazo.
 
 **Verificado contra el API real** con una llave falsa: lee las fotos, las codifica, elige el endpoint multi-imagen con dos imágenes, llega a Meshy y recibe un `401 Invalid API key` que el CLI explica. Lo que falta por comprobar necesita la llave de Richard: si los créditos del API son los mismos de la suscripción web —su documentación no lo aclara, y este proyecto ya se quemó dos veces con esa confusión en Higgsfield— y la calidad de la malla con pelaje largo negro.
+
+## [2026-09-17] Configurar bien Railway fue lo que tumbó el worker
+**Context:** Richard puso por fin las credenciales en Railway. El worker, que llevaba días respondiendo 200, empezó a devolver **502 "Application failed to respond"** en todas las rutas. El registro de Railway: `Error: Node.js detected but native WebSocket not found.`
+
+**La causa, y por qué es contraintuitiva.** `createClient` de supabase-js arma **siempre** un cliente de Realtime —lo uses o no— y ese cliente exige una implementación de WebSocket al construirse. Node 22 trae `WebSocket` global; la imagen del worker es **`node:20-slim`, que no lo trae**. El error se lanza antes de que el servidor llegue a escuchar, el contenedor muere al arrancar y Railway responde 502 a todo.
+
+**Por qué nunca se había visto:** `createClient` solo se ejecuta cuando `supabaseConfigurado` es verdadero. Mientras faltó la `service_role`, el cliente jamás se construía y el defecto estaba dormido. **Poner las credenciales correctas fue literalmente lo que destapó el fallo que la configuración incompleta escondía** — el peor momento posible para descubrirlo, porque parece que el cambio "bueno" rompió algo.
+
+**Tampoco se reproduce en local.** Este entorno corre Node 22.22.2, que sí tiene el global. Hubo que borrarlo (`delete globalThis.WebSocket`) para verlo: así se reprodujo el mensaje exacto y así se comprobó el arreglo.
+
+**Decision: `realtime: { transport: WebSocketImpl }` con el paquete `ws`.** Es la salida que sugiere el propio error de supabase-js y no toca la imagen.
+
+**Alternativa evaluada y descartada por ahora: subir a Node 22.** Es lo correcto de fondo y el Dockerfile está diseñado para soportarlo —la etapa `builder` tiene el toolchain completo, así que si no hay precompilado de `canvas` compila desde fuente—. Pero arrastra dos cosas que con el worker caído y lanzamiento el lunes no convenían: un cambio de base de Debian (la etapa final instala nombres de paquete de bookworm como `libgif7` y `libjpeg62-turbo`) y un recompilado nativo. **El arreglo tenía que ser el de menor superficie.** Queda anotado como pendiente sano para después del lanzamiento.
+
+**Verificado simulando la imagen de producción** (Node 22 con el global borrado): antes, el mismo caso lanzaba el error; después, el worker arranca completo y `/health` responde 200 con `generacion.disponible: true`. Se confirmó de paso que `reanudarPendientes` no tumba el arranque cuando la llave es inválida — solo avisa.
