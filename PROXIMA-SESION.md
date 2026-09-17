@@ -212,11 +212,35 @@ Lenguaje: **"tu primer video"**, no "tu primer tatuaje" — no vendemos tatuajes
 
 ---
 
-## Ramas: una sola línea viva
+## Ramas: todo va a `main` (decidido el 17 sep)
 
-`main` y la rama de trabajo de cada sesión apuntan al mismo commit. No hay
-nada que reconciliar y **nunca se ha abierto un PR**: las sesiones commitean en
-su rama y eso es main.
+**Producción se despliega desde `main`.** Cualquier trabajo que no llegue ahí
+es invisible, aunque esté commiteado y empujado.
+
+**Todas las sesiones commitean a `main` directamente.** Richard dio permiso
+explícito el 17 de septiembre. Antes de cada push: `git pull --rebase origin
+main` o un merge; si dos sesiones empujan a la vez, git rechaza la segunda y
+esa hace pull y reintenta. No se pierde nada.
+
+**Por qué se cambió.** El 16 y 17 de septiembre hubo dos sesiones en paralelo:
+una commiteaba directo a `main` y la otra a `claude/exciting-hamilton-j3quzt`,
+porque su instrucción le prohibía empujar a `main` sin permiso. Resultado: el
+trabajo de la segunda se quedó fuera de producción **dos veces** sin que nadie
+lo notara —la landing en vivo siguió mostrando la copy anterior al giro a video
+y sin el video de Zero— hasta que Richard lo vio. Y una vez fue peor: se
+promovió a producción la vista previa de esa rama, que era anterior al trabajo
+de AR, y **los demos dejaron de funcionar** (sus videos devolvían `index.html`).
+
+**Los conflictos nunca han sido de código.** Las sesiones trabajan en
+territorios distintos por naturaleza —AR y worker de un lado, landing y
+documentos del otro— y los tres merges hechos hasta ahora solo chocaron en
+`DECISIONS.md`, `PROXIMA-SESION.md` y `SHIPATON.md`. Como las dos partes
+AGREGAN entradas al final, resolver es conservar los dos lados. En
+`PROXIMA-SESION.md` y `SHIPATON.md`, cuando hay contradicción, **gana la
+decisión ya tomada por Richard** sobre la recomendación que la otra sesión
+escribió sin saberla.
+
+**No se abren PR.** Se commitea y se empuja.
 
 **Rama muerta, no la mergees:** `claude/retomar-proyecto-contexto-u3o686`
 (10 ago 2026, punta `ef2d231`) es un intento anterior con **historia
