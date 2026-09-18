@@ -1068,3 +1068,48 @@ Con `zero-parado.glb` —la malla que la otra sesión generó **en pose de pie a
 **Resultado:** `public/models/zero-animado.glb`, 1.97 MB con Draco, con tres animaciones. Solo con `standing` son 1.04 MB, dentro del rango de lo que la app ya carga (0.6 a 1.8 MB); cada animación extra pesa ~0.5 MB. Visible en `/preview?model=/models/zero-animado.glb`.
 
 **Lo que esto destapó y no es técnico:** los dos modelos de perro del repo son **CC-BY-4.0** y **nadie acredita a sus autores en ninguna parte**. Están desde el 16 de septiembre y la licencia viaja dentro del `.glb`, en `asset.extras`. El uso comercial está permitido; sin crédito visible, no. Ver `brand/3d/CREDITOS.md`. Y ninguno de los dos trae un ciclo de correr — que es literalmente lo que promete la landing.
+
+## [2026-09-18] Créditos infinitos con la llave pública: el agujero que dejó el grant por omisión
+**Context:** Richard pidió construir todo lo que falta para la v4. Auditando el camino del dinero —el que nunca había corrido— apareció algo que no estaba en ninguna lista.
+
+**El agujero.** `reservar_credito_generacion(p_user, p_generacion)` y `reembolsar_generacion(p_user, p_generacion)` son `SECURITY DEFINER` y reciben el usuario **como parámetro** en vez de leer `auth.uid()`. Eso es correcto y deliberado: las llama el worker, con la llave de servicio, actuando en nombre de otro. Lo que estaba mal es que además tenían `EXECUTE` para `anon` y `authenticated` — el grant por omisión de Supabase para todo lo que vive en `public`.
+
+La llave anónima viaja pública en el bundle de la app y en el sitio. Con ella, cualquiera podía pedir:
+
+```
+POST /rest/v1/rpc/reembolsar_generacion
+{ "p_user": "<cualquier usuario>", "p_generacion": "<uuid al azar>" }
+```
+
+y quedarse con **+1 crédito**. El índice único `(motivo, referencia)` no lo frena: la referencia se arma con el `p_generacion` que manda quien llama, así que basta inventar otro UUID. **Créditos infinitos, gratis, sin cuenta.** La gemela permitía lo contrario —restarle un crédito a otro usuario si se conocía su id—, que no da dinero pero sí hace daño.
+
+**Lo irónico es que el encabezado del webhook describe exactamente este riesgo** y explica que por eso `credit_ledger` no tiene política de INSERT. La defensa era correcta; se saltaba por un camino que nadie miró, porque `SECURITY DEFINER` ignora RLS por definición.
+
+**Por qué el aviso del linter no bastaba.** El analizador de Supabase reporta **31 funciones** en esta misma categoría. Treinta y nueve de esas advertencias son ruido —`saldo_creditos`, `canjear_codigo`, `consumir_creditos` y compañía **sí** leen `auth.uid()`, y tienen que ser llamables desde el cliente—. Lo que distingue a las dos peligrosas no es ser `SECURITY DEFINER` ni ser públicas: es **recibir la identidad como parámetro**. La consulta que lo encontró cruza tres cosas: `prosecdef`, `has_function_privilege('anon', …)` y si el cuerpo menciona `auth.uid()`. Vale la pena repetirla cuando se agreguen funciones nuevas.
+
+**Decision: revocar, no cambiar la firma.** Migración `010_blindar_rpc_del_worker.sql`. Hacer que lean `auth.uid()` rompería al worker, que es justamente quien debe poder actuar en nombre de otro. El problema nunca fue la firma sino quién podía llamarla.
+
+**Verificado en producción, no supuesto.** Antes: `anon_puede = true` en las dos. Después: `false` para `anon` y `authenticated`, `true` para `service_role`. Y se comprobó que el worker sigue pudiendo llamarlas **sin escribir nada**: como `service_role`, con un usuario inexistente, la función revisa el saldo antes de insertar y levanta `P0001` — si hubiera perdido el permiso habría levantado `insufficient_privilege`. El libro mayor quedó en las mismas 7 filas.
+
+**Falta mirar el histórico.** Hoy hay 7 movimientos y ninguno sospechoso, pero la app lleva publicada desde el 8 de septiembre. Si alguna vez aparece un saldo que no cuadra, el rastro sería una fila de `reembolso` cuya referencia no corresponde a ninguna generación de ese usuario.
+
+## [2026-09-18] `verify_jwt` vivía solo en el estado desplegado
+**Context:** El repo no tenía `supabase/config.toml`. La función del webhook está desplegada con `verify_jwt = false`, que es lo que necesita: RevenueCat no manda un JWT de usuario sino un secreto compartido en la cabecera Authorization, y la función lo compara ella misma.
+
+**El riesgo.** Ese ajuste no estaba escrito en ninguna parte del repo. El día que alguien corriera `supabase functions deploy revenuecat-webhook`, la función volvería al valor por omisión —`verify_jwt = true`— y la plataforma empezaría a rechazar a RevenueCat con 401 **antes de ejecutar una línea del código**.
+
+**Por qué sería el peor fallo posible.** Es invisible desde todos lados: la compra se cobra en Play igual, la app no muestra ningún error, los registros de la función están vacíos porque nunca corrió. Solo hay un cliente que pagó y no recibió su crédito.
+
+**Decision:** `supabase/config.toml` con `verify_jwt = false` para `revenuecat-webhook` y `true` para `eliminar-cuenta`. Lo segundo es una segunda puerta, no la única: `verify_jwt` se conforma con cualquier token válido del proyecto —y la llave anónima es uno—, así que esa función vuelve a resolver al usuario con `getUser()` por dentro, como ya hacía.
+
+**Verificado:** un POST sin secreto contesta `{"error":"No autorizado"}`, que es el JSON de nuestra función y no el de la plataforma. Esa diferencia es cómo se distingue si `verify_jwt` está encendido, y quedó escrita en `LANZAMIENTO.md` como comprobación obligatoria después de cada despliegue.
+
+## [2026-09-18] El precio de entrada solo estaba protegido en el cliente
+**Context:** `creditos_primero` es el primer crédito a mitad de precio. `Creditos.jsx` lo esconde a quien ya compró, consultando `ha_comprado()`.
+
+**Eso es una regla de negocio viviendo en el navegador.** Ni Play ni RevenueCat saben limitar un producto único por usuario, así que un cliente modificado puede comprarlo otra vez, y el webhook lo acreditaba sin distinguir.
+
+**Decision: marcar, no rechazar.** La persona pagó; negarle el crédito sería quedarse con su dinero, que es peor que cobrar de menos. El webhook ahora detecta el caso, lo deja en `detalle.primero_repetido` y lo grita en los registros.
+
+**Por qué importa registrarlo aunque no se actúe.** La diferencia entre "pasó una vez" y "está pasando" decide si conviene mover la oferta a un código promocional —que sí se puede limitar por usos— y esa diferencia no se puede reconstruir después si nadie la anotó. La exposición mientras tanto está acotada: sigue siendo una compra pagada al 50%, no un regalo.
+

@@ -1,0 +1,26 @@
+# Configuración de las funciones de borde.
+#
+# ── Por qué este archivo existe ──
+# `verify_jwt` vivía SOLO en el estado desplegado, no en el repo. El día que
+# alguien corriera `supabase functions deploy revenuecat-webhook` sin él, la
+# función volvería al valor por omisión —`verify_jwt = true`— y la plataforma
+# empezaría a rechazar a RevenueCat con 401 ANTES de que el código corriera.
+#
+# El daño sería invisible desde la app: la compra se cobra igual en Play, y el
+# crédito simplemente nunca llega. Nadie ve un error; solo un cliente que pagó
+# y no recibió nada. Por eso se fija aquí y no en el panel.
+
+project_id = "duzfvyfhsvhavptuxehi"
+
+[functions.revenuecat-webhook]
+# RevenueCat no manda un JWT de usuario: manda un secreto compartido en la
+# cabecera Authorization, que la función compara ella misma. Si la plataforma
+# exigiera JWT, ese secreto se leería como token inválido y nunca entraría.
+verify_jwt = false
+
+[functions.eliminar-cuenta]
+# Aquí sí llega un JWT de persona. Aun así la función NO se apoya en esto:
+# `verify_jwt` se conforma con cualquier token válido del proyecto, y la llave
+# anónima es uno. Por eso adentro vuelve a resolver al usuario con getUser().
+# Esta línea es una segunda puerta, no la única.
+verify_jwt = true

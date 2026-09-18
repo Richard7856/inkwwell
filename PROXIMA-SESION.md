@@ -1,6 +1,6 @@
 # Dónde retomar
 
-> **Actualizado el 17 de septiembre de 2026 (tarde).**
+> **Actualizado el 18 de septiembre de 2026.**
 >
 > Si vienes de otra máquina, primero `SETUP.md`. El contexto del sprint está en
 > `SHIPATON.md`; el porqué de cada decisión técnica, en `DECISIONS.md`.
@@ -25,36 +25,40 @@ lo antes físicamente posible; el anuncio puede ir después.
 
 ---
 
-## El estado real, verificado el 16 sep (no supuesto)
+## El estado real, verificado el 18 sep (medido, no supuesto)
+
+> La tabla del 16 sep quedó obsoleta en cuatro renglones. Esto se midió hoy
+> contra Railway, contra la base y contra el sitio.
 
 | | |
 |---|---|
 | App en Play | ✅ v3 publicada desde el 8 sep — **no puede cobrar** |
-| `versionCode` | ⚠️ sigue en **3**. La v4 no existe |
-| inkar.app | ✅ 200 (redirige a `www.inkar.app`) |
-| Worker `/health` | ✅ 200, analizador vivo |
-| Worker `/generar` | ⚠️ **503 `no_configurado`** — Railway no tiene las llaves de generación |
-| `SUPABASE_SERVICE_ROLE_KEY` | ❌ **falta. Es lo único que bloquea probar el worker** |
-| Llaves de Higgsfield | ✅ válidas |
-| Saldo en Higgsfield Cloud | ✅ **con saldo desde el 16 sep** |
-| Generación contra la API | ✅ **probada: 240 s, 768x768, fondo verde plano medido** |
-| Generación por el camino del worker | ❌ **nunca** — reserva de crédito, Storage y reembolso sin ejecutar |
-| Repo | ✅ todo commiteado y empujado |
+| `versionCode` | ✅ **4** (subido el 18 sep). La v4 todavía no se entrega |
+| inkar.app | ✅ 200, con el video y `zero-animado.glb` sirviendo |
+| Worker `/health` | ✅ 200, `disponible: true`, `motivo: ok` |
+| Llaves en Railway | ✅ **puestas** — ya no responde `no_configurado` |
+| **Generación por el camino del worker** | ✅ **PROBADA.** 2 videos generados, guardados en Storage y asignados a su tatuaje |
+| Reserva de crédito | ✅ ejercida, incluido el rechazo por saldo insuficiente |
+| Reembolso | ✅ **ejecutado de verdad** (el modelo `veo3.1` salió deshabilitado y devolvió el crédito) |
+| **Compras** | ❌ **0. El cobro nunca ha corrido completo** |
+| Lista de espera | ⚠️ **1** — la landing sigue sin compartirse |
+| Repo | ✅ todo commiteado y empujado a `main` |
 
-**La base sigue en cero.** Nada del núcleo se ha ejercitado por el camino de la
-app:
+**El único tramo que nunca ha corrido es el cobro.** Play → RevenueCat →
+webhook → `credit_ledger`. Los pasos para probarlo sin comprar están en
+`LANZAMIENTO.md` (A5).
 
-- **0** filas en `generaciones` — el worker nunca ha corrido una
-- **0** compras · **0** estudios · **0** tatuajes con video
-- **1** en la lista de espera (Richard **no ha compartido la landing**; no es
-  falta de interés)
-
----
+**Agujero de seguridad encontrado y cerrado el 18 sep.**
+`reembolsar_generacion` y `reservar_credito_generacion` tenían `EXECUTE` para
+`anon`, y como son `SECURITY DEFINER` sin `auth.uid()`, cualquiera con la llave
+anónima —que viaja pública en el bundle— podía regalarse créditos infinitos.
+Migración `010`, aplicada y verificada. Detalle en `DECISIONS.md`.
 
 ## Lo que SÍ se probó el 16 sep: el motor de video funciona
 
-Cuatro generaciones reales contra Higgsfield, **sin pasar por el worker** (por
-eso `generaciones` sigue en 0). Detalle en `DECISIONS.md`.
+Cuatro generaciones reales contra Higgsfield, **sin pasar por el worker**.
+Detalle en `DECISIONS.md`. (El 17 sep ya se probó también POR el worker: ver la
+tabla de arriba.)
 
 **El croma aguanta todo.** Fondo plano en todos los casos, desviación 1.2 a 2.3.
 Incluso **con la cámara orbitando**, que era el riesgo real — basta pedir
@@ -114,24 +118,29 @@ movimiento lento.
 
 ## Lo primero, en orden
 
-1. **Recargar Higgsfield Cloud** y poner `SUPABASE_SERVICE_ROLE_KEY` en
-   `worker/.env` y en Railway.
-2. **Probar la generación de punta a punta en local** — sin teléfono: worker +
-   JWT real de la cuenta del revisor + su crédito. Es la primera vez que se
-   ejecutaría. **Confirma además que el interruptor de degradación se enciende
-   de vuelta** al aceptarse el primer envío.
-3. **Productos en Play** y Offering en RevenueCat.
-4. **Compilar v4** (`versionCode` 4), verificar con grep que la llave de
-   RevenueCat quedó horneada, entregar a Play.
-5. **Probar en el teléfono** lo único que exige teléfono: la compra por Play y
-   la generación desde la app.
+> Los pasos 1 y 2 de la lista anterior —recargar Higgsfield, poner las llaves en
+> Railway, probar la generación por el worker— **ya están hechos**. Lo que queda:
 
-> **El paso 4 no depende del 1 ni del 2.** Las llaves de Higgsfield y la
-> `service_role` viven en el worker, no en el APK: se pueden arreglar mientras
-> Play revisa. Y desde el 16 sep, si el generador no está listo, la app **no
-> ofrece** "Anima tu recuerdo" en vez de mandar al usuario a chocar. Esperar a
-> tener todo resuelto antes de compilar cuesta días de revisión que no se
-> recuperan.
+1. **La llave de RevenueCat en `.env`.** Es lo ÚNICO que se hornea en el bundle,
+   y es el error que ya se cometió una vez: la v3 publicada no puede cobrar por
+   esto.
+2. **Productos en Play** (los cuatro IDs exactos) y **Offering marcada Current**
+   en RevenueCat.
+3. **Redesplegar el webhook** — tiene un cambio sin publicar, y ahora
+   `supabase/config.toml` fija `verify_jwt = false` para que el redespliegue no
+   lo rompa.
+4. **Probar el cobro sin comprar**: RevenueCat → Integrations → Webhooks → Send
+   test event. Debe contestar 200 `producto desconocido`. Es el único tramo del
+   producto que nunca ha corrido.
+5. **Compilar la v4**, verificar con grep que la llave quedó horneada, entregar.
+6. **En el teléfono**, lo único que exige teléfono: comprar de verdad y generar
+   desde la app.
+
+> **El paso 5 no depende de los productos de Play.** Los productos y la Offering
+> se leen en vivo; el bundle solo hornea la llave. Y si el generador se cayera,
+> la app deja de ofrecer "Anima tu recuerdo" en vez de mandar al usuario a
+> chocar. Esperar a tenerlo todo antes de compilar cuesta días de revisión que
+> no se recuperan.
 
 ---
 

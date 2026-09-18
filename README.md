@@ -1,16 +1,48 @@
-# React + Vite
+# InkAR
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Apunta la cámara a un tatuaje y el tatuaje se mueve.
 
-Currently, two official plugins are available:
+Quien se tatuó a su perro que murió sube una foto suya y una frase; de ahí sale
+un video generado, anclado a su piel en realidad aumentada. El video es suyo, no
+de un catálogo.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- **App**: [Google Play](https://play.google.com/store/apps/details?id=app.inkar) · **Sitio**: [inkar.app](https://www.inkar.app)
 
-## React Compiler
+## Cómo está armado
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+| | |
+|---|---|
+| `src/` | App y landing — React + Vite, desplegado en Vercel |
+| `android/` | Envoltorio Capacitor 8. Empaqueta `dist/` adentro |
+| `worker/` | Express en Railway: compila los objetivos de AR, analiza calidad del tatuaje y genera el video |
+| `supabase/` | Migraciones y funciones de borde (webhook de cobro, borrado de cuenta) |
+| `scripts/` | Builds firmados de Android y utilidades 3D |
 
-## Expanding the ESLint configuration
+## Para empezar
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+```bash
+npm install
+cp .env.example .env     # y llenarlo — ver SETUP.md
+npm run dev
+```
+
+| Comando | Qué hace |
+|---|---|
+| `npm run dev` | Servidor de desarrollo (HTTPS autofirmado: la cámara lo exige) |
+| `npm run build` | Construye `dist/` |
+| `npm run lint` | ESLint |
+| `npm run apk` | APK firmado para probar en un teléfono |
+| `npm run aab` | Bundle firmado para Play |
+
+## Los documentos
+
+| | |
+|---|---|
+| `CLAUDE.md` | Contexto mínimo y las trampas que ya costaron días |
+| `SETUP.md` | Montar el proyecto en otra máquina |
+| `PROXIMA-SESION.md` | Estado del día y decisiones abiertas |
+| `LANZAMIENTO.md` | Los pasos para publicar una versión |
+| `DECISIONS.md` | Por qué cada decisión, con lo que se probó |
+| `SHIPATON.md` | Contexto del concurso RevenueCat Shipaton |
+
+Los modelos 3D de perro llevan licencia CC-BY: ver `brand/3d/CREDITOS.md`.

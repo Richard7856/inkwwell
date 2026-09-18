@@ -1,4 +1,3 @@
-/* global __BUILD_ID__ */ // lo inyecta vite.config.js en tiempo de build
 import { Link } from 'react-router-dom'
 import { t, getIdioma, setIdioma } from '../lib/i18n.js'
 import Logo from '../components/ui/Logo.jsx'
