@@ -58,7 +58,8 @@ La compilación no necesita ninguna. **La generación de video sí**, y sin ella
 | `HIGGSFIELD_ENDPOINT` | Modelo, opcional | Por defecto `/minimax/hailuo-02/standard/image-to-video`. **Antes de cambiarlo, corre `node --env-file=.env modelos.js`**: el catálogo documentado NO es el que tu plan habilita |
 | `HIGGSFIELD_DURACION` | Segundos, opcional | Por defecto 6 |
 | `MESHY_API_KEY` | Llave del API de Meshy, para el 3D **en pruebas** | meshy.ai → API. Sin ella `/generar-3d` responde 503 |
-| `MESHY_ADMIN_TOKEN` | Contraseña de la ruta de 3D | **La inventas tú.** Sin ella la ruta queda deshabilitada |
+| `WORKER_ADMIN_TOKEN` | Contraseña de TODAS las rutas de administración (3D y video) | **La inventas tú.** Sin ella quedan deshabilitadas |
+| `MESHY_ADMIN_TOKEN` | Nombre anterior de lo mismo, solo para 3D | Se sigue aceptando. Poner cualquiera de los dos basta |
 
 ⚠️ **NO pongas las variables `VITE_*` aquí.** Railway las sugiere porque escanea
 todo el repositorio, pero son del frontend: Vite las hornea al compilar y quien
@@ -66,7 +67,7 @@ compila es Vercel. En el worker no hacen nada, y los valores que sugiere salen
 de `.env.example` — son marcadores de posición, no credenciales. Aceptarlas deja
 la impresión de haber configurado el worker mientras `/generar` sigue en 503.
 
-⚠️ **`MESHY_ADMIN_TOKEN` no es opcional si quieres usar el 3D.** La URL de este
+⚠️ **`WORKER_ADMIN_TOKEN` no es opcional si quieres usar el 3D ni el video.** La URL de este
 worker viaja en el bundle público, así que una ruta abierta que dispara
 generaciones de pago es una factura esperando a que alguien la encuentre. Sin
 token la ruta responde 503 y no genera nada: se prefiere inservible a costosa.
@@ -131,3 +132,8 @@ npm run apk
 | GET | `/health` | Healthcheck (lo usa Railway) |
 | POST | `/compile` | `multipart/form-data` con campo `image` → devuelve el `.mind` binario |
 | POST | `/analyze` | Igual, pero devuelve JSON con métricas de calidad de tracking |
+
+| POST | `/generar-video` | `{imagenUrl, prompt, modelo?, duracion?}` → arranca un video. **Token de admin.** Sin créditos, sin tatuaje, sin base |
+| POST | `/generar-video/estimar` | Lo mismo pero solo dice cuánto costaría. **Gratis** |
+| GET | `/generar-video/modelos` | Los modelos con perfil escrito. Tener perfil ≠ estar habilitado en el plan |
+| GET | `/generar-video/:tarea` | Avance y URL del video |

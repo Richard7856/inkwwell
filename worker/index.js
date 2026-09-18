@@ -15,6 +15,9 @@
  *   POST /generar        → foto + historia → video en el tatuaje (Higgsfield), JSON + JWT
  *   POST /generar-3d     → fotos de una mascota → modelo GLB (Meshy). EN PRUEBAS
  *   GET  /generar-3d/:id → avance y URL del GLB. EN PRUEBAS
+ *   POST /generar-video  → imagen + prompt → video, sin créditos ni tatuaje. ADMIN
+ *   POST /generar-video/estimar → cuánto costaría, sin generar. ADMIN, gratis
+ *   GET  /generar-video/:id → avance y URL del video. ADMIN
  */
 
 import { timingSafeEqual } from 'node:crypto'
@@ -26,6 +29,7 @@ import { analyzeTattooImage } from './analyzer.js'
 import { iniciarGeneracion, reanudarPendientes } from './generacion.js'
 import { estadoGeneracion } from './disponibilidad.js'
 import * as meshy from './meshy.js'
+import * as hf from './higgsfield.js'
 
 const app = express()
 
@@ -290,10 +294,22 @@ app.post('/generar', async (req, res) => {
   Es un token de administración a propósito, no el JWT de Supabase: esto no es
   una función de usuario, es una herramienta para Richard y para mí.
 */
-const TOKEN_3D = process.env.MESHY_ADMIN_TOKEN
+/*
+  Un solo token para todas las rutas de administración. Se acepta
+  `MESHY_ADMIN_TOKEN` además de `WORKER_ADMIN_TOKEN` porque el primero ya estaba
+  documentado en LANZAMIENTO.md cuando solo existía la ruta de 3D; poner
+  cualquiera de los dos funciona y no hay que coordinar un cambio de nombre en
+  Railway con un despliegue.
+*/
+const TOKEN_ADMIN = process.env.WORKER_ADMIN_TOKEN || process.env.MESHY_ADMIN_TOKEN
 
-function autorizado3D(req) {
-  if (!TOKEN_3D) return { ok: false, status: 503, error: 'Ruta deshabilitada: falta MESHY_ADMIN_TOKEN en el worker' }
+function autorizadoAdmin(req) {
+  if (!TOKEN_ADMIN) {
+    return {
+      ok: false, status: 503,
+      error: 'Ruta deshabilitada: falta WORKER_ADMIN_TOKEN (o MESHY_ADMIN_TOKEN) en el worker',
+    }
+  }
   const dado = (req.headers.authorization || '').replace(/^Bearer\s+/i, '')
   /*
     Comparación de largo constante. Es exagerado para una ruta de pruebas, pero
@@ -301,14 +317,14 @@ function autorizado3D(req) {
     carácter midiendo cuánto tarda la respuesta.
   */
   const a = Buffer.from(dado)
-  const b = Buffer.from(TOKEN_3D)
+  const b = Buffer.from(TOKEN_ADMIN)
   const igual = a.length === b.length && timingSafeEqual(a, b)
   if (!igual) return { ok: false, status: 401, error: 'Token inválido' }
   return { ok: true }
 }
 
 app.post('/generar-3d', upload.array('fotos', 4), async (req, res) => {
-  const permiso = autorizado3D(req)
+  const permiso = autorizadoAdmin(req)
   if (!permiso.ok) return res.status(permiso.status).json({ error: permiso.error })
 
   try {
@@ -343,7 +359,7 @@ app.post('/generar-3d', upload.array('fotos', 4), async (req, res) => {
 })
 
 app.get('/generar-3d/:tarea', async (req, res) => {
-  const permiso = autorizado3D(req)
+  const permiso = autorizadoAdmin(req)
   if (!permiso.ok) return res.status(permiso.status).json({ error: permiso.error })
 
   try {
@@ -351,6 +367,108 @@ app.get('/generar-3d/:tarea', async (req, res) => {
   } catch (err) {
     const status = Number.isInteger(err.status) ? err.status : 500
     res.status(status).json({ error: err.message, codigo: err.codigo ?? 'desconocido' })
+  }
+})
+
+/*
+  ═══ VIDEO, RUTA DE ADMINISTRACIÓN ════════════════════════════════════════
+
+  La misma generación que hace `/generar`, pero sin usuario, sin crédito y sin
+  tatuaje. Existe para poder ITERAR sobre el prompt, el modelo y la imagen de
+  entrada — que es de donde sale la calidad— sin tener que abrir sesión como
+  alguien ni gastarle un crédito a nadie.
+
+  ── Por qué hacía falta ──
+  `/generar` exige el JWT de sesión de un usuario real, y un token de sesión no
+  puede viajar por un chat. Sin esta ruta, mejorar un video obligaba a que
+  Richard corriera el CLI en su máquina y me mandara el archivo, una vuelta por
+  cada intento. La ruta de 3D ya existía por exactamente esta razón; al video
+  simplemente nunca se le hizo.
+
+  ── El mismo portón, el mismo criterio ──
+  Va detrás del token de administración y falla cerrada: sin token, 503. La URL
+  del worker viaja en el bundle público, y una ruta abierta que dispara
+  generaciones de pago es una factura esperando a que alguien la encuentre.
+
+  ── Lo que NO hace ──
+  No toca la base, no reserva créditos, no asigna el video a ningún tatuaje y
+  no enciende ni apaga el interruptor de degradación. Es un banco de pruebas;
+  el camino del producto sigue siendo `/generar` y no cambia.
+*/
+
+/** Lo que las tres rutas de video necesitan leer del cuerpo. */
+function peticionDeVideo(cuerpo = {}) {
+  const imagenUrl = String(cuerpo.imagenUrl ?? '').trim()
+  const prompt = String(cuerpo.prompt ?? '').trim()
+  if (!/^https?:\/\//i.test(imagenUrl)) {
+    const e = new Error('imagenUrl debe ser una URL http(s) pública')
+    e.status = 400
+    throw e
+  }
+  if (prompt.length < 10) {
+    const e = new Error('prompt demasiado corto')
+    e.status = 400
+    throw e
+  }
+  const endpoint = cuerpo.modelo ? String(cuerpo.modelo) : undefined
+  if (endpoint && !hf.MODELOS.includes(endpoint)) {
+    const e = new Error(`Modelo sin perfil: ${endpoint}. Conocidos: ${hf.MODELOS.join(', ')}`)
+    e.status = 400
+    throw e
+  }
+  const duracion = cuerpo.duracion !== undefined ? Number(cuerpo.duracion) : undefined
+  if (duracion !== undefined && !Number.isFinite(duracion)) {
+    const e = new Error('duracion debe ser un número de segundos')
+    e.status = 400
+    throw e
+  }
+  return { imagenUrl, prompt, endpoint, duracion }
+}
+
+function fallo(res, err, etiqueta) {
+  const status = Number.isInteger(err.status) ? err.status : 500
+  if (status >= 500) console.error(`[${etiqueta}] Error:`, err.message)
+  res.status(status).json({ error: err.message, codigo: err.codigo ?? 'desconocido' })
+}
+
+app.get('/generar-video/modelos', (req, res) => {
+  const permiso = autorizadoAdmin(req)
+  if (!permiso.ok) return res.status(permiso.status).json({ error: permiso.error })
+  // Tener perfil no es lo mismo que estar habilitado en el plan: ver modelos.js
+  res.json({ modelos: hf.MODELOS, porOmision: hf.ENDPOINT })
+})
+
+app.post('/generar-video/estimar', async (req, res) => {
+  const permiso = autorizadoAdmin(req)
+  if (!permiso.ok) return res.status(permiso.status).json({ error: permiso.error })
+  try {
+    const { imagenUrl, prompt, endpoint, duracion } = peticionDeVideo(req.body)
+    res.json(await hf.estimar({ prompt, imageUrl: imagenUrl, endpoint, duracion }))
+  } catch (err) {
+    fallo(res, err, 'video/estimar')
+  }
+})
+
+app.post('/generar-video', async (req, res) => {
+  const permiso = autorizadoAdmin(req)
+  if (!permiso.ok) return res.status(permiso.status).json({ error: permiso.error })
+  try {
+    const { imagenUrl, prompt, endpoint, duracion } = peticionDeVideo(req.body)
+    const { requestId } = await hf.enviar({ prompt, imageUrl: imagenUrl, endpoint, duracion })
+    console.log(`[video] ${requestId} · ${endpoint ?? hf.ENDPOINT} · ${duracion ?? "por omisión"}s`)
+    res.status(202).json({ tarea: requestId, modelo: endpoint ?? hf.ENDPOINT })
+  } catch (err) {
+    fallo(res, err, 'video')
+  }
+})
+
+app.get('/generar-video/:tarea', async (req, res) => {
+  const permiso = autorizadoAdmin(req)
+  if (!permiso.ok) return res.status(permiso.status).json({ error: permiso.error })
+  try {
+    res.json(await hf.estado(req.params.tarea))
+  } catch (err) {
+    fallo(res, err, 'video')
   }
 })
 

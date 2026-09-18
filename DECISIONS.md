@@ -1139,3 +1139,36 @@ Las cajas envolventes lo dicen en números. Donante de pie: `(34, 115, 83)` —a
 
 **El hueco que sigue abierto y sí importa:** ninguno de los dos donantes tiene ciclo de **caminar o correr**, que es literalmente lo que promete la landing. Ver `brand/3d/CREDITOS.md`.
 
+
+## [2026-09-18] Una ruta de administración para el video, que al 3D ya tenía y al video no
+**Context:** Richard pidió mejorar el video de Zero —la cara se deforma y la concha sale enorme— y preguntó si yo tenía acceso al worker para generarlo. No lo tenía: `/generar` exige el JWT de sesión de un usuario real, y un token de sesión no puede viajar por un chat. La única salida era que él corriera `generar-cli.js` en su máquina y me mandara el archivo: una vuelta completa por cada intento, sobre un problema que se resuelve iterando.
+
+**Lo irónico es que la ruta de 3D existe por exactamente esta razón** y está documentada así. Al video simplemente nunca se le hizo.
+
+**Decision: `POST /generar-video`, `/generar-video/estimar`, `/generar-video/modelos` y `GET /generar-video/:tarea`**, detrás del mismo portón de administración que el 3D y fallando cerradas. No tocan la base, no reservan créditos, no asignan el video a ningún tatuaje y no mueven el interruptor de degradación: son un banco de pruebas. El camino del producto sigue siendo `/generar` y no cambió.
+
+**El estimador es la pieza que más valor da y no costó nada.** `POST /estimate<ruta>` devuelve créditos y dólares sin generar. Eso convierte "elegir modelo" de una apuesta en una comparación: se pueden pedir los nueve perfiles y ver el precio antes de gastar un peso. Ya estaba descubierto en `modelos.js`; solo faltaba exponerlo.
+
+**`higgsfield.js` pasa a aceptar modelo y duración por parámetro**, con los valores del entorno como omisión, así que `enviar({prompt, imageUrl})` —lo que llama el producto— se comporta byte por byte igual que antes. Los perfiles reciben la duración en vez de leerla del módulo; cada familia sigue teniendo su propio enum (MiniMax {6,10}, Kling {5,10}, Veo cadenas {"4","6","8"}).
+
+**Un token para las dos familias.** `WORKER_ADMIN_TOKEN`, aceptando también `MESHY_ADMIN_TOKEN` porque ese nombre ya estaba documentado cuando solo existía el 3D. Poner cualquiera de los dos funciona, y así no hay que coordinar un cambio de nombre en Railway con un despliegue.
+
+**Verificado con el worker levantado en local:** sin ninguna variable de token las cuatro rutas responden 503; con token equivocado, 401; con token bueno, `/modelos` lista los nueve perfiles; una `imagenUrl` que no es http(s) da 400, un prompt de menos de 10 caracteres da 400, y un modelo sin perfil da 400 nombrando los conocidos. Con cuerpo válido y sin llaves de Higgsfield, 503 `no_configurado`. Comprobado además que `/generar` y `/health` responden exactamente lo mismo que antes del cambio.
+
+## [2026-09-18] La cara deforme y la concha gigante son culpa de la imagen de entrada
+**Context:** El video `75e33247` es fotorrealista y el fondo verde salió limpio, pero la cara de Zero se deforma al moverse y la concha sale desproporcionada. La tentación era culpar al modelo (`hailuo-02/standard`) o al prompt.
+
+**Se abrió la imagen de entrada, y ahí está todo.** `pruebas/zero-foto-real-verde-1789609509.png` es una foto real de Zero **de frente y en primer plano**: se ve la cabeza, el pecho y las patas delanteras. **El lomo, las patas traseras y la cola no están en el encuadre.**
+
+El prompt le pedía caminar, echarse, agarrar la concha con las patas, comérsela y mover la cola. Es decir, le pedía **inventar el 70% del animal** y girar una cara que solo conoce desde un ángulo. La deformación no es un defecto del modelo: es lo que pasa cuando se le pide alucinar lo que no vio.
+
+Y como en el cuadro no hay suelo ni ningún objeto de escala conocida, la concha se dimensiona contra el marco en vez de contra el perro. De ahí el pan enorme.
+
+**Las otras imágenes que hay en Storage no sirven** para esto: `zero-final-*` y `zero-*` son ilustraciones planas, las que produjeron el video de caricatura.
+
+**Entonces la palanca es la entrada, en este orden:**
+1. Una foto de **cuerpo entero**, de pie, de perfil o tres cuartos, con espacio alrededor. El modelo conserva lo que ve; lo que no ve, lo inventa.
+2. **Menos acción.** Cinco verbos en diez segundos son cinco oportunidades de deformar. Para un producto de memoria, el golpe emocional es el reconocimiento —está aquí, respira, mueve la cola— no que ejecute un truco.
+3. **Escala explícita** si hay un objeto: "del tamaño de su pata", y suelo en el cuadro.
+4. Recién entonces, subir de `standard` a `pro` o a `hailuo-2.3`. Es la palanca más cara y la que menos mueve la aguja si la entrada sigue mal.
+

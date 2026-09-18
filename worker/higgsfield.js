@@ -66,38 +66,38 @@ const PERFILES = {
     TODO el recorte de croma (ver videoLayer.js). Mejor un prompt literal que
     uno bonito que devuelva un fondo de bosque.
   */
-  '/minimax/hailuo-02/standard/image-to-video': (prompt, image_url) => ({
+  '/minimax/hailuo-02/standard/image-to-video': (prompt, image_url, dur) => ({
     prompt, image_url,
-    duration: DURACION > 8 ? 10 : 6,   // enum cerrado: 6 o 10
+    duration: dur > 8 ? 10 : 6,   // enum cerrado: 6 o 10
     resolution: '768P',
     prompt_optimizer: false,
   }),
-  '/minimax/hailuo-02/pro/image-to-video': (prompt, image_url) => ({
+  '/minimax/hailuo-02/pro/image-to-video': (prompt, image_url, dur) => ({
     prompt, image_url,
-    duration: DURACION > 8 ? 10 : 6,
+    duration: dur > 8 ? 10 : 6,
     resolution: '768P',
     prompt_optimizer: false,
   }),
-  '/minimax/hailuo-2.3-fast/standard/image-to-video': (prompt, image_url) => ({
+  '/minimax/hailuo-2.3-fast/standard/image-to-video': (prompt, image_url, dur) => ({
     prompt, image_url,
-    duration: DURACION > 8 ? 10 : 6,
+    duration: dur > 8 ? 10 : 6,
     resolution: '768P',
     prompt_optimizer: false,
   }),
-  '/minimax/hailuo-2.3/standard/image-to-video': (prompt, image_url) => ({
+  '/minimax/hailuo-2.3/standard/image-to-video': (prompt, image_url, dur) => ({
     prompt, image_url,
-    duration: DURACION > 8 ? 10 : 6,
+    duration: dur > 8 ? 10 : 6,
     resolution: '768P',
     prompt_optimizer: false,
   }),
 
   // Kling: duración en enum 5|10, sin aspect_ratio en imagen-a-video.
   // cfg_scale 0.5 es el valor por defecto de la API; se deja explícito.
-  '/kling-video/v2.5-turbo/standard/image-to-video': (prompt, image_url) => ({
-    prompt, image_url, duration: DURACION > 7 ? 10 : 5, cfg_scale: 0.5, negative_prompt: '',
+  '/kling-video/v2.5-turbo/standard/image-to-video': (prompt, image_url, dur) => ({
+    prompt, image_url, duration: dur > 7 ? 10 : 5, cfg_scale: 0.5, negative_prompt: '',
   }),
-  '/kling-video/v2.1/standard/image-to-video': (prompt, image_url) => ({
-    prompt, image_url, duration: DURACION > 7 ? 10 : 5, cfg_scale: 0.5, negative_prompt: '',
+  '/kling-video/v2.1/standard/image-to-video': (prompt, image_url, dur) => ({
+    prompt, image_url, duration: dur > 7 ? 10 : 5, cfg_scale: 0.5, negative_prompt: '',
   }),
 
   '/wan-25-preview/image-to-video': (prompt, image_url) => ({ prompt, image_url }),
@@ -107,14 +107,14 @@ const PERFILES = {
     es el único con aspect_ratio explícito, y si el plan cambia es el candidato
     natural para vertical garantizado.
   */
-  '/veo3.1/image-to-video': (prompt, image_url) => ({
+  '/veo3.1/image-to-video': (prompt, image_url, dur) => ({
     prompt, image_url,
-    duration: String([4, 6, 8].reduce((a, b) => Math.abs(b - DURACION) < Math.abs(a - DURACION) ? b : a)),
+    duration: String([4, 6, 8].reduce((a, b) => Math.abs(b - dur) < Math.abs(a - dur) ? b : a)),
     resolution: '720', aspect_ratio: '9:16', generate_audio: false,
   }),
-  '/veo3.1/fast/image-to-video': (prompt, image_url) => ({
+  '/veo3.1/fast/image-to-video': (prompt, image_url, dur) => ({
     prompt, image_url,
-    duration: String([4, 6, 8].reduce((a, b) => Math.abs(b - DURACION) < Math.abs(a - DURACION) ? b : a)),
+    duration: String([4, 6, 8].reduce((a, b) => Math.abs(b - dur) < Math.abs(a - dur) ? b : a)),
     resolution: '720', aspect_ratio: '9:16', generate_audio: false,
   }),
 }
@@ -161,16 +161,16 @@ function cabeceras() {
  * @param {{ prompt: string, imageUrl: string }} datos
  * @returns {Promise<{ requestId: string }>}
  */
-export async function enviar({ prompt, imageUrl }) {
-  const cuerpo = PERFILES[ENDPOINT]
+export async function enviar({ prompt, imageUrl, endpoint = ENDPOINT, duracion = DURACION }) {
+  const cuerpo = PERFILES[endpoint]
   if (!cuerpo) {
-    throw new Error(`HIGGSFIELD_ENDPOINT no reconocido: ${ENDPOINT}. Perfiles: ${Object.keys(PERFILES).join(', ')}`)
+    throw new Error(`Modelo no reconocido: ${endpoint}. Perfiles: ${Object.keys(PERFILES).join(', ')}`)
   }
 
-  const res = await fetch(`${BASE}${ENDPOINT}`, {
+  const res = await fetch(`${BASE}${endpoint}`, {
     method: 'POST',
     headers: cabeceras(),
-    body: JSON.stringify(cuerpo(prompt, imageUrl)),
+    body: JSON.stringify(cuerpo(prompt, imageUrl, duracion)),
   })
 
   const json = await res.json().catch(() => null)
@@ -178,7 +178,7 @@ export async function enviar({ prompt, imageUrl }) {
     const detalle = String(json?.detail ?? '')
     const nuestro = FALLOS_DE_CUENTA[detalle]
     if (nuestro) {
-      const e = new Error(nuestro.replace('${ENDPOINT}', ENDPOINT))
+      const e = new Error(nuestro.replace('${ENDPOINT}', endpoint))
       e.esDeCuenta = true   // para el registro: revisar la cuenta, no la foto
       e.detalle = detalle   // crudo, para que disponibilidad.js sepa cuál fue
       throw e
@@ -186,7 +186,7 @@ export async function enviar({ prompt, imageUrl }) {
     const porStatus = STATUS_DE_CUENTA[res.status]
     if (porStatus) {
       const e = new Error(
-        `Las llaves de Higgsfield no sirven para ${ENDPOINT} (HTTP ${res.status}` +
+        `Las llaves de Higgsfield no sirven para ${endpoint} (HTTP ${res.status}` +
         `${detalle ? `: ${detalle}` : ''}). Revisa HIGGSFIELD_KEY_ID y HIGGSFIELD_KEY_SECRET.`,
       )
       e.esDeCuenta = true
@@ -200,6 +200,39 @@ export async function enviar({ prompt, imageUrl }) {
     throw new Error(`Higgsfield aceptó pero no devolvió request_id: ${JSON.stringify(json)}`)
   }
   return { requestId: json.request_id }
+}
+
+/** Los modelos con perfil escrito. No todos los habilita el plan: ver modelos.js */
+export const MODELOS = Object.keys(PERFILES)
+
+/**
+ * Cuánto costaría, SIN generar.
+ *
+ * `POST /estimate<ruta>` con un cuerpo válido devuelve créditos y dólares y no
+ * arranca nada. No está en el openapi.json —vive en la página de facturación—
+ * pero funciona, y es lo que permite comparar modelos antes de gastar. Que sea
+ * gratis es la diferencia entre probar tres modelos y quedarse con el primero.
+ *
+ * @returns {Promise<{ creditos: number|null, usd: number|null, crudo: object }>}
+ */
+export async function estimar({ prompt, imageUrl, endpoint = ENDPOINT, duracion = DURACION }) {
+  const cuerpo = PERFILES[endpoint]
+  if (!cuerpo) throw new Error(`Modelo no reconocido: ${endpoint}`)
+
+  const res = await fetch(`${BASE}/estimate${endpoint}`, {
+    method: 'POST',
+    headers: cabeceras(),
+    body: JSON.stringify(cuerpo(prompt, imageUrl, duracion)),
+  })
+  const json = await res.json().catch(() => null)
+  if (!res.ok) {
+    throw new Error(`No se pudo estimar ${endpoint}: ${res.status} ${json?.detail ?? ''}`)
+  }
+  return {
+    creditos: json?.credits ?? json?.cost ?? null,
+    usd: json?.usd ?? json?.price ?? null,
+    crudo: json,
+  }
 }
 
 /**
