@@ -18,6 +18,8 @@
  *   POST /generar-video  → imagen + prompt → video, sin créditos ni tatuaje. ADMIN
  *   POST /generar-video/estimar → cuánto costaría, sin generar. ADMIN, gratis
  *   GET  /generar-video/:id → avance y URL del video. ADMIN
+ *   POST /generar-imagen  → foto + prompt → escena compuesta (Meshy). ADMIN
+ *   GET  /generar-imagen/:id → avance y URL de la imagen. ADMIN
  */
 
 import { timingSafeEqual } from 'node:crypto'
@@ -469,6 +471,59 @@ app.get('/generar-video/:tarea', async (req, res) => {
     res.json(await hf.estado(req.params.tarea))
   } catch (err) {
     fallo(res, err, 'video')
+  }
+})
+
+/*
+  ═══ COMPOSICIÓN DE ESCENA, RUTA DE ADMINISTRACIÓN ════════════════════════
+
+  La primera mitad del producto que de verdad se quiere vender. Animar una foto
+  lo hace cualquiera; lo que nadie puede copiar es reconstruir el recuerdo de
+  alguien —"le llevaba una concha y se sentaba a comer con nosotros"— porque no
+  es tecnología, es de esa persona.
+
+  Y reconstruirlo NO se le puede pedir al modelo de video: es malo inventando.
+  Aquí se compone la escena como imagen fija, y recién esa imagen se anima con
+  `/generar-video`. Dos modelos, cada uno haciendo lo único que hace bien.
+
+  Mismo portón de administración y mismo criterio: falla cerrada.
+*/
+
+app.post('/generar-imagen', upload.array('fotos', 5), async (req, res) => {
+  const permiso = autorizadoAdmin(req)
+  if (!permiso.ok) return res.status(permiso.status).json({ error: permiso.error })
+
+  try {
+    // Igual que en 3D: archivos sueltos para probar desde una terminal, URLs
+    // para la forma que tendría en el producto (la app ya subió a Storage).
+    const deArchivos = (req.files ?? []).map(
+      (f) => `data:${f.mimetype};base64,${f.buffer.toString('base64')}`,
+    )
+    const deUrls = Array.isArray(req.body?.fotos)
+      ? req.body.fotos
+      : typeof req.body?.fotos === 'string' ? [req.body.fotos] : []
+
+    const { tarea } = await meshy.componerImagen({
+      imagenes: [...deArchivos, ...deUrls],
+      prompt: String(req.body?.prompt ?? ''),
+      modelo: req.body?.modelo || undefined,
+      proporcion: req.body?.proporcion || undefined,
+      quitarFondo: req.body?.quitarFondo === true || req.body?.quitarFondo === 'true',
+    })
+    console.log(`[imagen] tarea ${tarea} · ${req.body?.modelo ?? 'nano-banana-pro'}`)
+    res.status(202).json({ tarea, creditos: meshy.MODELOS_IMAGEN[req.body?.modelo || 'nano-banana-pro'] })
+  } catch (err) {
+    fallo(res, err, 'imagen')
+  }
+})
+
+app.get('/generar-imagen/:tarea', async (req, res) => {
+  const permiso = autorizadoAdmin(req)
+  if (!permiso.ok) return res.status(permiso.status).json({ error: permiso.error })
+  try {
+    res.json(await meshy.estadoImagen(req.params.tarea))
+  } catch (err) {
+    fallo(res, err, 'imagen')
   }
 })
 
