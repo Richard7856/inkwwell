@@ -1202,3 +1202,38 @@ Y como en el cuadro no hay suelo ni ningún objeto de escala conocida, la concha
 
 **Hallazgos sueltos del estimador, todos gratis:** `hailuo-02/pro` solo acepta 6 segundos (el perfil decía {6,10} y habría reventado), `kling v2.1` responde `423 model_blocked`, y `wan-25-preview` cobra $0.50 fijos ignorando la duración.
 
+
+## [2026-09-18] Componer la escena y luego animarla: la arquitectura que Richard pidió
+**Context:** Richard rechazó el camino fácil con un argumento que hay que conservar entero: *"animar una foto ya cualquiera lo puede hacer con gemini subiendo la foto y diciendo anima, eso no es un wow"*. Tiene razón. Animar una foto es una función de mercancía. Lo que nadie puede copiar es reconstruir **el recuerdo de alguien** —"le llevaba una concha y se sentaba a comer con nosotros", que es literalmente el texto de ejemplo de `RecuerdoForm.jsx`— porque eso no es tecnología, es de esa persona.
+
+**El problema era de reparto de trabajo.** Le estábamos pidiendo al modelo de video que inventara la escena, y quedó medido hoy que es malo inventando y bueno moviendo.
+
+**Decision: dos pasos, dos modelos.**
+1. **Componer** — foto del cliente + su recuerdo → una imagen fija de la escena, con `nano-banana-pro` (`POST /openapi/v1/image-to-image`, 9 créditos). Es un modelo de EDICIÓN: parte de la foto en vez de generar otro perro "parecido", que es lo que ya falló con popcorn y con soul.
+2. **Animar** — esa imagen + un movimiento acotado, con `hailuo-2.3` ($0.28).
+
+Cada fallo del día se diseña fuera: la cara no se deforma porque el cuerpo ya está en el cuadro, la escala del objeto se fija al componer en vez de describirse, y las marcas salen de la foto del cliente.
+
+**Y aparece una función de producto, no solo un ahorro.** Una imagen cuesta una fracción de un video, así que se puede componer, **enseñársela al cliente** —"así se va a ver tu recuerdo, ¿lo generamos?"— y recién entonces gastar. Sin ese paso esto es una máquina expendedora; con él, es alguien ayudándote a recordar.
+
+### Lo que se probó, y las dos sorpresas
+
+Tres composiciones, 27 créditos, sobre la misma foto real de Zero:
+
+| | Referencias | Resultado |
+|---|---|---|
+| **A** | foto real + render de cuerpo entero, verde pedido en el prompt | ✅ **Fotográfica**, cuerpo entero, concha del tamaño correcto y con su rayado |
+| **B** | igual, pero `remove_background: true` | ❌ **Borró la concha**: la trató como fondo y la recortó |
+| **C** | **solo** la foto real | ❌ Perdió el fondo verde, perdió la concha, y le cambió las marcas al perro |
+
+**Sorpresa 1: `remove_background` destruye la escena.** Parecía la opción elegante —PNG transparente y uno le pone el verde perfecto— y recorta cualquier objeto que no sea el sujeto principal. Para componer escenas, el verde va pedido en el prompt.
+
+**Sorpresa 2: la segunda referencia no es una pista de pose, es el ancla.** Quitarla —dejando solo el primer plano real— hizo que el modelo inventara el cuerpo, y con él inventó otro perro, otro cuarto y ningún pan. La referencia de cuerpo entero es lo que mantiene al modelo pegado a la composición pedida.
+
+**Consecuencia práctica:** el defecto que Richard señaló —una franja blanca en el cuello que Zero no tiene— venía de que la referencia de cuerpo era `brand/3d/zero.glb`, cuya reconstrucción tiene ese blanco de más. El arreglo no es quitar la referencia sino **usar una con las marcas correctas** (`zero-parado.glb`, que tiene el blanco solo en el pecho).
+
+### Lo que queda sin contestar
+**Cuánta acción aguanta una escena ya compuesta.** Es el único desconocido que decide el producto: si aguanta "se echa, la agarra con las patas y se la come", el recuerdo completo es reproducible; si solo aguanta "baja la cabeza y la huele", el producto sigue siendo bueno pero más contenido. Se está midiendo con los dos niveles sobre la misma escena.
+
+### Lo que esto implica para `promptDe()`, y sigue sin decidirse
+Hoy el worker antepone `natural gentle motion` y pega la historia del usuario **tal cual al modelo de video**. En esta arquitectura ese texto ya no debería ir al video: debería alimentar el paso de COMPOSICIÓN. Un cliente que escriba "corría a traerme la pelota" hoy recibe el perro que se derrite. Es un cambio en el camino del cliente y lo decide Richard.
