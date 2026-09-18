@@ -1232,8 +1232,28 @@ Tres composiciones, 27 créditos, sobre la misma foto real de Zero:
 
 **Consecuencia práctica:** el defecto que Richard señaló —una franja blanca en el cuello que Zero no tiene— venía de que la referencia de cuerpo era `brand/3d/zero.glb`, cuya reconstrucción tiene ese blanco de más. El arreglo no es quitar la referencia sino **usar una con las marcas correctas** (`zero-parado.glb`, que tiene el blanco solo en el pecho).
 
-### Lo que queda sin contestar
-**Cuánta acción aguanta una escena ya compuesta.** Es el único desconocido que decide el producto: si aguanta "se echa, la agarra con las patas y se la come", el recuerdo completo es reproducible; si solo aguanta "baja la cabeza y la huele", el producto sigue siendo bueno pero más contenido. Se está midiendo con los dos niveles sobre la misma escena.
+### Contestado: la escena compuesta aguanta el recuerdo COMPLETO
+Se animaron los dos niveles sobre la misma escena, 10 segundos cada uno:
+
+- **Contenido** — baja la cabeza, huele la concha, mueve la cola, se endereza. ✅
+- **Completo** — se acerca, se echa, la agarra con las dos patas y se la come. ✅ **También aguanta.**
+
+Es exactamente el recuerdo del formulario —*"se sentaba a comer con nosotros"*— y es lo que el modelo de video NO podía hacer cuando se le pedía inventar la escena. La diferencia no fue el modelo: fue que ya no tenía que inventar al perro ni el pan ni su tamaño.
+
+**Medido cuadro a cuadro, que es lo que importa para AR:**
+
+| | Cuadro 0 | Cuadro 120 | Cuadro 240 |
+|---|---|---|---|
+| Ancho del sujeto | 81% | 77% | 78% |
+| Alto | 49% | 25% | 30% |
+| **Base (las patas)** | **78%** | **79%** | **83%** |
+
+El ancho no se mueve: la cámara está clavada, sin el acercamiento que descalificó a `pro`. El alto baja porque el perro se echa, que es la acción pedida. Y **la base se queda en su sitio**: el perro no se desliza ni flota, así que se queda pegado al ancla del tatuaje. Un video donde el sujeto deriva se despega de la piel y rompe la ilusión; este no lo hace.
+
+### El hueco que queda, y es de producto
+**Para Zero teníamos una referencia de cuerpo entero. Para un cliente no.** La composición necesita DOS referencias y la segunda —cuerpo entero, de buena calidad— es la que evita que el modelo invente otro perro (variante C). Hoy salió de un modelo 3D que solo existe porque Zero es el perro de Richard.
+
+La salida no es técnica: **la app debería pedir 2 a 4 fotos en vez de una**, y exigir que al menos una sea de cuerpo entero. Es lo que cualquiera tiene de su mascota, sirve igual para el camino 3D, y convierte el único requisito frágil de esta arquitectura en una casilla del formulario.
 
 ### Lo que esto implica para `promptDe()`, y sigue sin decidirse
 Hoy el worker antepone `natural gentle motion` y pega la historia del usuario **tal cual al modelo de video**. En esta arquitectura ese texto ya no debería ir al video: debería alimentar el paso de COMPOSICIÓN. Un cliente que escriba "corría a traerme la pelota" hoy recibe el perro que se derrite. Es un cambio en el camino del cliente y lo decide Richard.
