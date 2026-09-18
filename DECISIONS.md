@@ -1172,3 +1172,33 @@ Y como en el cuadro no hay suelo ni ningún objeto de escala conocida, la concha
 3. **Escala explícita** si hay un objeto: "del tamaño de su pata", y suelo en el cuadro.
 4. Recién entonces, subir de `standard` a `pro` o a `hailuo-2.3`. Es la palanca más cara y la que menos mueve la aguja si la entrada sigue mal.
 
+
+## [2026-09-18] La cara deforme y el pan gigante: cinco generaciones para separar la causa
+**Context:** Richard pidió mejorar el video de Zero. Dos quejas concretas: la cara se deforma y la concha sale enorme. Con la ruta de administración recién hecha se pudieron correr cinco generaciones sobre entradas y prompts distintos, y comparar.
+
+**Primero se descartó lo que no era.** No era el modelo ni el precio: `hailuo-02/standard` produjo el video original y produce videos limpios con otra entrada. Eran dos causas distintas apuntando al mismo sitio.
+
+**Causa 1 — el prompt pedía cinco verbos.** "Camina hacia la concha, se echa, la agarra con las patas, se la come y mueve la cola" son cinco oportunidades de deformar en diez segundos. Con el mismo modelo y **la misma foto**, cambiando solo el prompt a movimiento contenido —respira, mueve la cola, parpadea, no camina, no cambia de posición— la cara aguanta los seis segundos enteros.
+
+**Causa 2 — la imagen de entrada no tenía suelo ni objeto de escala**, así que la concha se dimensionaba contra el marco. Sin objeto que pedir, el problema desaparece.
+
+**Y una tercera que apareció al arreglarlo: la malla 3D miente.** Se probó con un render de `brand/3d/zero.glb` para dar cuerpo entero. Richard lo vio de inmediato: *"Zero no tiene blanco en la cabeza"* y *"las patas traseras se ven planas"*. Las dos son ciertas y **ninguna la inventó el generador**: el pelo blanco de esa reconstrucción sube por el cuello hasta la cabeza, y sus patas traseras están mal formadas. El video copió fielmente lo que se le dio.
+
+**Decision: la foto real del cliente es la entrada, no un render.** No es un parche, es el camino del producto: un cliente sube un primer plano de su mascota y nunca vamos a tener una malla suya. Que la foto "no muestre el cuerpo" solo importa si se le pide mover el cuerpo.
+
+**Comparativa de modelos, medida sobre la misma foto y el mismo prompt:**
+
+| Modelo | Costo 6 s | Resolución | Identidad | Encuadre |
+|---|---|---|---|---|
+| **`hailuo-2.3/standard`** | **$0.280** | 768×1364 | Conserva las marcas | **Clavado** |
+| `hailuo-02/pro` | $0.488 | 1080×1918 | Conserva las marcas, más detalle | **Se acerca solo** |
+| `kling v2.5-turbo` | $0.179 | 720×1276 | Deriva a "perro genérico" | Estable |
+
+**El encuadre se midió, no se opinó.** Contando el ancho del sujeto cuadro a cuadro: `hailuo-2.3` va 57 → 57 → 58 → 57%, y `pro` va 57 → 71 → 79 → **93%**. `pro` **ignora** `camera is locked off, no camera movement, no zoom` y hace un acercamiento continuo. Para AR eso descalifica: el video se mapea sobre el tatuaje, así que un acercamiento cambia el tamaño del perro respecto a su ancla.
+
+**Gana `hailuo-2.3/standard`**: mitad de precio que `pro`, encuadre estable, marcas correctas. Cambiar `HIGGSFIELD_ENDPOINT` en Railway es configuración, no código.
+
+**Lo que esto implica para `promptDe()`** y todavía no se ha cambiado: hoy antepone `natural gentle motion` y pega la historia del usuario tal cual. Un usuario que escriba "corría a traerme la pelota" va a recibir exactamente el video que se derretía. El preámbulo debería empujar a movimiento contenido y el producto debería acotar lo que se le pide al generador — pero eso toca el camino del cliente y no se cambia sin decidirlo.
+
+**Hallazgos sueltos del estimador, todos gratis:** `hailuo-02/pro` solo acepta 6 segundos (el perfil decía {6,10} y habría reventado), `kling v2.1` responde `423 model_blocked`, y `wan-25-preview` cobra $0.50 fijos ignorando la duración.
+
