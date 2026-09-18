@@ -72,9 +72,15 @@ const PERFILES = {
     resolution: '768P',
     prompt_optimizer: false,
   }),
-  '/minimax/hailuo-02/pro/image-to-video': (prompt, image_url, dur) => ({
+  /*
+    El `pro` de hailuo-02 NO acepta 10 segundos, solo 6 — al contrario que su
+    hermano `standard`. Se descubrió pidiéndole una estimación con duración 10:
+    `400 duration: 10 is not one of [6]`. Estaba escrito como el standard y
+    habría reventado el día que alguien subiera HIGGSFIELD_DURACION.
+  */
+  '/minimax/hailuo-02/pro/image-to-video': (prompt, image_url) => ({
     prompt, image_url,
-    duration: dur > 8 ? 10 : 6,
+    duration: 6,
     resolution: '768P',
     prompt_optimizer: false,
   }),
