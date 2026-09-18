@@ -1113,3 +1113,29 @@ y quedarse con **+1 crédito**. El índice único `(motivo, referencia)` no lo f
 
 **Por qué importa registrarlo aunque no se actúe.** La diferencia entre "pasó una vez" y "está pasando" decide si conviene mover la oferta a un código promocional —que sí se puede limitar por usos— y esa diferencia no se puede reconstruir después si nadie la anotó. La exposición mientras tanto está acotada: sigue siendo una compra pagada al 50%, no un regalo.
 
+
+## [2026-09-18] Qué tan lejos generaliza el rigeo por transferencia: la pose de entrada es todo
+**Context:** Richard preguntó si se puede automatizar que **cualquier** cuadrúpedo sea compatible con un solo esqueleto. La tubería ya existe (`scripts/rigear-mascota.py`), así que en vez de opinar se probó con tres entradas distintas y se midió.
+
+| Entrada | Qué es | Resultado |
+|---|---|---|
+| `zero-parado.glb` | Meshy, **pose de pie a propósito**, una sola malla | ✅ Limpio. `standing`, `sitting` y `play_dead` se leen bien |
+| `zero-realista.glb` | Meshy, misma calidad, pero **sentado** | ⚠️ **No se rompe: se queda sentado.** Los pesos se copian, la malla no se desgarra, y la animación de pie no lo levanta nunca |
+| `alaskan_malamute_dog.glb` | Sketchfab: **23 mallas, dos perros y un rig propio** | ❌ Ni siquiera acierta cuál malla es el perro |
+
+**El resultado que más enseña es el del medio.** `zero-realista` no falla ruidosamente —no hay malla desgarrada ni losas negras—, simplemente no sirve: un perro sentado amarrado a un esqueleto de pie sigue sentado para siempre. Eso significa que **no hay forma de detectar el fallo mirando si "se ve roto"**: hay que validar la pose antes.
+
+Las cajas envolventes lo dicen en números. Donante de pie: `(34, 115, 83)` —angosto, largo, alto—. `zero-parado`: `(28, 140, 83)`, misma forma. `zero-realista`: `(65, 91, 83)` — **casi el doble de ancho y más corto**, que es la firma geométrica de un animal sentado. Esa relación es un criterio de aceptación utilizable.
+
+**Entonces la parte difícil de automatizar no es el rigeo.** Copiar pesos entre dos cuadrúpedos es determinista y ya funciona. Lo que no es determinista es la entrada. Por eso el camino barato no pasa por mejorar este guion sino por **fijar la pose en el momento de generar**, que la otra sesión ya probó que se puede: `nano-banana-pro` puso a Zero de pie conservando sus marcas, y de ahí a 3D. Si toda malla nace en la misma pose canónica, la transferencia deja de tener casos.
+
+**Tres defectos reales encontrados al probar con un modelo de catálogo**, los tres arreglados:
+
+1. **`bound_box` miente.** Blender lo cachea y en una malla de glTF con esqueleto puede quedar desfasado: daba `(1.7, 4.7, 2.4)` donde los vértices daban `(158, 5.1, 154)`, factor de casi 90. `caja()` ahora recorre los vértices.
+2. **Hay que copiar la matriz de mundo ANTES de borrar nada.** Borrar el padre desemparenta al hijo y le deja su matriz local, así que la escala que aportaba el padre se pierde antes de poder guardarla. Costó una ronda entera.
+3. **La malla destino puede llegar con su propio rig**, y entonces se acumulaban 231 grupos de vértices donde debían ser 191, con dos modificadores Armature deformando en cadena. Ahora se desarma primero.
+
+**Lo que NO se arregló, a propósito:** elegir la malla mayor como "el animal" falla en un archivo de catálogo, y resolverlo bien exige identificar qué es un animal dentro de una escena arbitraria. No está en el camino del producto: Meshy entrega siempre una sola malla limpia. Queda anotado como límite conocido, con aviso en la salida del guion.
+
+**El hueco que sigue abierto y sí importa:** ninguno de los dos donantes tiene ciclo de **caminar o correr**, que es literalmente lo que promete la landing. Ver `brand/3d/CREDITOS.md`.
+

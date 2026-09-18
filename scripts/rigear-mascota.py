@@ -73,11 +73,24 @@ def argumentos():
 
 
 def caja(obj):
-    """Caja envolvente en coordenadas de mundo."""
+    """
+    Caja envolvente en coordenadas de mundo, medida sobre los VÉRTICES.
+
+    Lo natural sería usar `obj.bound_box`, que es justo eso y ya viene calculado.
+    No sirve: Blender lo cachea y en una malla importada de glTF con esqueleto
+    puede quedar desfasado del contenido real. Medido sobre el malamute de
+    Sketchfab, `bound_box` daba (1.7, 4.7, 2.4) donde los vértices daban
+    (158.0, 5.1, 153.8) — un factor de casi 90, suficiente para que el alineado
+    escalara la malla a un tamaño absurdo y todo lo demás fuera basura.
+
+    Recorrer los vértices cuesta microsegundos en mallas de este tamaño y no
+    depende de ninguna caché.
+    """
     lo = Vector((1e9,) * 3)
     hi = Vector((-1e9,) * 3)
-    for v in obj.bound_box:
-        w = obj.matrix_world @ Vector(v)
+    m = obj.matrix_world
+    for v in obj.data.vertices:
+        w = m @ v.co
         lo = Vector((min(lo[i], w[i]) for i in range(3)))
         hi = Vector((max(hi[i], w[i]) for i in range(3)))
     return lo, hi
@@ -237,11 +250,56 @@ def main():
     # ── 2. la malla a rigear ──
     antes = set(bpy.data.objects)
     bpy.ops.import_scene.gltf(filepath=a.malla)
-    nuevos = [o for o in set(bpy.data.objects) - antes if o.type == 'MESH']
+    llegaron = set(bpy.data.objects) - antes
+    nuevos = [o for o in llegaron if o.type == 'MESH']
     if not nuevos:
         sys.exit(f'{a.malla} no trae ninguna malla.')
     zero = max(nuevos, key=lambda o: len(o.data.vertices))
     print(f'  malla     {os.path.basename(a.malla)} · {len(zero.data.vertices)} vértices')
+    if len(nuevos) > 1:
+        # Meshy entrega una sola malla; un modelo de catálogo llega partido en
+        # cuerpo, ojos, collar… y a veces con más de un animal en el archivo.
+        # Se queda la más grande, que casi siempre es el cuerpo, PERO eso tira
+        # las demás partes en silencio si no se avisa.
+        otras = sorted((len(o.data.vertices) for o in nuevos if o is not zero), reverse=True)
+        print(f'  AVISO     el archivo trae {len(nuevos)} mallas; se usa solo la mayor. '
+              f'Las otras: {otras[:6]}{"…" if len(otras) > 6 else ""}')
+
+    # ── 2b. desarmar lo que la malla traiga puesto ──
+    #
+    # Una malla recién salida de Meshy llega limpia, pero cualquier modelo
+    # bajado de Sketchfab —o un intento anterior de rigeo— llega con esqueleto,
+    # modificador, padre y grupos de vértices propios. Si no se quitan pasan
+    # tres cosas, y las tres se vieron al probar con el malamute:
+    #
+    #   · la caja envolvente sale deformada, porque se mide sobre la malla YA
+    #     deformada por su propia armadura en el cuadro 1, no sobre su geometría
+    #     de reposo. El alineado dio (5183, 6606, 915) contra (34, 114, 83);
+    #   · la copia de pesos agrega los grupos del donante a los que ya tenía:
+    #     231 grupos donde debían ser 191, con los viejos compitiendo por los
+    #     mismos vértices;
+    #   · el objeto acaba con dos modificadores Armature y se deforma dos veces.
+    #
+    # Se desarma antes de tocar nada. Lo que se tira es el rig, no la malla.
+    # El ORDEN importa y ya costó una ronda: hay que copiar la matriz de mundo
+    # ANTES de borrar nada. Borrar un padre desemparenta al hijo y le deja su
+    # matriz local, así que la contribución del padre —que en un glTF de
+    # Sketchfab suele traer toda la escala— se pierde antes de poder guardarla.
+    mundo = zero.matrix_world.copy()
+    sobrantes = [o for o in llegaron if o is not zero]
+    for o in sobrantes:
+        bpy.data.objects.remove(o, do_unlink=True)
+    zero.parent = None
+    zero.matrix_world = mundo
+    zero.modifiers.clear()
+    zero.vertex_groups.clear()
+    zero.animation_data_clear()
+    if zero.data.shape_keys:
+        zero.shape_key_clear()
+    bpy.context.view_layer.update()
+    if sobrantes:
+        print(f'  desarmada {len(sobrantes)} objeto(s) que traía la malla '
+              f'(esqueleto o rig previo) y sus grupos de vértices')
 
     # ── 3. alinear ──
     dlo, dhi = caja(donante)
