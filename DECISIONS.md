@@ -1273,3 +1273,23 @@ Hoy el worker antepone `natural gentle motion` y pega la historia del usuario **
 **Riesgos:** el generador reinterpreta el dibujo —le sube el contraste y le agrega detalle—; con un tatuaje muy fino podría "redibujarlo" de más. El rastreo de esta pieza da 17% (aceptable, como la huella). Y si el generador movía el brazo, todo el cuadro contaría como cambio; el prompt lo evita, pero hay que verificarlo por video.
 
 **Arreglo colateral:** `componer-inicio.js` rechazaba una foto 9:16 exacta (900x1600) por un píxel de redondeo. Ahora la ajusta dentro del lienzo e imprime la escala que le toca al target.
+
+## [2026-09-19] Animar un tatuaje sin que el generador lo redibuje: zona animable
+**Context:** con `demo=medusa` y `demo=lobo`, Richard señaló lo que fallaba: no era su tatuaje. El generador **añadió y quitó elementos, cambió el color del fuego de azul a naranja y hasta volteó la imagen**. Además corrigió el contenido: es un LOBO y lo que se abre es su boca, no un ojo.
+
+**El problema de fondo:** un modelo de imagen-a-video no "anima" un dibujo, lo **vuelve a dibujar** cuadro a cuadro. Todo lo que se mueve, se reinventa.
+
+**Lo que se probó:**
+| Modelo | Ajustes | Resultado |
+|---|---|---|
+| Hailuo-02, prompt corregido | — | Boca y fuego animados, pero lobo redibujado, llamas naranjas, imagen **volteada**. $0.28 |
+| Kling 2.5-turbo | `cfg_scale: 0.25` + lista de prohibiciones | Sin voltear y con los colores respetados, pero le puso **orejas rosas** al lobo. $0.18 |
+| Kling 2.5-turbo | `cfg_scale: 0.2`, "el lobo NO se mueve", solo fuego y humo | **Fiel.** El dibujo se respeta; se mueven humo y llamas. $0.18 |
+
+**Decision, en dos partes:**
+1. **Pedir movimiento solo donde el dibujo lo aguanta** (fuego, humo, agua, pelo). Cuanto menos se mueve, menos se reinventa.
+2. **`zona` en `videoLayer`**: un rectángulo, en coordenadas del video, fuera del cual la app no pinta nada. Lo que el generador retoque fuera de la zona no se ve nunca: ahí queda el tatuaje real. Bordes suaves para que no se note el recorte. `demo=fuego`.
+
+**Consecuencia para la automatización** (idea de Richard): hacen falta dos IA. Una que **lea el tatuaje** (qué hay, qué estilo, y **qué parte conviene animar** — de ahí sale la zona) y otra que **escriba el prompt** juntando esa lectura con lo que pida el usuario, con las reglas fijas: cámara y brazo congelados, no redibujar, no agregar ni quitar, conservar color y estilo, no voltear.
+
+**Gasto del día en pruebas de video:** $0.92.

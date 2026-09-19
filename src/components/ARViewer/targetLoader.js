@@ -169,6 +169,29 @@ const DEMO_ZERO_3D = {
   llamas pasan de azul-gris a naranja—, así que se conserva `demo=medusa`
   para comparar cuánta libertad se le quiere dar.
 */
+/*
+  Tercera versión, la fiel: Kling 2.5 con `cfg_scale` bajo (0.2) y una lista
+  de prohibiciones, pidiendo que el LOBO NO SE MUEVA y que solo el fuego y el
+  humo ondulen. El dibujo se respeta; el movimiento es sutil.
+
+  `zona` acota además dónde puede pintar la app —el área del fuego, abajo a la
+  izquierda— para que cualquier retoque del generador sobre la cara del lobo
+  nunca llegue a verse. Coordenadas del video, con y desde arriba.
+*/
+const DEMO_FUEGO = {
+  mindUrl: '/targets/medusa.mind',
+  targets: [
+    {
+      videoUrl: '/video/lobo-fuego.mp4',
+      soloCambios: true,
+      croma: false,
+      escala: 1,
+      zona: [0.03, 0.58, 0.62, 0.38],
+      label: 'Fuego',
+    },
+  ],
+}
+
 const DEMO_LOBO = {
   mindUrl: '/targets/medusa.mind',
   targets: [
@@ -211,6 +234,7 @@ export async function loadTarget({ tattooId = null, demo = null } = {}) {
   if (demo === 'zero-realista') return DEMO_ZERO_REALISTA
   if (demo === 'medusa') return DEMO_MEDUSA
   if (demo === 'lobo') return DEMO_LOBO
+  if (demo === 'fuego') return DEMO_FUEGO
 
   if (!tattooId) {
     throw new Error('No se indicó qué tatuaje escanear')

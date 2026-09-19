@@ -144,6 +144,8 @@ const FRAGMENT = `
   uniform sampler2D base;
   uniform float usarBase;
   uniform float soloCambios;
+  uniform vec4 zona;      // x, y, ancho, alto en coordenadas del video (0..1)
+  uniform float bordeZona;
   uniform float listo;
   varying vec2 vUv;
 
@@ -199,6 +201,23 @@ const FRAGMENT = `
       // El borde del cambio se difumina para que no se note el recorte sobre
       // la piel: sin esto, la zona que revive aparece con un contorno duro
       alfa *= smoothstep(0.0, 0.05, alfa);
+
+      /*
+        Zona animable.
+
+        Un generador de video no "anima" un dibujo: lo vuelve a dibujar, y de
+        paso le cambia rasgos (probado el 19 sep: al lobo le salieron orejas
+        rosas). Limitando dónde se puede pintar, lo redibujado fuera de la zona
+        nunca se ve: ahí queda el tatuaje REAL. Así se pide movimiento solo
+        donde el dibujo lo aguanta —el fuego, el humo— y el resto se respeta.
+
+        Bordes suaves para que el recorte no se note sobre la piel.
+      */
+      if (zona.z > 0.0) {
+        vec2 desde = smoothstep(zona.xy, zona.xy + bordeZona, vUv);
+        vec2 hasta = smoothstep(zona.xy + zona.zw, zona.xy + zona.zw - bordeZona, vUv);
+        alfa *= desde.x * desde.y * hasta.x * hasta.y;
+      }
     }
 
     if (alfa < 0.01) discard;   // píxel de fondo o dibujo quieto: no se escribe
@@ -392,6 +411,9 @@ function abrirVideo(url, { bucle, croma }) {
  * @param {string} [config.introUrl] - Se reproduce una vez antes del principal
  * @param {[number, number]} [config.introLlave] - Segundos en que la llave por
  *   diferencia se apaga. Por defecto, LLAVE_FRACCION de la duración.
+ * @param {[number, number, number, number]} [config.zona] - [x, y, ancho, alto]
+ *   en coordenadas del video (0..1, con y hacia abajo como en la foto): fuera
+ *   de ese rectángulo no se pinta nada. Sin él, toda la imagen puede pintarse.
  * @param {boolean} [config.soloCambios] - Para el video que ANIMA EL TATUAJE
  *   mismo: se filmó sobre la piel, no sobre croma, así que se pinta solo lo
  *   que cambia respecto del primer cuadro y la llave nunca se apaga.
@@ -403,7 +425,7 @@ function abrirVideo(url, { bucle, croma }) {
  * @returns {Promise<object>} handle de la capa
  */
 export async function cargarVideo(config, anchorGroup) {
-  const { videoUrl, introUrl = null, croma = true, escala = 1, introLlave = null, soloCambios = false } = config
+  const { videoUrl, introUrl = null, croma = true, escala = 1, introLlave = null, soloCambios = false, zona = null } = config
 
   const [principal, intro] = await Promise.all([
     abrirVideo(videoUrl, { bucle: true, croma }),
@@ -464,6 +486,13 @@ export async function cargarVideo(config, anchorGroup) {
           umbral: { value: UMBRAL },
           suavizado: { value: SUAVIZADO },
           soloCambios: { value: soloCambios ? 1 : 0 },
+          /*
+            La y llega medida desde ARRIBA, como se ve la foto, y en la textura
+            el 0 está abajo: se invierte aquí para que quien configure un target
+            pueda leer las coordenadas de la imagen tal cual.
+          */
+          zona: { value: zona ? new THREE.Vector4(zona[0], 1 - zona[1] - zona[3], zona[2], zona[3]) : new THREE.Vector4(0, 0, 0, 0) },
+          bordeZona: { value: 0.04 },
           opacidad: { value: 1 },
           base: { value: null },
           usarBase: { value: 0 },
