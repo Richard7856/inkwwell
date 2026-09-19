@@ -162,6 +162,26 @@ const DEMO_ZERO_3D = {
   .mind compilado desde ella misma (`worker/componer-inicio.js` imprime la
   escala cuando no es así).
 */
+/*
+  Segunda versión del mismo tatuaje, con el prompt corregido por Richard: lo
+  que se abre es la BOCA del lobo (no un ojo), y el fuego de atrás se mueve.
+  Ojo: el generador reinterpreta el dibujo —el lobo queda más ilustrado y las
+  llamas pasan de azul-gris a naranja—, así que se conserva `demo=medusa`
+  para comparar cuánta libertad se le quiere dar.
+*/
+const DEMO_LOBO = {
+  mindUrl: '/targets/medusa.mind',
+  targets: [
+    {
+      videoUrl: '/video/lobo-vive.mp4',
+      soloCambios: true,
+      croma: false,
+      escala: 1,
+      label: 'Lobo',
+    },
+  ],
+}
+
 const DEMO_MEDUSA = {
   mindUrl: '/targets/medusa.mind',
   targets: [
@@ -190,6 +210,7 @@ export async function loadTarget({ tattooId = null, demo = null } = {}) {
   if (demo === 'zero-3d') return DEMO_ZERO_3D
   if (demo === 'zero-realista') return DEMO_ZERO_REALISTA
   if (demo === 'medusa') return DEMO_MEDUSA
+  if (demo === 'lobo') return DEMO_LOBO
 
   if (!tattooId) {
     throw new Error('No se indicó qué tatuaje escanear')
