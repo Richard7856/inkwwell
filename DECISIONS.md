@@ -1257,3 +1257,19 @@ La salida no es técnica: **la app debería pedir 2 a 4 fotos en vez de una**, y
 
 ### Lo que esto implica para `promptDe()`, y sigue sin decidirse
 Hoy el worker antepone `natural gentle motion` y pega la historia del usuario **tal cual al modelo de video**. En esta arquitectura ese texto ya no debería ir al video: debería alimentar el paso de COMPOSICIÓN. Un cliente que escriba "corría a traerme la pelota" hoy recibe el perro que se derrite. Es un cambio en el camino del cliente y lo decide Richard.
+
+
+## [2026-09-19] "Tu tatuaje cobra vida": animar el tatuaje sin generar nada nuevo
+**Context:** Richard pidió animar OTRO tatuaje suyo —una medusa sombreada en gris, en el antebrazo— sin inventar contenido: solo que el dibujo cobre vida. Es la opción 1 de las tres del pedido.
+
+**Lo que NO funcionó:** extraer la tinta con `mascara-tinta.js` para componerla sobre croma. Está calibrada para trazo negro sobre piel clara y con el tatuaje centrado; con un sombreado gris de bajo contraste y una foto con escritorio oscuro al fondo, marcó el fondo y no el dibujo.
+
+**Decision:** no extraer nada. Se manda **la foto tal cual** a Hailuo-02 con un prompt que exige cámara y brazo congelados y que solo la tinta se mueva, y en la app se pinta **únicamente lo que cambia respecto del primer cuadro** (`soloCambios` en `videoLayer`, la misma llave por diferencia de la intro pero permanente y sin croma). Lo quieto —la piel del video, la mesa, el fondo— nunca se dibuja: se ve el brazo real. Lo que se mueve se pinta encima, alineado por el rastreo.
+
+**Resultado:** el tatuaje recupera color y nitidez y el ojo parpadea; el brazo no se mueve. 6 s, $0.28, 76 s de generación. Probado con cámara simulada: sobre la piel se ve el tatuaje revivir sin recuadro ni bordes. `demo=medusa`.
+
+**Ventaja para el producto:** esta opción no necesita croma, ni quitar fondos, ni foto del recuerdo. Solo la foto del tatuaje que el usuario YA sube para activarlo. Es la más barata y la que menos puede salir mal.
+
+**Riesgos:** el generador reinterpreta el dibujo —le sube el contraste y le agrega detalle—; con un tatuaje muy fino podría "redibujarlo" de más. El rastreo de esta pieza da 17% (aceptable, como la huella). Y si el generador movía el brazo, todo el cuadro contaría como cambio; el prompt lo evita, pero hay que verificarlo por video.
+
+**Arreglo colateral:** `componer-inicio.js` rechazaba una foto 9:16 exacta (900x1600) por un píxel de redondeo. Ahora la ajusta dentro del lienzo e imprime la escala que le toca al target.

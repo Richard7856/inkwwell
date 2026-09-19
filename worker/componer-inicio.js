@@ -57,23 +57,32 @@ if (!fotoRuta || !salidaInicio) {
 }
 
 const foto = await loadImage(fotoRuta)
-const altoFoto = Math.round(foto.height * (ANCHO / foto.width))
-if (altoFoto > ALTO) {
-  console.error(`La foto (${foto.width}x${foto.height}) es más vertical que 9:16; no cabe en el lienzo sin recortar el tatuaje.`)
-  process.exit(1)
-}
+/*
+  La foto se ajusta DENTRO del lienzo sin recortarse: si es más vertical que
+  9:16, manda su alto y sobra verde a los lados. Antes se exigía que mandara
+  el ancho y una foto de 900x1600 —9:16 exacto— se rechazaba por un píxel de
+  redondeo.
+
+  Cuando no ocupa todo el ancho, el plano de AR ya no mide 1: se imprime la
+  escala que le corresponde para pasarla al target (ver targetLoader.js).
+*/
+const k = Math.min(ANCHO / foto.width, ALTO / foto.height)
+const anchoFoto = Math.round(foto.width * k)
+const altoFoto = Math.round(foto.height * k)
+const x0 = Math.round((ANCHO - anchoFoto) / 2)
 const y0 = Math.round((ALTO - altoFoto) / 2)
+console.log(`foto ${anchoFoto}x${altoFoto} en (${x0}, ${y0}) · escala para el target: ${(anchoFoto / ANCHO).toFixed(3)}`)
 
 // Foto escalada al ancho del lienzo, en gris, para la máscara
-const c = createCanvas(ANCHO, altoFoto)
+const c = createCanvas(anchoFoto, altoFoto)
 const ctx = c.getContext('2d')
-ctx.drawImage(foto, 0, 0, ANCHO, altoFoto)
-const rgba = ctx.getImageData(0, 0, ANCHO, altoFoto).data
-const gris = new Uint8Array(ANCHO * altoFoto)
+ctx.drawImage(foto, 0, 0, anchoFoto, altoFoto)
+const rgba = ctx.getImageData(0, 0, anchoFoto, altoFoto).data
+const gris = new Uint8Array(anchoFoto * altoFoto)
 for (let i = 0; i < gris.length; i++) {
   gris[i] = Math.round(rgba[i * 4] * 0.299 + rgba[i * 4 + 1] * 0.587 + rgba[i * 4 + 2] * 0.114)
 }
-const mascara = limpiarMascara(calcularMascaraTinta(gris, ANCHO, altoFoto), ANCHO, altoFoto)
+const mascara = limpiarMascara(calcularMascaraTinta(gris, anchoFoto, altoFoto), anchoFoto, altoFoto)
 
 const lienzo = createCanvas(ANCHO, ALTO)
 const lctx = lienzo.getContext('2d')
@@ -84,23 +93,25 @@ if (modo === 'trazo') {
     for (let x = 0; x < ANCHO; x++) {
       const o = (y * ANCHO + x) * 4
       const fy = y - y0
+      const fx = x - x0
       // Umbral suave: sin él quedan puntos sueltos de poros que el generador
       // interpreta como textura y "anima" como ruido
-      const m = fy >= 0 && fy < altoFoto ? suave(0.22, 0.55, mascara[fy * ANCHO + x]) : 0
+      const dentro = fy >= 0 && fy < altoFoto && fx >= 0 && fx < anchoFoto
+      const m = dentro ? suave(0.22, 0.55, mascara[fy * anchoFoto + fx]) : 0
       for (let k = 0; k < 3; k++) img.data[o + k] = Math.round(VERDE[k] + (TINTA[k] - VERDE[k]) * m)
       img.data[o + 3] = 255
     }
   }
   lctx.putImageData(img, 0, 0)
 } else {
-  const { cx, cy, radio } = centroDeTinta(mascara, ANCHO, altoFoto)
+  const { cx, cy, radio } = centroDeTinta(mascara, anchoFoto, altoFoto)
   lctx.fillStyle = `rgb(${VERDE.join(',')})`
   lctx.fillRect(0, 0, ANCHO, ALTO)
-  dibujarGota(lctx, cx, cy + y0, radio)
-  console.log(`gota en (${Math.round(cx)}, ${Math.round(cy + y0)}), radio ${Math.round(radio)}`)
+  dibujarGota(lctx, cx + x0, cy + y0, radio)
+  console.log(`gota en (${Math.round(cx + x0)}, ${Math.round(cy + y0)}), radio ${Math.round(radio)}`)
 }
 writeFileSync(salidaInicio, lienzo.toBuffer('image/png'))
-console.log(`inicio → ${salidaInicio} (foto en y=${y0}..${y0 + altoFoto})`)
+console.log(`inicio → ${salidaInicio}`)
 
 if (finalRuta && salidaFinal) {
   const fin = await loadImage(finalRuta)

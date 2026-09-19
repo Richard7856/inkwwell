@@ -148,6 +148,33 @@ const DEMO_ZERO_3D = {
   ],
 }
 
+/*
+  "Tu tatuaje cobra vida" — el tatuaje de la medusa del founder (19 sep).
+
+  No hay contenido nuevo: el video ES la foto del tatuaje, generada con
+  Hailuo pidiendo que el brazo y la cámara no se muevan y que solo la tinta
+  reviva. La app pinta ÚNICAMENTE lo que cambia respecto del primer cuadro
+  (`soloCambios`), así que sobre la piel se ve el tatuaje real recuperando
+  color y el ojo parpadeando, sin recuadro ni croma.
+
+  ── Escala 1 ──
+  La foto es 9:16 y ocupa todo el ancho del lienzo del video, igual que el
+  .mind compilado desde ella misma (`worker/componer-inicio.js` imprime la
+  escala cuando no es así).
+*/
+const DEMO_MEDUSA = {
+  mindUrl: '/targets/medusa.mind',
+  targets: [
+    {
+      videoUrl: '/video/medusa-revive.mp4',
+      soloCambios: true,
+      croma: false,
+      escala: 1,
+      label: 'Medusa',
+    },
+  ],
+}
+
 /**
  * @param {object} params
  * @param {string|null} params.tattooId - UUID de un tatuaje concreto
@@ -162,6 +189,7 @@ export async function loadTarget({ tattooId = null, demo = null } = {}) {
   if (demo === 'zero-nace') return DEMO_ZERO_NACE
   if (demo === 'zero-3d') return DEMO_ZERO_3D
   if (demo === 'zero-realista') return DEMO_ZERO_REALISTA
+  if (demo === 'medusa') return DEMO_MEDUSA
 
   if (!tattooId) {
     throw new Error('No se indicó qué tatuaje escanear')

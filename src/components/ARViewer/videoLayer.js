@@ -143,6 +143,7 @@ const FRAGMENT = `
   uniform float opacidad;
   uniform sampler2D base;
   uniform float usarBase;
+  uniform float soloCambios;
   uniform float listo;
   varying vec2 vUv;
 
@@ -166,7 +167,15 @@ const FRAGMENT = `
     float saturacion = max(length(croma - (croma.r + croma.g + croma.b) / 3.0), 0.05);
     float distancia = length(d - brillo) / saturacion;
 
-    float alfa = smoothstep(umbral - suavizado, umbral + suavizado, distancia);
+    /*
+      Con soloCambios el video NO trae croma: es el tatuaje filmado sobre la
+      piel. Ahí el recorte por color no aplica —la piel del video no es un
+      fondo que quitar— y todo el trabajo lo hace la llave por diferencia de
+      abajo: se pinta lo que se mueve, y lo quieto deja ver el brazo real.
+    */
+    float alfa = soloCambios > 0.5
+      ? 1.0
+      : smoothstep(umbral - suavizado, umbral + suavizado, distancia);
 
     /*
       Llave por diferencia (solo durante la intro).
@@ -187,6 +196,9 @@ const FRAGMENT = `
       // usarBase baja a 0 cuando el sujeto sale: si no, su pelaje negro sobre
       // una línea del dibujo original contaría como "sin cambio" y se recortaría
       alfa *= mix(1.0, smoothstep(0.10, 0.22, cambio), usarBase);
+      // El borde del cambio se difumina para que no se note el recorte sobre
+      // la piel: sin esto, la zona que revive aparece con un contorno duro
+      alfa *= smoothstep(0.0, 0.05, alfa);
     }
 
     if (alfa < 0.01) discard;   // píxel de fondo o dibujo quieto: no se escribe
@@ -204,6 +216,10 @@ const FRAGMENT = `
       recorta. Es la técnica estándar y cuesta dos operaciones por píxel.
     */
     vec3 rgb = color.rgb;
+    if (soloCambios > 0.5) {
+      gl_FragColor = vec4(rgb, alfa * opacidad);
+      return;
+    }
 
     /*
       El desderrame se aplica SOLO en el borde, con fuerza proporcional a
@@ -376,6 +392,9 @@ function abrirVideo(url, { bucle, croma }) {
  * @param {string} [config.introUrl] - Se reproduce una vez antes del principal
  * @param {[number, number]} [config.introLlave] - Segundos en que la llave por
  *   diferencia se apaga. Por defecto, LLAVE_FRACCION de la duración.
+ * @param {boolean} [config.soloCambios] - Para el video que ANIMA EL TATUAJE
+ *   mismo: se filmó sobre la piel, no sobre croma, así que se pinta solo lo
+ *   que cambia respecto del primer cuadro y la llave nunca se apaga.
  * @param {boolean} [config.croma] - Recortar el fondo por color. Con false el
  *   video se muestra completo, dentro de su rectángulo.
  * @param {number} [config.escala] - Ancho del plano en unidades del target,
@@ -384,7 +403,7 @@ function abrirVideo(url, { bucle, croma }) {
  * @returns {Promise<object>} handle de la capa
  */
 export async function cargarVideo(config, anchorGroup) {
-  const { videoUrl, introUrl = null, croma = true, escala = 1, introLlave = null } = config
+  const { videoUrl, introUrl = null, croma = true, escala = 1, introLlave = null, soloCambios = false } = config
 
   const [principal, intro] = await Promise.all([
     abrirVideo(videoUrl, { bucle: true, croma }),
@@ -416,10 +435,18 @@ export async function cargarVideo(config, anchorGroup) {
     capturar ahora, se reintenta al reproducir: los primeros ~0.8 s de la
     intro son el dibujo quieto, así que ese cuadro sigue sirviendo.
   */
-  if (intro && croma) {
-    const d = intro.video.duration || 6
-    intro.llave = introLlave ?? [d * LLAVE_FRACCION[0], d * LLAVE_FRACCION[1]]
-    intro.base = capturarCuadro(intro.video)
+  /*
+    El primer cuadro de referencia. En la intro es el dibujo del tatuaje sobre
+    croma; con soloCambios es la foto del brazo quieto, y la referencia es del
+    video PRINCIPAL porque no hay intro.
+  */
+  const conBase = soloCambios ? principal : intro
+  if (conBase && (croma || soloCambios)) {
+    const d = conBase.video.duration || 6
+    // Con soloCambios la llave no se apaga nunca: todo lo quieto es piel real
+    conBase.llave = soloCambios ? [Infinity, Infinity] : (introLlave ?? [d * LLAVE_FRACCION[0], d * LLAVE_FRACCION[1]])
+    conBase.base = capturarCuadro(conBase.video)
+    const intro = conBase   // el reintento vale para la pieza que lleva base
     if (!intro.base) {
       intro.video.addEventListener('playing', () => requestAnimationFrame(() => {
         intro.base = capturarCuadro(intro.video)
@@ -429,13 +456,14 @@ export async function cargarVideo(config, anchorGroup) {
     }
   }
 
-  const material = croma
+  const material = (croma || soloCambios)
     ? new THREE.ShaderMaterial({
         uniforms: {
           mapa: { value: primera.textura },
           croma: { value: (primera.croma ?? CROMA_POR_DEFECTO).clone() },
           umbral: { value: UMBRAL },
           suavizado: { value: SUAVIZADO },
+          soloCambios: { value: soloCambios ? 1 : 0 },
           opacidad: { value: 1 },
           base: { value: null },
           usarBase: { value: 0 },
@@ -459,7 +487,7 @@ export async function cargarVideo(config, anchorGroup) {
   plano.position.z = 0.01
   anchorGroup.add(plano)
 
-  if (croma) mostrarPiezaEnMaterial(material, primera)
+  if (croma || soloCambios) mostrarPiezaEnMaterial(material, primera)
 
   const capa = {
     tipo: 'video',
@@ -513,6 +541,7 @@ function mostrarPiezaEnMaterial(material, pieza) {
 
 function fuerzaLlave(pieza) {
   const [ini, fin] = pieza.llave
+  if (!isFinite(ini)) return 1   // llave permanente (soloCambios)
   const t = pieza.video.currentTime
   return 1 - Math.min(1, Math.max(0, (t - ini) / (fin - ini)))
 }
